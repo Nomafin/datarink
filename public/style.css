@@ -95,7 +95,6 @@ input[type="number"]::-webkit-outer-spin-button {
 select,
 input[type="text"],
 input[type="number"],
-input[type="checkbox"],
 label.checkbox-label,
 button {
   cursor: pointer; }
@@ -111,19 +110,16 @@ input[type="number"] {
   width: 110px; }
 
 select:hover,
-label.checkbox-label:hover,
 button:hover {
   background: #babdbe;
   border-color: #babdbe; }
 
 select:active,
-label.checkbox-label:active,
 button:active {
   background: #9ca0a1;
   border-color: #9ca0a1; }
 
 select:focus,
-label.checkbox-label:focus,
 input[type="text"]:focus,
 input[type="number"]:focus,
 button:focus {
@@ -133,11 +129,29 @@ button:focus {
 select::-ms-expand {
   display: none; }
 
-input[type="checkbox"] {
+button.toggle-button span.checkbox-container {
   display: inline-block;
   vertical-align: top;
-  height: 20px;
-  margin: 0 8px 0 0; }
+  position: relative;
+  box-sizing: border-box;
+  height: 16px;
+  width: 16px;
+  margin-top: 2px;
+  margin-right: 8px;
+  border: 1px solid #babdbe;
+  border-radius: 2px;
+  background: #fff; }
+
+button.toggle-button.toggle-button-checked span.checkbox-checkmark {
+  content: "";
+  display: block;
+  width: 3px;
+  height: 6px;
+  border: solid #008442;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: 2px;
+  margin-left: 4px; }
 
 .search-with-menu {
   display: inline-block;
@@ -161,6 +175,19 @@ input[type="checkbox"] {
 .search-with-menu label {
   background: none;
   border-right: 0; }
+
+.search-with-menu .tooltip {
+  display: none;
+  position: absolute;
+  right: 0;
+  margin: 4px 0 0 0;
+  padding: 8px 16px;
+  background: #313639;
+  color: #f8f9f9;
+  z-index: 100; }
+
+.search-with-menu input[type="text"]:focus + .tooltip {
+  display: block; }
 
 /*
 *
@@ -222,7 +249,7 @@ table td span.pct {
 /* Control column visibility */
 table:not(.cols-individual) .cols-individual,
 table:not(.cols-on-ice-goals) .cols-on-ice-goals,
-table:not(.cols-on-ice-corsis) .cols-on-ice-corsis {
+table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
   display: none; }
 
 /*

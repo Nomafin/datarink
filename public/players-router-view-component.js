@@ -8,7 +8,7 @@ var playersViewComponent = {
 			visibleColumns: {
 				individual: true,
 				onIceGoals: false,
-				onIceCorsis: false
+				onIceCorsi: false
 			},
 			sort: {
 				col: "toi",
@@ -29,7 +29,6 @@ var playersViewComponent = {
 	filters: {
 		percentage: function(value) {
 			return isNaN(value) ? 0 : Math.round(value * 100);
-			return value;
 		},
 		signed: function(value) {
 			return value > 0 ? "+" + value : value;
@@ -55,7 +54,7 @@ var playersViewComponent = {
 				} else if (col === "teams") {
 					players = players.filter(function(p) { return p[col].indexOf(query) >= 0 || p["teamNames"].indexOf(query) >= 0; });
 				} else if (col === "positions" && query === "f") {
-					players = players.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p["col"].indexOf("l") >= 0; });
+					players = players.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p[col].indexOf("l") >= 0; });
 				} else if (col === "positions") {
 					players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
 				}

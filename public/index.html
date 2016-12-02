@@ -13,63 +13,69 @@
 		<div>
 			<div class="table-header">
 				<h1>Teams: 2016-2017</h1>
-				<div v-if="processedTeams.length > 0">
+				<div v-if="teamsWithAggregatedData">
 					<select v-model="strengthSit">
 						<option value="all">All situations</option>
 						<option value="ev5">5 on 5</option>
 						<option value="sh">Short handed</option>
 						<option value="pp">Power play</option>
 					</select
-					><label for="onIceGoals">
-						<input type="checkbox" id="onIceGoals" v-model="visibleColumns.onIceGoals">Goals
-					</label
-					><label for="onIceCorsi">
-						<input type="checkbox" id="onIceCorsi" v-model="visibleColumns.onIceCorsis">Corsi
-					</label>
+					><button class="toggle-button"
+						v-on:click="visibleColumns.onIceGoals === false ? visibleColumns.onIceGoals = true : visibleColumns.onIceGoals = false"
+						v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
+						<span class="checkbox-container">
+							<span class="checkbox-checkmark"></span>
+						</span>On-ice goals</button
+					><button class="toggle-button"
+						v-on:click="visibleColumns.onIceCorsi === false ? visibleColumns.onIceCorsi = true : visibleColumns.onIceCorsi = false"
+						v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
+						<span class="checkbox-container">
+							<span class="checkbox-checkmark"></span>
+						</span>On-ice corsi</button>
 				</div>
 			</div>
-			<div class="loader" v-if="!processedTeams || processedTeams.length <= 0"></div>
-			<div class="table-container" v-if="processedTeams.length > 0">
-				<table v-bind:class="{ 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsis': visibleColumns.onIceCorsis }">
+			<div class="loader" v-if="!teamsWithAggregatedData"></div>
+			<div class="table-container" v-if="teamsWithAggregatedData">
+				<table v-bind:class="{ 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
 					<thead>
 						<tr>
 							<th @click="sortBy('team');" class="left-aligned"
-								v-bind:class="[ sort.column === 'team' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								v-bind:class="[ sort.col === 'team' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Name</th>
 							<th @click="sortBy('toi');"
-								v-bind:class="[ sort.column === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								v-bind:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Mins</th>
 							<th @click="sortBy('gf');" class="cols-on-ice-goals"
-								v-bind:class="[ sort.column === 'gf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								v-bind:class="[ sort.col === 'gf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>GF</th>
 							<th @click="sortBy('ga');" class="cols-on-ice-goals"
-								v-bind:class="[ sort.column === 'ga' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								v-bind:class="[ sort.col === 'ga' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>GA</th>
 							<th @click="sortBy('gDiff');" class="cols-on-ice-goals"
-								v-bind:class="[ sort.column === 'gDiff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								v-bind:class="[ sort.col === 'gDiff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>G diff</th>
 							<th @click="sortBy('shPct');" class="cols-on-ice-goals"
-								v-bind:class="[ sort.column === 'shPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								v-bind:class="[ sort.col === 'shPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Sh%</th>
 							<th @click="sortBy('svPct');" class="cols-on-ice-goals"
-								v-bind:class="[ sort.column === 'svPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								v-bind:class="[ sort.col === 'svPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Sv%</th>
-							<th @click="sortBy('cf');" class="cols-on-ice-corsis"
-								v-bind:class="[ sort.column === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cf');" class="cols-on-ice-corsi"
+								v-bind:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF</th>
-							<th @click="sortBy('ca');" class="cols-on-ice-corsis"
-								v-bind:class="[ sort.column === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('ca');" class="cols-on-ice-corsi"
+								v-bind:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CA</th>
-							<th @click="sortBy('cfPct');" class="cols-on-ice-corsis"
-								v-bind:class="[ sort.column === 'cfPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cfPct');" class="cols-on-ice-corsi"
+								v-bind:class="[ sort.col === 'cfPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%</th>
-							<th @click="sortBy('cfPctAdj');" class="cols-on-ice-corsis"
-								v-bind:class="[ sort.column === 'cfPctAdj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cfPctAdj');" class="cols-on-ice-corsi"
+								v-bind:class="[ sort.col === 'cfPctAdj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%, score-adj</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="p in processedTeams">
+						<tr v-for="p in sortedTeams">
 							<td class="left-aligned">{{ p.team.toUpperCase() }}</td>
 							<td>{{ Math.round(p.toi / 60) }}</td>
 							<td class="cols-on-ice-goals">{{ p.gf }}</td>
@@ -77,10 +83,10 @@
 							<td class="cols-on-ice-goals">{{ p.gDiff | signed }}</td>
 							<td class="cols-on-ice-goals">{{ p.shPct | percentage }}<span class="pct">%</span></td>
 							<td class="cols-on-ice-goals">{{ p.svPct | percentage }}<span class="pct">%</span></td>					
-							<td class="cols-on-ice-corsis">{{ p.cf }}</td>
-							<td class="cols-on-ice-corsis">{{ p.ca }}</td>
-							<td class="cols-on-ice-corsis">{{ p.cfPct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsis">{{ p.cfPctAdj | percentage }}<span class="pct">%</span></td>			
+							<td class="cols-on-ice-corsi">{{ p.cf }}</td>
+							<td class="cols-on-ice-corsi">{{ p.ca }}</td>
+							<td class="cols-on-ice-corsi">{{ p.cfPct | percentage }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cfPctAdj | percentage }}<span class="pct">%</span></td>			
 						</tr>
 					</tbody>
 				</table>
@@ -99,15 +105,24 @@
 						<option value="sh">Short handed</option>
 						<option value="pp">Power play</option>
 					</select
-					><label for="individual" class="checkbox-label">
-						<input type="checkbox" id="individual" v-model="visibleColumns.individual">Own production
-					</label
-					><label for="onIceGoals" class="checkbox-label">
-						<input type="checkbox" id="onIceGoals" v-model="visibleColumns.onIceGoals">On-ice goals
-					</label
-					><label for="onIceCorsi" class="checkbox-label">
-						<input type="checkbox" id="onIceCorsi" v-model="visibleColumns.onIceCorsis">On-ice corsi
-					</label
+					><button class="toggle-button"
+						v-on:click="visibleColumns.individual === false ? visibleColumns.individual = true : visibleColumns.individual = false"
+						v-bind:class="{ 'toggle-button-checked': visibleColumns.individual }">
+						<span class="checkbox-container">
+							<span class="checkbox-checkmark"></span>
+						</span>Own production</button
+					><button class="toggle-button"
+						v-on:click="visibleColumns.onIceGoals === false ? visibleColumns.onIceGoals = true : visibleColumns.onIceGoals = false"
+						v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
+						<span class="checkbox-container">
+							<span class="checkbox-checkmark"></span>
+						</span>On-ice goals</button
+					><button class="toggle-button"
+						v-on:click="visibleColumns.onIceCorsi === false ? visibleColumns.onIceCorsi = true : visibleColumns.onIceCorsi = false"
+						v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
+						<span class="checkbox-container">
+							<span class="checkbox-checkmark"></span>
+						</span>On-ice corsi</button
 					><div class="search-with-menu">
 						<select v-model="search.col" v-on:change="search.query = '';">
 							<option value="name">Name:</option>
@@ -115,6 +130,7 @@
 							<option value="positions">Position:</option>
 						</select
 						><input v-model="search.query" type="text">
+						<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
 					</div
 					><div class="search-with-menu">
 						<label for="minimum-toi">Minimum minutes:</label
@@ -124,7 +140,7 @@
 			</div>
 			<div class="loader" v-if="!playersWithAggregatedData"></div>
 			<div class="table-container" v-if="playersWithAggregatedData">
-				<table v-bind:class="{ 'cols-individual': visibleColumns.individual, 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsis': visibleColumns.onIceCorsis }">
+				<table v-bind:class="{ 'cols-individual': visibleColumns.individual, 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
 					<thead>
 						<tr>
 							<th @click="sortBy('name');" class="left-aligned"
@@ -172,19 +188,19 @@
 							<th @click="sortBy('svPct');" class="cols-on-ice-goals"
 								v-bind:class="[ sort.col === 'svPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Sv%</th>
-							<th @click="sortBy('cf');" class="cols-on-ice-corsis"
+							<th @click="sortBy('cf');" class="cols-on-ice-corsi"
 								v-bind:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF</th>
-							<th @click="sortBy('ca');" class="cols-on-ice-corsis"
+							<th @click="sortBy('ca');" class="cols-on-ice-corsi"
 								v-bind:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CA</th>
-							<th @click="sortBy('cfPct');" class="cols-on-ice-corsis"
+							<th @click="sortBy('cfPct');" class="cols-on-ice-corsi"
 								v-bind:class="[ sort.col === 'cfPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%</th>
-							<th @click="sortBy('cfPctRel');" class="cols-on-ice-corsis"
+							<th @click="sortBy('cfPctRel');" class="cols-on-ice-corsi"
 								v-bind:class="[ sort.col === 'cfPctRel' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%, rel</th>
-							<th @click="sortBy('cfPctAdj');" class="cols-on-ice-corsis"
+							<th @click="sortBy('cfPctAdj');" class="cols-on-ice-corsi"
 								v-bind:class="[ sort.col === 'cfPctAdj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%, score-adj</th>
 						</tr>
@@ -206,23 +222,15 @@
 							<td class="cols-on-ice-goals">{{ p.gDiff | signed }}</td>
 							<td class="cols-on-ice-goals">{{ p.shPct | percentage }}<span class="pct">%</span></td>
 							<td class="cols-on-ice-goals">{{ p.svPct | percentage }}<span class="pct">%</span></td>					
-							<td class="cols-on-ice-corsis">{{ p.cf }}</td>
-							<td class="cols-on-ice-corsis">{{ p.ca }}</td>
-							<td class="cols-on-ice-corsis">{{ p.cfPct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsis">{{ p.cfPctRel | percentage | signed }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsis">{{ p.cfPctAdj | percentage }}<span class="pct">%</span></td>			
+							<td class="cols-on-ice-corsi">{{ p.cf }}</td>
+							<td class="cols-on-ice-corsi">{{ p.ca }}</td>
+							<td class="cols-on-ice-corsi">{{ p.cfPct | percentage }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cfPctRel | percentage | signed }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cfPctAdj | percentage }}<span class="pct">%</span></td>			
 						</tr>
 					</tbody>
 				</table>
 				<div class="pagination" v-if="pagination.total > 0">
-					<!--
-					<button @click="changePage(0);" class="first">
-						<svg viewBox="0 0 16 16">
-							<path d="M12,3,7,8l5,5L13,12,9,8,13,4Z"/>
-							<rect x="4" y="3" width="1.5" height="10"/>
-						</svg>
-					</button>
-					-->
 					<button @click="pagination.current--;" class="previous">
 						<svg viewBox="0 0 16 16">
 							<path d="M10,3,5,8l5,5L11,12,7,8,11,4Z"/>
@@ -238,16 +246,6 @@
 							<path d="M10,3,5,8l5,5L11,12,7,8,11,4Z" transform="rotate(180 8 8)"/>
 						</svg>
 					</button>
-					<!--
-					<button @click="changePage(pagination.totalPages - 1);" class="last">
-						<svg viewBox="0 0 16 16">
-							<g transform="rotate(180 8 8)">
-								<path d="M12,3,7,8l5,5L13,12,9,8,13,4Z"/>
-								<rect x="4" y="3" width="1.5" height="10"/>
-							</g>
-						</svg>
-					</button>
-					-->
 				</div>
 			</div>
 		</div>
