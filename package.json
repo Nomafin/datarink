@@ -1,0 +1,26 @@
+{
+  "name": "datarink-app",
+  "version": "1.0.0",
+  "description": "datarink web application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevkan/datarink-app.git"
+  },
+  "author": "datarink",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kevkan/datarink-app/issues"
+  },
+  "homepage": "https://github.com/kevkan/datarink-app#readme",
+  "dependencies": {
+    "express": "^4.14.0",
+    "lodash": "^4.17.2",
+    "mysql": "^2.12.0",
+    "vue": "^2.0.8",
+    "vue-router": "^2.0.3"
+  }
+}

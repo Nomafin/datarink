@@ -1,0 +1,401 @@
+$font-stack: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+$base-font-size: 14px;
+$base-line-height: 20px;
+$small-font-size: 12px;
+$small-line-height: 16px;
+
+$control-height: 32px;
+
+$gray1: #f8f9f9;
+$gray2: #d9dadb;
+$gray3: #babdbe;
+$gray4: #9ca0a1;
+$gray5: #808485;
+$gray6: #64686b;
+$gray7: #4a4f51;
+$gray8: #313639;
+
+$green4: #00b864;
+$green8: #008442;
+
+body {
+	font-family: $font-stack;
+	color: $gray8;
+	font-size: $base-font-size;
+	line-height: $base-line-height;
+	margin: 0;
+	overflow-x: hidden;
+	min-width: 320px;
+}
+
+h1 {
+	font-size: 22px;
+	line-height: 32px;
+	font-weight: 400;
+	margin: 0 0 16px 0;
+}
+
+p {
+	font-size: 14px;
+	line-height: 20px;
+}
+
+/*
+*
+* Page header
+*
+*/
+
+.header {
+	height: 56px;
+	background: $gray8;
+}
+
+.header > svg {
+	display: inline-block;
+	vertical-align: top;
+	width: 32px;
+	height: 32px;
+	margin: 12px 4px 12px 24px;
+}
+
+.header svg .logo-r {
+	fill: #00c870;
+}
+
+.header svg .logo-d {
+	fill: $green8;
+}
+
+.header a {
+	display: inline-block;
+	vertical-align: top;
+
+	color: $gray3;
+	text-decoration: none;
+
+	border-bottom: 2px solid transparent;
+	margin: 18px 0 20px 24px;
+}
+
+.header a:hover,
+.header a:focus {
+	border-color: $gray3;
+	outline: 0;
+}
+
+.header a.router-link-active {
+	color: $gray1;
+	border-color: $gray1;
+}
+
+/*
+*
+* Input controls
+*
+*/
+
+select,
+input[type="text"],
+input[type="number"],
+label,
+button {
+	-moz-appearance: none; 
+	-webkit-appearance: none;
+	appearance: none;
+
+	display: inline-block;
+	vertical-align: top;
+
+	box-sizing: border-box;
+	height: $control-height;
+	line-height: $base-line-height;
+	border: 1px solid $gray2;
+	padding: 5px 15px;
+
+	font-size: $base-font-size;
+	color: $gray8;
+	background: $gray2;
+	margin: 0 8px 8px 0;
+	border-radius: 4px;
+}
+
+/* Hide number spinners */
+input[type="number"] {
+	-moz-appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button, 
+input[type="number"]::-webkit-outer-spin-button { 
+	-webkit-appearance: none; 
+	margin: 0; 
+}
+
+select,
+input[type="text"],
+input[type="number"],
+input[type="checkbox"],
+label.checkbox-label,
+button {
+	cursor: pointer;
+}
+
+label.checkbox-label {
+	padding-left: 11px;
+}
+
+input[type="text"],
+input[type="number"] {
+	padding-left: 11px;
+	padding-right: 11px;
+	background: #fff;
+	width: 110px;
+}
+
+select:hover,
+label.checkbox-label:hover,
+button:hover {
+	background: $gray3;
+	border-color: $gray3;
+}
+
+select:active,
+label.checkbox-label:active,
+button:active {
+	background: $gray4;
+	border-color: $gray4;
+}
+
+select:focus,
+label.checkbox-label:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+button:focus {
+	outline: 0;
+	border-color: $green4;
+}
+
+select::-ms-expand {
+	display: none;
+}
+
+input[type="checkbox"] {
+	display: inline-block;
+	vertical-align: top;
+	height: $base-line-height;
+	margin: 0 8px 0 0;
+}
+
+.search-with-menu {
+	display: inline-block;
+	vertical-align: top;
+	height: $control-height;
+	position: relative;
+	margin: 0 8px 8px 0
+}
+
+.search-with-menu select,
+.search-with-menu label {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	margin: 0;
+}
+
+.search-with-menu input[type="text"],
+.search-with-menu input[type="number"] {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	margin: 0;
+}
+
+.search-with-menu label {
+	background: none;
+	border-right: 0;
+}
+
+/*
+*
+* Data tables
+*
+*/
+
+.table-header {
+	background: $gray1;
+	padding: 24px 24px 23px 24px;
+	border-bottom: 1px solid $gray2;
+}
+
+.table-container {
+	overflow-x: auto;
+	padding: 24px;
+}
+
+table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+table th,
+table td {
+	font-size: 14px;
+	line-height: 16px;
+	padding: 8px;
+	margin: 0;
+	text-align: right;
+	border-bottom: 1px solid $gray2;
+}
+
+table th.left-aligned,
+table td.left-aligned {
+	text-align: left;
+}
+
+table th.uppercased,
+table td.uppercased {
+	text-transform: uppercase;
+}
+
+table th {
+	color: $green8;
+	cursor: pointer;
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	vertical-align: top;
+	font-size: $small-font-size;
+	line-height: $small-line-height;
+}
+
+table th.sort-asc:after {
+	content: " ↑";
+}
+
+table th.sort-desc:after {
+	content: " ↓";
+}
+
+table th:hover {
+	background: $gray2;
+}
+
+table th span.pct,
+table td span.pct {
+	font-size: $small-font-size;
+}
+
+/* Control column visibility */
+table:not(.cols-individual) .cols-individual,
+table:not(.cols-on-ice-goals) .cols-on-ice-goals,
+table:not(.cols-on-ice-corsis) .cols-on-ice-corsis {
+	display: none;
+}
+
+/*
+*
+* Table pagination controls
+*
+*/
+
+.pagination {
+	margin: 24px 0;
+}
+
+.pagination button svg {
+	width: 16px;
+	height: 16px;
+	margin: 2px;
+	fill: $gray8;
+}
+
+.pagination button {
+	margin: 0;
+	padding-left: 6px;
+	padding-right: 6px;
+}
+
+/*
+.pagination button.first {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	margin-right: 1px;
+}
+.pagination button.previous,
+.pagination button.next {
+	border-radius: 0;
+}
+.pagination button.last {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	margin-left: 1px;
+}*/
+
+.pagination button.previous {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.pagination button.next {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+}
+
+.pagination > div,
+.pagination > div > span {
+	display: inline-block;
+	vertical-align: top;
+}
+
+.pagination > div {
+	height: $control-height;
+	box-sizing: border-box;
+	border-top: 1px solid $gray2;
+	border-bottom: 1px solid $gray2;
+	background: $gray1;
+	padding: 5px 4px;
+	min-width: 80px;
+	text-align: center;
+}
+
+.pagination > div > span {
+	padding: 0 2px;
+}
+
+/*
+*
+* Loading spinner
+*
+*/
+
+.loader {
+	height: 64px;
+	width: 64px;
+	margin: 64px auto 0 auto;
+	position: relative;
+	-webkit-animation: rotation 1s infinite linear;
+	-moz-animation: rotation 1s infinite linear;
+	-o-animation: rotation 1s infinite linear;
+	animation: rotation 1s infinite linear;
+	border-left: 8px solid $green4;
+	border-right: 8px solid $green4;
+	border-bottom: 8px solid $green4;
+	border-top: 8px solid #fff;
+	border-radius: 50%;
+}
+
+@-webkit-keyframes rotation {
+	from { -webkit-transform: rotate(0deg); }
+	to { -webkit-transform: rotate(360deg); }
+}
+
+@-moz-keyframes rotation {
+  from { -moz-transform: rotate(0deg); }
+  to { -moz-transform: rotate(360deg); }
+}
+
+@-o-keyframes rotation {
+	from { -o-transform: rotate(0deg); }
+	to { -o-transform: rotate(360deg); }
+}
+
+@keyframes rotation {
+  from { transform: rotate(0deg);
+  } to { transform: rotate(360deg); }
+}

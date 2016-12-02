@@ -1,0 +1,329 @@
+@charset "UTF-8";
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #313639;
+  font-size: 14px;
+  line-height: 20px;
+  margin: 0;
+  overflow-x: hidden;
+  min-width: 320px; }
+
+h1 {
+  font-size: 22px;
+  line-height: 32px;
+  font-weight: 400;
+  margin: 0 0 16px 0; }
+
+p {
+  font-size: 14px;
+  line-height: 20px; }
+
+/*
+*
+* Page header
+*
+*/
+.header {
+  height: 56px;
+  background: #313639; }
+
+.header > svg {
+  display: inline-block;
+  vertical-align: top;
+  width: 32px;
+  height: 32px;
+  margin: 12px 4px 12px 24px; }
+
+.header svg .logo-r {
+  fill: #00c870; }
+
+.header svg .logo-d {
+  fill: #008442; }
+
+.header a {
+  display: inline-block;
+  vertical-align: top;
+  color: #babdbe;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin: 18px 0 20px 24px; }
+
+.header a:hover,
+.header a:focus {
+  border-color: #babdbe;
+  outline: 0; }
+
+.header a.router-link-active {
+  color: #f8f9f9;
+  border-color: #f8f9f9; }
+
+/*
+*
+* Input controls
+*
+*/
+select,
+input[type="text"],
+input[type="number"],
+label,
+button {
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-block;
+  vertical-align: top;
+  box-sizing: border-box;
+  height: 32px;
+  line-height: 20px;
+  border: 1px solid #d9dadb;
+  padding: 5px 15px;
+  font-size: 14px;
+  color: #313639;
+  background: #d9dadb;
+  margin: 0 8px 8px 0;
+  border-radius: 4px; }
+
+/* Hide number spinners */
+input[type="number"] {
+  -moz-appearance: textfield; }
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0; }
+
+select,
+input[type="text"],
+input[type="number"],
+input[type="checkbox"],
+label.checkbox-label,
+button {
+  cursor: pointer; }
+
+label.checkbox-label {
+  padding-left: 11px; }
+
+input[type="text"],
+input[type="number"] {
+  padding-left: 11px;
+  padding-right: 11px;
+  background: #fff;
+  width: 110px; }
+
+select:hover,
+label.checkbox-label:hover,
+button:hover {
+  background: #babdbe;
+  border-color: #babdbe; }
+
+select:active,
+label.checkbox-label:active,
+button:active {
+  background: #9ca0a1;
+  border-color: #9ca0a1; }
+
+select:focus,
+label.checkbox-label:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+button:focus {
+  outline: 0;
+  border-color: #00b864; }
+
+select::-ms-expand {
+  display: none; }
+
+input[type="checkbox"] {
+  display: inline-block;
+  vertical-align: top;
+  height: 20px;
+  margin: 0 8px 0 0; }
+
+.search-with-menu {
+  display: inline-block;
+  vertical-align: top;
+  height: 32px;
+  position: relative;
+  margin: 0 8px 8px 0; }
+
+.search-with-menu select,
+.search-with-menu label {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin: 0; }
+
+.search-with-menu input[type="text"],
+.search-with-menu input[type="number"] {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin: 0; }
+
+.search-with-menu label {
+  background: none;
+  border-right: 0; }
+
+/*
+*
+* Data tables
+*
+*/
+.table-header {
+  background: #f8f9f9;
+  padding: 24px 24px 23px 24px;
+  border-bottom: 1px solid #d9dadb; }
+
+.table-container {
+  overflow-x: auto;
+  padding: 24px; }
+
+table {
+  border-collapse: collapse;
+  width: 100%; }
+
+table th,
+table td {
+  font-size: 14px;
+  line-height: 16px;
+  padding: 8px;
+  margin: 0;
+  text-align: right;
+  border-bottom: 1px solid #d9dadb; }
+
+table th.left-aligned,
+table td.left-aligned {
+  text-align: left; }
+
+table th.uppercased,
+table td.uppercased {
+  text-transform: uppercase; }
+
+table th {
+  color: #008442;
+  cursor: pointer;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  line-height: 16px; }
+
+table th.sort-asc:after {
+  content: " ↑"; }
+
+table th.sort-desc:after {
+  content: " ↓"; }
+
+table th:hover {
+  background: #d9dadb; }
+
+table th span.pct,
+table td span.pct {
+  font-size: 12px; }
+
+/* Control column visibility */
+table:not(.cols-individual) .cols-individual,
+table:not(.cols-on-ice-goals) .cols-on-ice-goals,
+table:not(.cols-on-ice-corsis) .cols-on-ice-corsis {
+  display: none; }
+
+/*
+*
+* Table pagination controls
+*
+*/
+.pagination {
+  margin: 24px 0; }
+
+.pagination button svg {
+  width: 16px;
+  height: 16px;
+  margin: 2px;
+  fill: #313639; }
+
+.pagination button {
+  margin: 0;
+  padding-left: 6px;
+  padding-right: 6px; }
+
+/*
+.pagination button.first {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	margin-right: 1px;
+}
+.pagination button.previous,
+.pagination button.next {
+	border-radius: 0;
+}
+.pagination button.last {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	margin-left: 1px;
+}*/
+.pagination button.previous {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0; }
+
+.pagination button.next {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0; }
+
+.pagination > div,
+.pagination > div > span {
+  display: inline-block;
+  vertical-align: top; }
+
+.pagination > div {
+  height: 32px;
+  box-sizing: border-box;
+  border-top: 1px solid #d9dadb;
+  border-bottom: 1px solid #d9dadb;
+  background: #f8f9f9;
+  padding: 5px 4px;
+  min-width: 80px;
+  text-align: center; }
+
+.pagination > div > span {
+  padding: 0 2px; }
+
+/*
+*
+* Loading spinner
+*
+*/
+.loader {
+  height: 64px;
+  width: 64px;
+  margin: 64px auto 0 auto;
+  position: relative;
+  -webkit-animation: rotation 1s infinite linear;
+  -moz-animation: rotation 1s infinite linear;
+  -o-animation: rotation 1s infinite linear;
+  animation: rotation 1s infinite linear;
+  border-left: 8px solid #00b864;
+  border-right: 8px solid #00b864;
+  border-bottom: 8px solid #00b864;
+  border-top: 8px solid #fff;
+  border-radius: 50%; }
+
+@-webkit-keyframes rotation {
+  from {
+    -webkit-transform: rotate(0deg); }
+  to {
+    -webkit-transform: rotate(360deg); } }
+@-moz-keyframes rotation {
+  from {
+    -moz-transform: rotate(0deg); }
+  to {
+    -moz-transform: rotate(360deg); } }
+@-o-keyframes rotation {
+  from {
+    -o-transform: rotate(0deg); }
+  to {
+    -o-transform: rotate(360deg); } }
+@keyframes rotation {
+  from {
+    transform: rotate(0deg); }
+  to {
+    transform: rotate(360deg); } }
+
+/*# sourceMappingURL=style.css.map */

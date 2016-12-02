@@ -1,0 +1,5 @@
+NOTE = "Populate this file and rename it to .env - these are only used when running the application locally via heroku local. When deployed to Heroku, these config vars can be defined in Heroku's application settings tab."
+DB_HOST = ""
+DB_USER = ""
+DB_PASS = ""
+DB = ""
