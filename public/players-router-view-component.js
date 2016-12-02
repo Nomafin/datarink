@@ -4,7 +4,9 @@ var playersViewComponent = {
 		return {
 			players: [],
 			playersWithAggregatedData: null,
+			filteredPlayers: null,
 			strengthSit: "all",
+			minimumToi: 0,
 			visibleColumns: {
 				individual: true,
 				onIceGoals: false,
@@ -18,7 +20,6 @@ var playersViewComponent = {
 				col: "name",
 				query: ""
 			},
-			minimumToi: 0,
 			pagination: {
 				rowsPerPage: 20,
 				current: 0,
@@ -40,32 +41,18 @@ var playersViewComponent = {
 	watch: {
 		strengthSit: function() {
 			this.aggregatePlayerData();
+		},
+		"search.query": function() {
+			this.filterPlayers();
+		},
+		"search.col": function() {
+			this.filterPlayers();
+		},
+		minimumToi: function() {
+			this.filterPlayers();
 		}
 	},
 	computed: {
-		filteredPlayers: function() {
-			var players = this.playersWithAggregatedData;
-			// Find players matching search string
-			if (this.search.query) {
-				var col = this.search.col;
-				var query = this.search.query.toLowerCase();
-				if (col === "name") {
-					players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
-				} else if (col === "teams") {
-					players = players.filter(function(p) { return p[col].indexOf(query) >= 0 || p["teamNames"].indexOf(query) >= 0; });
-				} else if (col === "positions" && query === "f") {
-					players = players.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p[col].indexOf("l") >= 0; });
-				} else if (col === "positions") {
-					players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
-				}
-			}
-			// Find players satisying minimum toi
-			if (this.minimumToi) {
-				var min = this.minimumToi;
-				players = players.filter(function(p) { return Math.round(p["toi"] / 60) >= min; });
-			}
-			return players;
-		},
 		sortedPlayers: function() {
 			var players = this.filteredPlayers;
 			var order = this.sort.order < 0 ? "desc" : "asc";
@@ -139,8 +126,36 @@ var playersViewComponent = {
 				p["cfPctRel"] = (p["cf"] + p["ca"] === 0 || p["cfOff"] + p["caOff"] === 0) ? 0 : p["cf"] / (p["cf"] + p["ca"]) - p["cfOff"] / (p["cfOff"] + p["caOff"]);
 				p["cfPctAdj"] = p["cfAdj"] + p["caAdj"] === 0 ? 0 : p["cfAdj"] / (p["cfAdj"] + p["caAdj"]);
 			});
-			this.playersWithAggregatedData = []; // Force the filteredPlayers computed property to be recomputed
 			this.playersWithAggregatedData = players;
-		}
+			// Refilter players based on updated stats
+			this.filterPlayers();
+		},
+		filterPlayers: 
+			_.debounce(
+				function() {
+					var players = this.playersWithAggregatedData;
+					// Find players matching search string
+					if (this.search.query) {
+						var col = this.search.col;
+						var query = this.search.query.toLowerCase();
+						if (col === "name") {
+							players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
+						} else if (col === "teams") {
+							players = players.filter(function(p) { return p[col].indexOf(query) >= 0 || p["teamNames"].indexOf(query) >= 0; });
+						} else if (col === "positions" && query === "f") {
+							players = players.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p[col].indexOf("l") >= 0; });
+						} else if (col === "positions") {
+							players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
+						}
+					}
+					// Find players satisying minimum toi
+					if (this.minimumToi) {
+						var min = this.minimumToi;
+						players = players.filter(function(p) { return Math.round(p["toi"] / 60) >= min; });
+					}
+					this.filteredPlayers = []; // Forced the sortedPlayers computed property to be recomputed
+					this.filteredPlayers = players;
+				}, 350
+			)
 	}
 };
