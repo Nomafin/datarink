@@ -129,6 +129,9 @@ button:focus {
 select::-ms-expand {
   display: none; }
 
+button.toggle-button {
+  padding-left: 8px; }
+
 button.toggle-button span.checkbox-container {
   display: inline-block;
   vertical-align: top;
@@ -242,6 +245,13 @@ table th.sort-desc:after {
 table th:hover {
   background: #d9dadb; }
 
+table th:active {
+  background: #babdbe; }
+
+table th:focus {
+  border-color: #008442;
+  outline: 0; }
+
 table th span.pct,
 table td span.pct {
   font-size: 12px; }
@@ -271,21 +281,6 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
   padding-left: 6px;
   padding-right: 6px; }
 
-/*
-.pagination button.first {
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
-	margin-right: 1px;
-}
-.pagination button.previous,
-.pagination button.next {
-	border-radius: 0;
-}
-.pagination button.last {
-	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
-	margin-left: 1px;
-}*/
 .pagination button.previous {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0; }
