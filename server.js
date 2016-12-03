@@ -7,6 +7,7 @@ var url = require("url");
 
 // Configure and initialize the Postgres connection pool
 // Get the DATABASE_URL config var and parse it into its components
+console.log(process.env.DATABASE_URL);
 var params = url.parse(process.env.DATABASE_URL);
 var auth = params.auth.split(":");
 var pgConfig = {
@@ -19,6 +20,7 @@ var pgConfig = {
 	max: 10,					// Maximum number of clients in the pool
 	idleTimeoutMillis: 30000	// Duration a client can remain idle before being closed
 };
+console.log(pgConfig);
 var pool = new pg.Pool(pgConfig);
 
 // Create an Express server
