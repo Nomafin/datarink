@@ -1,10 +1,11 @@
 var playersViewComponent = {
 	template: "#players-view-template",
 	data: function() {
+		// Once the api populates 'players' so that it's not null, the loading spinner will disappear
 		return {
-			players: [],
-			playersWithAggregatedData: null,
-			filteredPlayers: null,
+			players: null,
+			playersWithAggregatedData: [],
+			filteredPlayers: [],
 			strengthSit: "all",
 			minimumToi: 0,
 			visibleColumns: {
@@ -13,7 +14,7 @@ var playersViewComponent = {
 				onIceCorsi: false
 			},
 			sort: {
-				col: "toi",
+				col: "ip1",
 				order: -1
 			},
 			search: {
@@ -42,26 +43,21 @@ var playersViewComponent = {
 		strengthSit: function() {
 			this.aggregatePlayerData();
 		},
-		"search.query": function() {
-			this.filterPlayers();
-		},
-		"search.col": function() {
-			this.filterPlayers();
-		},
-		minimumToi: function() {
-			this.filterPlayers();
-		}
+		search: {
+			handler: "filterPlayers",
+			deep: true
+		}	
 	},
 	computed: {
 		sortedPlayers: function() {
-			var players = this.filteredPlayers;
+			var players = this.filteredPlayers ? this.filteredPlayers : [];
 			var order = this.sort.order < 0 ? "desc" : "asc";
 			players = _.orderBy(players, this.sort.col, order);
 			this.pagination.current = 0;
-			return players;	
+			return players;
 		},
 		pagePlayers: function() {
-			var players = this.sortedPlayers;
+			var players = this.sortedPlayers ? this.sortedPlayers : [];
 			// Sanitize page input
 			this.pagination.total = Math.ceil(players.length / this.pagination.rowsPerPage);
 			this.pagination.current = Math.min(this.pagination.total - 1, Math.max(0, this.pagination.current));
@@ -153,7 +149,9 @@ var playersViewComponent = {
 						var min = this.minimumToi;
 						players = players.filter(function(p) { return Math.round(p["toi"] / 60) >= min; });
 					}
-					this.filteredPlayers = []; // Forced the sortedPlayers computed property to be recomputed
+					// Force the sortedPlayers computed property to be recomputed by setting this.filterPlayers = [] before actually updating it
+					// This is faster than using a deep watcher on filteredPlayers (which seems to check every property in filteredPlayers)
+					this.filteredPlayers = [];
 					this.filteredPlayers = players;
 				}, 350
 			)

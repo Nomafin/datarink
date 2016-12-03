@@ -15,8 +15,8 @@ $gray6: #64686b;
 $gray7: #4a4f51;
 $gray8: #313639;
 
-$green4: #00b864;
-$green8: #008442;
+$green4: #40b771;
+$green8: #2b7b4c;
 
 body {
 	font-family: $font-stack;
@@ -60,7 +60,7 @@ p {
 }
 
 .header svg .logo-r {
-	fill: #00c870;
+	fill: $green4;
 }
 
 .header svg .logo-d {

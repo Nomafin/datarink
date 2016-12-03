@@ -78,6 +78,18 @@ server.get("/api/players/", function(request, response) {
 				last: groupedRows[pId][0]["last"],
 				data: groupedRows[pId]
 			});
+
+			// Set redundant properties in 'data' to be undefined - this removes them from the response
+			// Setting the properties to undefined is ~10sec faster than deleting the properties completely
+			result["players"].forEach(function(p) {
+				p.data.forEach(function(r) {
+					r.team = undefined;
+					r.playerId = undefined;
+					r.first = undefined;
+					r.last = undefined;
+					r.position = undefined;
+				});
+			});
 		}
 
 		return response

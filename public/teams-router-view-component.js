@@ -1,9 +1,10 @@
 var teamsViewComponent = {
 	template: "#teams-view-template",
 	data: function() {
+		// Once the api populates 'teams' so that it's not null, the loading spinner will disappear
 		return {
-			teams: [],
-			teamsWithAggregatedData: null,
+			teams: null,
+			teamsWithAggregatedData: [],
 			strengthSit: "all",
 			visibleColumns: {
 				onIceGoals: true,

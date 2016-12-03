@@ -35,10 +35,10 @@ p {
   margin: 12px 4px 12px 24px; }
 
 .header svg .logo-r {
-  fill: #00c870; }
+  fill: #40b771; }
 
 .header svg .logo-d {
-  fill: #008442; }
+  fill: #2b7b4c; }
 
 .header a {
   display: inline-block;
@@ -124,7 +124,7 @@ input[type="text"]:focus,
 input[type="number"]:focus,
 button:focus {
   outline: 0;
-  border-color: #00b864; }
+  border-color: #40b771; }
 
 select::-ms-expand {
   display: none; }
@@ -150,7 +150,7 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
   display: block;
   width: 3px;
   height: 6px;
-  border: solid #008442;
+  border: solid #2b7b4c;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
   margin-top: 2px;
@@ -228,7 +228,7 @@ table td.uppercased {
   text-transform: uppercase; }
 
 table th {
-  color: #008442;
+  color: #2b7b4c;
   cursor: pointer;
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
@@ -249,7 +249,7 @@ table th:active {
   background: #babdbe; }
 
 table th:focus {
-  border-color: #008442;
+  border-color: #2b7b4c;
   outline: 0; }
 
 table th span.pct,
@@ -321,9 +321,9 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
   -moz-animation: rotation 1s infinite linear;
   -o-animation: rotation 1s infinite linear;
   animation: rotation 1s infinite linear;
-  border-left: 8px solid #00b864;
-  border-right: 8px solid #00b864;
-  border-bottom: 8px solid #00b864;
+  border-left: 8px solid #40b771;
+  border-right: 8px solid #40b771;
+  border-bottom: 8px solid #40b771;
   border-top: 8px solid #fff;
   border-radius: 50%; }
 

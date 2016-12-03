@@ -13,7 +13,7 @@
 		<div>
 			<div class="table-header">
 				<h1>Teams: 2016-2017</h1>
-				<div v-if="teamsWithAggregatedData">
+				<div v-if="teams">
 					<select v-model="strengthSit">
 						<option value="all">All situations</option>
 						<option value="ev5">5 on 5</option>
@@ -34,8 +34,8 @@
 						</span>On-ice corsi</button>
 				</div>
 			</div>
-			<div class="loader" v-if="!teamsWithAggregatedData"></div>
-			<div class="table-container" v-if="teamsWithAggregatedData">
+			<div class="loader" v-if="!teams"></div>
+			<div class="table-container" v-if="teams">
 				<table v-bind:class="{ 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
 					<thead>
 						<tr>
@@ -98,7 +98,7 @@
 		<div>
 			<div class="table-header">
 				<h1>Skaters: 2016-2017</h1>
-				<div v-if="playersWithAggregatedData">
+				<div v-if="players">
 					<select v-model="strengthSit">
 						<option value="all">All situations</option>
 						<option value="ev5">5 on 5</option>
@@ -138,8 +138,8 @@
 					</div>
 				</div>
 			</div>
-			<div class="loader" v-if="!playersWithAggregatedData"></div>
-			<div class="table-container" v-if="playersWithAggregatedData">
+			<div class="loader" v-if="!players"></div>
+			<div class="table-container" v-if="players">
 				<table v-bind:class="{ 'cols-individual': visibleColumns.individual, 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
 					<thead>
 						<tr>
