@@ -1,16 +1,25 @@
 "use strict"
 
 var constants = require("./server-constants.json");
-var mysql = require("mysql");
+var pg = require("pg");
 var _ = require("lodash");
+var url = require("url");
 
-// Define mysql connection
-var connection = mysql.createConnection({
-	host: process.env.DB_HOST,
-	user: process.env.DB_USER,
-	password: process.env.DB_PASS,
-	database: process.env.DB
-});
+// Configure and initialize the Postgres connection pool
+// Get the DATABASE_URL config var and parse it into its components
+var params = url.parse(process.env.DATABASE_URL);
+var auth = params.auth.split(":");
+var pgConfig = {
+	user: auth[0],
+	password: auth[1],
+	host: params.hostname,
+	port: params.port,
+	database: params.pathname.split("/")[1],
+	ssl: true,
+	max: 10,					// Maximum number of clients in the pool
+	idleTimeoutMillis: 30000	// Duration a client can remain idle before being closed
+};
+var pool = new pg.Pool(pgConfig);
 
 // Create an Express server
 var express = require("express");
@@ -22,41 +31,62 @@ server.use(express.static("node_modules/vue/dist"));
 server.use(express.static("node_modules/vue-router/dist"));
 server.use(express.static("node_modules/lodash"));
 
+//
 // Handle GET request for players api
+//
+
 server.get("/api/players/", function(request, response) {
 
-	var queryString = "SELECT s.team, s.playerId, first, last, position, scoreSit, strengthSit,"
-		+ "		SUM(toi) AS toi, SUM(ig) AS ig, SUM(`is`) AS `is`, (SUM(`is`) + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
+	// Create query string
+	var queryString = "SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
+		+ "		SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
 		+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-		+ "		SUM(cfOff) AS cfOff, SUM(caOff) AS caOff " 
+		+ "		SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
 		+ " FROM game_stats AS s"
 		+ " 	LEFT JOIN game_rosters AS r"
-		+ " 	ON s.playerId = r.playerId AND s.season = r.season AND s.gameId = r.gameId"
-		+ " WHERE s.playerId > 0 AND r.position <> 'na' AND r.position <> 'g'"
-		+ " GROUP BY playerId, scoreSit, strengthSit";
-	// queryString += "AND s.team=" + connection.escape(request.params.team);
+		+ " 	ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
+		+ " WHERE s.player_id > 0 AND r.position <> 'na' AND r.position <> 'g'"
+		+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit";
 
-	connection.query(queryString, function(error, rows, fields) {
+	// Run query
+	pool.connect(function(err, client, done) {
+		if (err) { returnError("Error fetching client from pool: " + err); }
+		client.query(queryString, function(err, result) {
+			done(); // Return client to pool
+			if (err) { returnError("Error running query: " + err); }
+			processResults(result.rows);
+		});
+	});
 
-		if (error) {
-			connection.end();
-			return response
-				.status(500)
-				.send(error);
-		}
+	// Return errors
+	function returnError(responseStr) {
+		return response
+			.status(500)
+			.send(responseStr);
+	}
 
-		// rows is an array of RowDataPacket objects - use stringify then parse to convert it to json
+	// Process query results
+	function processResults(rows) {
+
+		// rows is an array of Anonymous objects - use stringify and parse to convert it to json
 		rows = JSON.parse(JSON.stringify(rows));
+
+		// Postgres aggregate functions like SUM return strings, so cast them as ints
+		rows.forEach(function(r) {
+			["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
+				r[col] = +r[col];
+			});
+		});
 
 		// Calculate score-adjusted corsi for each row
 		rows.forEach(function(r) {
-			r["cfAdj"] = constants["cfWeights"][r["scoreSit"]] * r["cf"];
-			r["caAdj"] = constants["cfWeights"][-1 * r["scoreSit"]] * r["ca"];
+			r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
+			r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
 		});
 
 		// Group rows by playerId:
 		//	{ 123: [rows for player 123], 234: [rows for player 234] }
-		var groupedRows = _.groupBy(rows, "playerId");
+		var groupedRows = _.groupBy(rows, "player_id");
 
 		// Structure results as an array of objects:
 		// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
@@ -71,7 +101,7 @@ server.get("/api/players/", function(request, response) {
 			var positions = _.uniqBy(groupedRows[pId], "teams").map(function(d) { return d.position; });
 
 			result["players"].push({
-				playerId: +pId,
+				player_id: +pId,
 				teams: teams,
 				positions: positions,
 				first: groupedRows[pId][0]["first"],
@@ -84,7 +114,7 @@ server.get("/api/players/", function(request, response) {
 			result["players"].forEach(function(p) {
 				p.data.forEach(function(r) {
 					r.team = undefined;
-					r.playerId = undefined;
+					r.player_id = undefined;
 					r.first = undefined;
 					r.last = undefined;
 					r.position = undefined;
@@ -95,39 +125,61 @@ server.get("/api/players/", function(request, response) {
 		return response
 			.status(200)
 			.send(result);
-	});
+	}
 });
 
+//
 // Handle GET request for teams api
+//
+
 server.get("/api/teams/", function(request, response) {
 
-	var queryString = "SELECT s.team, scoreSit, strengthSit, SUM(toi) AS toi,"
+	// Create query string
+	var queryString = "SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
 		+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
-		+ " FROM game_stats AS s"
-		+ " WHERE s.playerId = 0 "
-		+ " GROUP BY team, scoreSit, strengthSit";
+		+ " FROM game_stats"
+		+ " WHERE player_id = 0 "
+		+ " GROUP BY team, score_sit, strength_sit";
 	
-	connection.query(queryString, function(error, rows, fields) {
+	// Run query
+	pool.connect(function(err, client, done) {
+		if (err) { returnError("Error fetching client from pool: " + err); }
+		client.query(queryString, function(err, result) {
+			done(); // Return client to pool
+			if (err) { returnError("Error running query: " + err); }
+			processResults(result.rows);
+		});
+	});
 
-		if (error) {
-			connection.end();
-			return response
-				.status(500)
-				.send(error);
-		}
+	// Return errors
+	function returnError(responseStr) {
+		return response
+			.status(500)
+			.send(responseStr);
+	}
 
-		// rows is an array of RowDataPacket objects - use stringify then parse to convert it to json
+	// Process query results
+	function processResults(rows) {
+
+		// rows is an array of Anonymous objects - use stringify and parse to convert it to json
 		rows = JSON.parse(JSON.stringify(rows));
+
+		// Postgres aggregate functions like SUM return strings, so cast them as ints
+		rows.forEach(function(r) {
+			["toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
+				r[col] = +r[col];
+			});
+		});
 
 		// Calculate score-adjusted corsi for each row
 		rows.forEach(function(r) {
-			r["cfAdj"] = constants["cfWeights"][r["scoreSit"]] * r["cf"];
-			r["caAdj"] = constants["cfWeights"][-1 * r["scoreSit"]] * r["ca"];
+			r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
+			r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
 		});
 
 		// Group rows by team:
 		// { "edm": [rows for edm], "tor": [rows for tor] }
-		var groupedRows = _.groupBy(rows, "team");
+		var groupedRows = _.groupBy(rows, "team");		
 
 		// Structure results as an array of objects:
 		// [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
@@ -145,10 +197,10 @@ server.get("/api/teams/", function(request, response) {
 		return response
 			.status(200)
 			.send(result);
-	});
+	}
 });
 
-// Listen on port 5000
+// Start listening for requests
 server.listen(process.env.PORT || 5000, function(error) {
 	if (error) { throw error; }
 	console.log("Server is running at localhost:5000");

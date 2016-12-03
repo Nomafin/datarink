@@ -102,11 +102,11 @@ var playersViewComponent = {
 			// the computed property would check each player and stat to see if any values changed
 			var players = this.players;
 			var sits = this.strengthSit === "all" ? ["ev5", "pp", "sh", "penShot", "other"] : [this.strengthSit];
-			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cfAdj", "caAdj", "cfOff", "caOff"];
+			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj", "cf_off", "ca_off"];
 			players.forEach(function(p) {
 				stats.forEach(function(st) {
 					p[st] = _.sumBy(
-						p.data.filter(function(row) { return sits.indexOf(row["strengthSit"]) >= 0; }),
+						p.data.filter(function(row) { return sits.indexOf(row["strength_sit"]) >= 0; }),
 						function(row) { return row[st]; }
 					);
 				});
@@ -114,13 +114,13 @@ var playersViewComponent = {
 			// Compute additional stats
 			players.forEach(function(p) {
 				p["ip1"] = p["ig"] + p["ia1"];
-				p["iShPct"] = p["is"] === 0 ? 0 : p["ig"] / p["is"];
-				p["gDiff"] = p["gf"] - p["ga"];
-				p["shPct"] = p["sf"] === 0 ? 0 : p["gf"] / p["sf"];
-				p["svPct"] = p["sa"] === 0 ? 0 : 1 - p["ga"] / p["sa"];
-				p["cfPct"] = p["cf"] + p["ca"] === 0 ? 0 : p["cf"] / (p["cf"] + p["ca"]);
-				p["cfPctRel"] = (p["cf"] + p["ca"] === 0 || p["cfOff"] + p["caOff"] === 0) ? 0 : p["cf"] / (p["cf"] + p["ca"]) - p["cfOff"] / (p["cfOff"] + p["caOff"]);
-				p["cfPctAdj"] = p["cfAdj"] + p["caAdj"] === 0 ? 0 : p["cfAdj"] / (p["cfAdj"] + p["caAdj"]);
+				p["i_sh_pct"] = p["is"] === 0 ? 0 : p["ig"] / p["is"];
+				p["g_diff"] = p["gf"] - p["ga"];
+				p["sh_pct"] = p["sf"] === 0 ? 0 : p["gf"] / p["sf"];
+				p["sv_pct"] = p["sa"] === 0 ? 0 : 1 - p["ga"] / p["sa"];
+				p["cf_pct"] = p["cf"] + p["ca"] === 0 ? 0 : p["cf"] / (p["cf"] + p["ca"]);
+				p["cf_pct_rel"] = (p["cf"] + p["ca"] === 0 || p["cf_off"] + p["ca_off"] === 0) ? 0 : p["cf"] / (p["cf"] + p["ca"]) - p["cf_off"] / (p["cf_off"] + p["ca_off"]);
+				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
 			});
 			this.playersWithAggregatedData = players;
 			// Refilter players based on updated stats

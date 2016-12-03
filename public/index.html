@@ -80,13 +80,13 @@
 							<td>{{ Math.round(p.toi / 60) }}</td>
 							<td class="cols-on-ice-goals">{{ p.gf }}</td>
 							<td class="cols-on-ice-goals">{{ p.ga }}</td>
-							<td class="cols-on-ice-goals">{{ p.gDiff | signed }}</td>
-							<td class="cols-on-ice-goals">{{ p.shPct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-goals">{{ p.svPct | percentage }}<span class="pct">%</span></td>					
+							<td class="cols-on-ice-goals">{{ p.g_diff | signed }}</td>
+							<td class="cols-on-ice-goals">{{ p.sh_pct | percentage }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-goals">{{ p.sv_pct | percentage }}<span class="pct">%</span></td>					
 							<td class="cols-on-ice-corsi">{{ p.cf }}</td>
 							<td class="cols-on-ice-corsi">{{ p.ca }}</td>
-							<td class="cols-on-ice-corsi">{{ p.cfPct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsi">{{ p.cfPctAdj | percentage }}<span class="pct">%</span></td>			
+							<td class="cols-on-ice-corsi">{{ p.cf_pct | percentage }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | percentage }}<span class="pct">%</span></td>			
 						</tr>
 					</tbody>
 				</table>
@@ -216,17 +216,17 @@
 							<td class="cols-individual">{{ p.ia2 }}</td>
 							<td class="cols-individual">{{ p.ip1 }}</td>
 							<td class="cols-individual">{{ p.ic }}</td>
-							<td class="cols-individual">{{ p.iShPct | percentage }}<span class="pct">%</span></td>
+							<td class="cols-individual">{{ p.i_sh_pct | percentage }}<span class="pct">%</span></td>
 							<td class="cols-on-ice-goals">{{ p.gf }}</td>
 							<td class="cols-on-ice-goals">{{ p.ga }}</td>
-							<td class="cols-on-ice-goals">{{ p.gDiff | signed }}</td>
-							<td class="cols-on-ice-goals">{{ p.shPct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-goals">{{ p.svPct | percentage }}<span class="pct">%</span></td>					
+							<td class="cols-on-ice-goals">{{ p.g_diff | signed }}</td>
+							<td class="cols-on-ice-goals">{{ p.sh_pct | percentage }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-goals">{{ p.sv_pct | percentage }}<span class="pct">%</span></td>					
 							<td class="cols-on-ice-corsi">{{ p.cf }}</td>
 							<td class="cols-on-ice-corsi">{{ p.ca }}</td>
-							<td class="cols-on-ice-corsi">{{ p.cfPct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsi">{{ p.cfPctRel | percentage | signed }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsi">{{ p.cfPctAdj | percentage }}<span class="pct">%</span></td>			
+							<td class="cols-on-ice-corsi">{{ p.cf_pct | percentage }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cf_pct_rel | percentage | signed }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | percentage }}<span class="pct">%</span></td>			
 						</tr>
 					</tbody>
 				</table>
