@@ -1,5 +1,5 @@
 {
-  "name": "datarink-app",
+  "name": "datarink",
   "version": "1.0.0",
   "description": "datarink web application",
   "main": "server.js",
@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kevkan/datarink-app.git"
+    "url": "git+https://github.com/kevkan/datarink.git"
   },
   "author": "datarink",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kevkan/datarink-app/issues"
+    "url": "https://github.com/kevkan/datarink/issues"
   },
-  "homepage": "https://github.com/kevkan/datarink-app#readme",
+  "homepage": "https://github.com/kevkan/datarink#readme",
   "dependencies": {
     "express": "^4.14.0",
     "lodash": "^4.17.2",
