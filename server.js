@@ -1,17 +1,18 @@
 "use strict"
 
-var constants = require("./server-constants.json");
 var pg = require("pg");
 var _ = require("lodash");
 var url = require("url");
+var auth = require("http-auth");
+var constants = require("./server-constants.json");
 
 // Configure and initialize the Postgres connection pool
 // Get the DATABASE_URL config var and parse it into its components
 var params = url.parse(process.env.HEROKU_POSTGRESQL_COPPER_URL);
-var auth = params.auth.split(":");
+var authParams = params.auth.split(":");
 var pgConfig = {
-	user: auth[0],
-	password: auth[1],
+	user: authParams[0],
+	password: authParams[1],
 	host: params.hostname,
 	port: params.port,
 	database: params.pathname.split("/")[1],
@@ -24,6 +25,16 @@ var pool = new pg.Pool(pgConfig);
 // Create an Express server
 var express = require("express");
 var server = express();
+
+// Add user authentication if PASSWORD_PROTECT isn't set to 'off'
+// Define logins in users.htpasswd with format user:password (one per line)
+if (process.env.PASSWORD_PROTECT.toLowerCase() !== "off") {
+	console.log("User authentication enabled");
+	var basic = auth.basic({
+		file: "users.htpasswd"
+	});
+	server.use(auth.connect(basic));
+}
 
 // Serve static files, including the Vue application in public/index.html
 server.use(express.static("public"));
