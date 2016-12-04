@@ -163,12 +163,13 @@ var playersViewComponent = {
 		flagPlayersOnPage: function() {
 			// Using a function to flag on-page players and a computed property to filter the on-page players results in better performance
 			// This way, we only start flagging players after the filterPlayers debounce
-			// Sanitiaze page input and get the start and end indices
-			this.pagination.total = Math.ceil(this.players.length / this.pagination.rowsPerPage);
+			// Sanitize page input and get the start and end indices
+			var playersNotFilteredOut = this.players.filter(function(p) { return !p.isFilteredOut; });
+			this.pagination.total = Math.ceil(playersNotFilteredOut.length / this.pagination.rowsPerPage);
 			this.pagination.current = Math.min(this.pagination.total - 1, Math.max(0, this.pagination.current));
 			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
 			var endIdx = startIdx + this.pagination.rowsPerPage;
-			var playersOnPage = this.players.filter(function(p) { return !p.isFilteredOut; }).slice(startIdx, endIdx);
+			var playersOnPage = playersNotFilteredOut.slice(startIdx, endIdx);
 			// Flag players on page
 			this.players.map(function(p) { 
 				p.isOnPage = false;
