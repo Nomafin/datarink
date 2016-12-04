@@ -11,7 +11,7 @@ var teamsViewComponent = {
 				onIceCorsi: true
 			},
 			sort: {
-				col: "toi",
+				col: "pts",
 				order: -1
 			}
 		}

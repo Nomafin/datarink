@@ -160,8 +160,8 @@ server.get("/api/players/", function(request, response) {
 
 server.get("/api/teams/", function(request, response) {
 
-	// Create query string
-	var queryString = "SELECT result1.*, result2.gp"
+	// Create query strings
+	var statsQueryString = "SELECT result1.*, result2.gp"
 		+ " FROM "
 		+ " ( "
 			+ " SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
@@ -177,14 +177,19 @@ server.get("/api/teams/", function(request, response) {
 			+ " GROUP BY team"
 		+ " ) AS result2"
 		+ " ON result1.team = result2.team";
-	
-	// Run query
+
+	var resultsQueryString = "SELECT * FROM game_results WHERE game_id < 30000"; // Exclude playoff games from points calculation
+
+	// Run queries
 	pool.connect(function(err, client, done) {
 		if (err) { returnError("Error fetching client from pool: " + err); }
-		client.query(queryString, function(err, result) {
-			done(); // Return client to pool
+		client.query(statsQueryString, function(err, gameStats) {
 			if (err) { returnError("Error running query: " + err); }
-			processResults(result.rows);
+			// Run 2nd query
+			client.query(resultsQueryString, function(err, gameResults) {
+				done();
+				processResults(gameStats.rows, gameResults.rows);
+			});
 		});
 	});
 
@@ -196,27 +201,54 @@ server.get("/api/teams/", function(request, response) {
 	}
 
 	// Process query results
-	function processResults(rows) {
+	function processResults(statRows, resultRows) {
 
 		// rows is an array of Anonymous objects - use stringify and parse to convert it to json
-		rows = JSON.parse(JSON.stringify(rows));
+		statRows = JSON.parse(JSON.stringify(statRows));
 
 		// Postgres aggregate functions like SUM return strings, so cast them as ints
-		rows.forEach(function(r) {
+		statRows.forEach(function(r) {
 			["gp", "toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
 				r[col] = +r[col];
 			});
 		});
 
 		// Calculate score-adjusted corsi for each row
-		rows.forEach(function(r) {
+		statRows.forEach(function(r) {
 			r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
 			r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
 		});
 
 		// Group rows by team:
 		// { "edm": [rows for edm], "tor": [rows for tor] }
-		var groupedRows = _.groupBy(rows, "team");		
+		var groupedRows = _.groupBy(statRows, "team");		
+
+		//
+		// Calculate the number of points won
+		//
+
+		// Initialize points counter
+		for (var tricode in groupedRows) {
+			if (groupedRows.hasOwnProperty(tricode)) {
+				groupedRows[tricode]["pts"] = 0;
+			}
+		}
+
+		// Loop through game_result rows and increment points
+		resultRows = JSON.parse(JSON.stringify(resultRows));
+		resultRows.forEach(function(r) {
+			if (r["a_final"] > r["h_final"]) {
+				groupedRows[r["a_team"]].pts += 2;
+				if (r["periods"] > 3) {
+					groupedRows[r["h_team"]].pts += 1;
+				}
+			} else if (r["h_final"] > r["a_final"]) {
+				groupedRows[r["h_team"]].pts += 2;
+				if (r["periods"] > 3) {
+					groupedRows[r["a_team"]].pts += 1;
+				}
+			}
+		});
 
 		// Structure results as an array of objects:
 		// [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
@@ -227,6 +259,7 @@ server.get("/api/teams/", function(request, response) {
 			}
 			result["teams"].push({
 				team: tricode,
+				pts: groupedRows[tricode]["pts"],
 				gp: groupedRows[tricode][0]["gp"],
 				data: groupedRows[tricode]
 			});
