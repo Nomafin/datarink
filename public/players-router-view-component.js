@@ -4,8 +4,6 @@ var playersViewComponent = {
 		// Once the api populates 'players' so that it's not null, the loading spinner will disappear
 		return {
 			players: null,
-			playersWithAggregatedData: [],
-			filteredPlayers: [],
 			strengthSit: "all",
 			minimumToi: 0,
 			visibleColumns: {
@@ -46,25 +44,14 @@ var playersViewComponent = {
 		search: {
 			handler: "filterPlayers",
 			deep: true
-		}	
+		},
+		minimumToi: function() {
+			this.filterPlayers();
+		}
 	},
 	computed: {
-		sortedPlayers: function() {
-			var players = this.filteredPlayers ? this.filteredPlayers : [];
-			var order = this.sort.order < 0 ? "desc" : "asc";
-			players = _.orderBy(players, this.sort.col, order);
-			this.pagination.current = 0;
-			return players;
-		},
-		pagePlayers: function() {
-			var players = this.sortedPlayers ? this.sortedPlayers : [];
-			// Sanitize page input
-			this.pagination.total = Math.ceil(players.length / this.pagination.rowsPerPage);
-			this.pagination.current = Math.min(this.pagination.total - 1, Math.max(0, this.pagination.current));
-			// Return sliced array
-			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
-			var endIdx = startIdx + this.pagination.rowsPerPage;
-			return players.slice(startIdx, endIdx);
+		playersOnPage: function() {
+			return this.players.filter(function(p) { return p.isOnPage; });
 		}
 	},
 	methods: {
@@ -83,27 +70,22 @@ var playersViewComponent = {
 					});
 					p["teamNames"] = p["teamNames"].toString().toLowerCase();
 					p["teams"] = p["teams"].toString().toLowerCase();
+					// Flag for filtering and paging
+					// Default isOnPage to false - otherwise the first render will include all players
+					p["isFilteredOut"] = false;
+					p["isOnPage"] = false;
 				});
 				self.aggregatePlayerData();
 			}
 			xhr.send();
 		},
-		sortBy: function(newSortCol) {
-			if (newSortCol === this.sort.col) {
-				this.sort.order *= -1;
-			} else {
-				this.sort.col = newSortCol;
-				this.sort.order = -1;
-			}
-		},
 		aggregatePlayerData: function() {
 			// To aggregate data, use a method that we can explicitly call instead of a computed property
 			// Using a computed property caused laggy input fields - it seemed like each time an input changed, 
 			// the computed property would check each player and stat to see if any values changed
-			var players = this.players;
 			var sits = this.strengthSit === "all" ? ["ev5", "pp", "sh", "penShot", "other"] : [this.strengthSit];
 			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj", "cf_off", "ca_off"];
-			players.forEach(function(p) {
+			this.players.forEach(function(p) {
 				stats.forEach(function(st) {
 					p[st] = _.sumBy(
 						p.data.filter(function(row) { return sits.indexOf(row["strength_sit"]) >= 0; }),
@@ -112,7 +94,7 @@ var playersViewComponent = {
 				});
 			});	
 			// Compute additional stats
-			players.forEach(function(p) {
+			this.players.forEach(function(p) {
 				p["ip1"] = p["ig"] + p["ia1"];
 				p["i_sh_pct"] = p["is"] === 0 ? 0 : p["ig"] / p["is"];
 				p["g_diff"] = p["gf"] - p["ga"];
@@ -122,38 +104,85 @@ var playersViewComponent = {
 				p["cf_pct_rel"] = (p["cf"] + p["ca"] === 0 || p["cf_off"] + p["ca_off"] === 0) ? 0 : p["cf"] / (p["cf"] + p["ca"]) - p["cf_off"] / (p["cf_off"] + p["ca_off"]);
 				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
 			});
-			this.playersWithAggregatedData = players;
-			// Refilter players based on updated stats
+			// Refilter and resort players based on updated stats
 			this.filterPlayers();
+			this.sortPlayers();
+		},
+		sortBy: function(newSortCol) {
+			if (newSortCol === this.sort.col) {
+				this.sort.order *= -1;
+			} else {
+				this.sort.col = newSortCol;
+				this.sort.order = -1;
+			}
+			this.sortPlayers();
+		},
+		sortPlayers: function() {
+			var order = this.sort.order < 0 ? "desc" : "asc";
+			this.players = _.orderBy(this.players, this.sort.col, order);
+			this.pagination.current = 0;
+			this.flagPlayersOnPage();
 		},
 		filterPlayers: 
 			_.debounce(
 				function() {
-					var players = this.playersWithAggregatedData;
 					// Find players matching search string
+					var matchedPlayers = this.players;
 					if (this.search.query) {
 						var col = this.search.col;
 						var query = this.search.query.toLowerCase();
 						if (col === "name") {
-							players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
+							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0; });
 						} else if (col === "teams") {
-							players = players.filter(function(p) { return p[col].indexOf(query) >= 0 || p["teamNames"].indexOf(query) >= 0; });
+							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0 || p["teamNames"].indexOf(query) >= 0; });
 						} else if (col === "positions" && query === "f") {
-							players = players.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p[col].indexOf("l") >= 0; });
+							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p[col].indexOf("l") >= 0; });
 						} else if (col === "positions") {
-							players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
+							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0; });
 						}
 					}
 					// Find players satisying minimum toi
 					if (this.minimumToi) {
 						var min = this.minimumToi;
-						players = players.filter(function(p) { return Math.round(p["toi"] / 60) >= min; });
+						matchedPlayers = matchedPlayers.filter(function(p) { return Math.round(p["toi"] / 60) >= min; });
 					}
-					// Force the sortedPlayers computed property to be recomputed by setting this.filterPlayers = [] before actually updating it
-					// This is faster than using a deep watcher on filteredPlayers (which seems to check every property in filteredPlayers)
-					this.filteredPlayers = [];
-					this.filteredPlayers = players;
+					// Update filter players' flag
+					this.players.map(function(p) { 
+						p.isFilteredOut = true;
+						return p;
+					});
+					matchedPlayers.map(function(p) { 
+						p.isFilteredOut = false;
+						return p;
+					});
+					// Reset current page to 0
+					this.pagination.current = 0;
+					this.flagPlayersOnPage();
 				}, 350
-			)
+			),
+		flagPlayersOnPage: function() {
+			// Using a function to flag on-page players and a computed property to filter the on-page players results in better performance
+			// This way, we only start flagging players after the filterPlayers debounce
+			// Sanitiaze page input and get the start and end indices
+			this.pagination.total = Math.ceil(this.players.length / this.pagination.rowsPerPage);
+			this.pagination.current = Math.min(this.pagination.total - 1, Math.max(0, this.pagination.current));
+			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
+			var endIdx = startIdx + this.pagination.rowsPerPage;
+			var playersOnPage = this.players.filter(function(p) { return !p.isFilteredOut; }).slice(startIdx, endIdx);
+			// Flag players on page
+			this.players.map(function(p) { 
+				p.isOnPage = false;
+				return p;
+			});
+			playersOnPage.map(function(p) { 
+				p.isOnPage = true;
+				return p;
+			});
+			// Force the playersOnPage computed property to be recomputed
+			// Using a deep watcher is slower than setting this.players = [] - the deep watcher seems to check each property in players
+			var tmp = this.players;
+			this.players = [];
+			this.players = tmp;
+		}
 	}
 };

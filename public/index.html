@@ -217,7 +217,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="p in pagePlayers">
+						<tr v-for="p in playersOnPage">
 							<td class="left-aligned">{{ p.first + " " + p.last }}</td>			
 							<td class="left-aligned uppercased">{{ p.positions }}</td>
 							<td class="left-aligned uppercased">{{ p.teams }}</td>
@@ -243,7 +243,7 @@
 					</tbody>
 				</table>
 				<div class="pagination" v-if="pagination.total > 0">
-					<button type="button" @click="pagination.current--;" class="previous">
+					<button type="button" @click="pagination.current--; flagPlayersOnPage();" class="previous">
 						<svg viewBox="0 0 16 16">
 							<path d="M10,3,5,8l5,5L11,12,7,8,11,4Z"/>
 						</svg>
@@ -253,7 +253,7 @@
 						><span> of </span
 						><span>{{ pagination.total }}</span>
 					</div
-					><button type="button" @click="pagination.current++;" class="next">
+					><button type="button" @click="pagination.current++; flagPlayersOnPage();" class="next">
 						<svg viewBox="0 0 16 16">
 							<path d="M10,3,5,8l5,5L11,12,7,8,11,4Z" transform="rotate(180 8 8)"/>
 						</svg>

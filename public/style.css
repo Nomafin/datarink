@@ -204,7 +204,9 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 
 .table-container {
   overflow-x: auto;
-  padding: 24px; }
+  padding: 24px;
+  /* Use min-height to prevent the page from changing heights when the number of rows in the table changes */
+  min-height: 824px; }
 
 table {
   border-collapse: collapse;

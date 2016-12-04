@@ -34,10 +34,8 @@ var teamsViewComponent = {
 	},
 	computed: {
 		sortedTeams: function() {
-			var teams = this.teamsWithAggregatedData;
 			var order = this.sort.order < 0 ? "desc" : "asc";
-			teams = _.orderBy(teams, this.sort.col, order);
-			return teams;	
+			return _.orderBy(this.teamsWithAggregatedData, this.sort.col, order);
 		}
 	},
 	methods: {
