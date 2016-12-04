@@ -26,13 +26,14 @@ var pool = new pg.Pool(pgConfig);
 var express = require("express");
 var server = express();
 
-// Add user authentication if PASSWORD_PROTECT isn't set to 'off'
-// Define logins in users.htpasswd with format user:password (one per line)
-if (process.env.PASSWORD_PROTECT.toLowerCase() !== "off") {
+// Add user authentication if AUTHENTICATION isn't set to 'off'
+if (process.env.AUTHENTICATION.toLowerCase() !== "off") {
 	console.log("User authentication enabled");
-	var basic = auth.basic({
-		file: "users.htpasswd"
-	});
+	var basic = auth.basic({},
+		(username, password, callback) => { 
+	        callback(username === process.env.AUTHENTICATION_USER && password === process.env.AUTHENTICATION_PASSWORD);
+	    }
+	);
 	server.use(auth.connect(basic));
 }
 
