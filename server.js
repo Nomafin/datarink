@@ -51,15 +51,26 @@ server.use(express.static("node_modules/lodash"));
 server.get("/api/players/", function(request, response) {
 
 	// Create query string
-	var queryString = "SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
-		+ "		SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
-		+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-		+ "		SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
-		+ " FROM game_stats AS s"
-		+ " 	LEFT JOIN game_rosters AS r"
-		+ " 	ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
-		+ " WHERE s.player_id > 0 AND r.position <> 'na' AND r.position <> 'g'"
-		+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit";
+	var queryString = "SELECT result1.*, result2.gp"
+		+ " FROM "
+		+ " ( "
+			+ " SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
+			+ "		SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
+			+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
+			+ "		SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
+			+ " FROM game_stats AS s"
+			+ " 	LEFT JOIN game_rosters AS r"
+			+ " 	ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
+			+ " WHERE s.player_id > 0 AND r.position <> 'na' AND r.position <> 'g'"
+			+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit"
+		+ " ) AS result1"
+		+ " LEFT JOIN"
+		+ " ( "
+			+ " SELECT player_id, COUNT(DISTINCT game_id) AS gp"
+			+ " FROM game_rosters" 
+			+ " GROUP BY player_id"
+		+ " ) AS result2"
+		+ " ON result1.player_id = result2.player_id";
 
 	// Run query
 	pool.connect(function(err, client, done) {
@@ -86,7 +97,7 @@ server.get("/api/players/", function(request, response) {
 
 		// Postgres aggregate functions like SUM return strings, so cast them as ints
 		rows.forEach(function(r) {
-			["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
+			["gp", "toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
 				r[col] = +r[col];
 			});
 		});
@@ -119,6 +130,7 @@ server.get("/api/players/", function(request, response) {
 				positions: positions,
 				first: groupedRows[pId][0]["first"],
 				last: groupedRows[pId][0]["last"],
+				gp: groupedRows[pId][0]["gp"],
 				data: groupedRows[pId]
 			});
 
@@ -131,6 +143,7 @@ server.get("/api/players/", function(request, response) {
 					r.first = undefined;
 					r.last = undefined;
 					r.position = undefined;
+					r.gp = undefined;
 				});
 			});
 		}
@@ -148,11 +161,22 @@ server.get("/api/players/", function(request, response) {
 server.get("/api/teams/", function(request, response) {
 
 	// Create query string
-	var queryString = "SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
-		+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
-		+ " FROM game_stats"
-		+ " WHERE player_id = 0 "
-		+ " GROUP BY team, score_sit, strength_sit";
+	var queryString = "SELECT result1.*, result2.gp"
+		+ " FROM "
+		+ " ( "
+			+ " SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
+			+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
+			+ " FROM game_stats"
+			+ " WHERE player_id = 0 "
+			+ " GROUP BY team, score_sit, strength_sit"
+		+ " ) AS result1"
+		+ " LEFT JOIN"
+		+ " ( "
+			+ " SELECT team, COUNT(DISTINCT game_id) AS gp"
+			+ " FROM game_rosters" 
+			+ " GROUP BY team"
+		+ " ) AS result2"
+		+ " ON result1.team = result2.team";
 	
 	// Run query
 	pool.connect(function(err, client, done) {
@@ -179,7 +203,7 @@ server.get("/api/teams/", function(request, response) {
 
 		// Postgres aggregate functions like SUM return strings, so cast them as ints
 		rows.forEach(function(r) {
-			["toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
+			["gp", "toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
 				r[col] = +r[col];
 			});
 		});
@@ -203,7 +227,15 @@ server.get("/api/teams/", function(request, response) {
 			}
 			result["teams"].push({
 				team: tricode,
+				gp: groupedRows[tricode][0]["gp"],
 				data: groupedRows[tricode]
+			});
+			// Set redundant properties in 'data' to be undefined - this removes them from the response
+			result["teams"].forEach(function(t) {
+				t.data.forEach(function(r) {
+					r.team = undefined;
+					r.gp = undefined;
+				});
 			});
 		}
 

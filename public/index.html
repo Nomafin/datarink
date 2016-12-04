@@ -42,6 +42,9 @@
 							<th @click="sortBy('team');" @keyup.enter="sortBy('team');" class="left-aligned" tabindex=0
 								v-bind:class="[ sort.col === 'team' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Name</th>
+							<th @click="sortBy('gp');" @keyup.enter="sortBy('gp');" tabindex=0
+								v-bind:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								>Games</th>
 							<th @click="sortBy('toi');" @keyup.enter="sortBy('toi');" tabindex=0
 								v-bind:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Mins</th>
@@ -77,6 +80,7 @@
 					<tbody>
 						<tr v-for="p in sortedTeams">
 							<td class="left-aligned">{{ p.team.toUpperCase() }}</td>
+							<td>{{ p.gp }}</td>
 							<td>{{ Math.round(p.toi / 60) }}</td>
 							<td class="cols-on-ice-goals">{{ p.gf }}</td>
 							<td class="cols-on-ice-goals">{{ p.ga }}</td>
@@ -152,6 +156,9 @@
 							<th @click="sortBy('teams');" @keyup.enter="sortBy('teams');" class="left-aligned" tabindex=0
 								v-bind:class="[ sort.col === 'teams' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Team</th>
+							<th @click="sortBy('gp');" @keyup.enter="sortBy('gp');" tabindex=0
+								v-bind:class="[ sort.col === 'gp' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								>Games</th>
 							<th @click="sortBy('toi');" @keyup.enter="sortBy('toi');" tabindex=0
 								v-bind:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Mins</th>
@@ -210,6 +217,7 @@
 							<td class="left-aligned">{{ p.first + " " + p.last }}</td>			
 							<td class="left-aligned uppercased">{{ p.positions }}</td>
 							<td class="left-aligned uppercased">{{ p.teams }}</td>
+							<td>{{ p.gp }}</td>
 							<td>{{ Math.round(p.toi / 60) }}</td>
 							<td class="cols-individual">{{ p.ig }}</td>
 							<td class="cols-individual">{{ p.ia1 }}</td>
