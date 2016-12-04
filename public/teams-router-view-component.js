@@ -27,6 +27,11 @@ var teamsViewComponent = {
 	created: function() {
 		this.fetchData();
 	},
+	watch: {
+		strengthSit: function() {
+			this.aggregateTeamData();
+		}
+	},
 	computed: {
 		sortedTeams: function() {
 			var teams = this.teamsWithAggregatedData;
@@ -74,6 +79,9 @@ var teamsViewComponent = {
 				p["cf_pct"] = p["cf"] + p["ca"] === 0 ? 0 : p["cf"] / (p["cf"] + p["ca"]);
 				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
 			});
+			// Force the sortedPlayers computed property to be recomputed by setting this.teamsWithAggregatedData = [] before actually updating it
+			// This is faster than using a deep watcher on teamsWithAggregatedData (which seems to check every property in teamsWithAggregatedData)
+			this.teamsWithAggregatedData = [];
 			this.teamsWithAggregatedData = teams;
 		}
 	}
