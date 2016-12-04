@@ -5,6 +5,9 @@
 # Database URL from Heroku
 HEROKU_POSTGRESQL_COPPER_URL = ""
 
+# Concurrency settings
+process.env.WEB_CONCURRENCY = 1
+
 # Authentication settings. Set AUTHENTICATION = "off" to turn off authentication.
 AUTHENTICATION = ""
 AUTHENTICATION_USER = ""
