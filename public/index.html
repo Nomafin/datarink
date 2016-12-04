@@ -137,12 +137,12 @@
 							<option value="teams">Team:</option>
 							<option value="positions">Position:</option>
 						</select
-						><input v-model="search.query" type="text">
+						><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
 						<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
 					</div
 					><div class="search-with-menu">
 						<label for="minimum-toi">Minimum minutes:</label
-						><input id="minimum-toi" v-model.number="minimumToi" type="number" style="width: 62px;">
+						><input id="minimum-toi" v-model.number="minimumToi" v-on:keyup.enter="blurInput($event);" type="number" style="width: 62px;">
 					</div>
 				</div>
 			</div>

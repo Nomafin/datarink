@@ -55,6 +55,9 @@ var playersViewComponent = {
 		}
 	},
 	methods: {
+		blurInput: function(event) {
+			event.target.blur();
+		},
 		fetchData: function() {
 			var self = this;
 			var xhr = new XMLHttpRequest();
