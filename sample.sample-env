@@ -1,5 +1,11 @@
-NOTE = "Populate this file and rename it to .env - these are only used when running the application locally via heroku local. When deployed to Heroku, these config vars can be defined in Heroku's application settings tab."
-DB_HOST = ""
-DB_USER = ""
-DB_PASS = ""
-DB = ""
+# Populate this file and rename it to .env
+# These are only used when running the application locally via heroku local.
+# When deployed to Heroku, these config vars are  defined in Heroku's application settings tab.
+
+# Database URL from Heroku
+HEROKU_POSTGRESQL_COPPER_URL = ""
+
+# Authentication settings. Set AUTHENTICATION = "off" to turn off authentication.
+AUTHENTICATION = ""
+AUTHENTICATION_USER = ""
+AUTHENTICATION_PASSWORD = ""

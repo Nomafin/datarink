@@ -17,7 +17,7 @@ var pgConfig = {
 	port: params.port,
 	database: params.pathname.split("/")[1],
 	ssl: true,
-	max: 10,					// Maximum number of clients in the pool
+	max: 16,					// Maximum number of clients in the pool
 	idleTimeoutMillis: 30000	// Duration a client can remain idle before being closed
 };
 var pool = new pg.Pool(pgConfig);
@@ -29,7 +29,8 @@ var server = express();
 // Add user authentication if AUTHENTICATION isn't set to 'off'
 if (process.env.AUTHENTICATION.toLowerCase() !== "off") {
 	console.log("User authentication enabled");
-	var basic = auth.basic({},
+	var basic = auth.basic(
+		{ },
 		(username, password, callback) => { 
 	        callback(username === process.env.AUTHENTICATION_USER && password === process.env.AUTHENTICATION_PASSWORD);
 	    }
