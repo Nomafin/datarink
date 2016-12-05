@@ -38,6 +38,20 @@ h1 {
 p {
 	font-size: 14px;
 	line-height: 20px;
+	margin: 0;
+}
+
+a,
+a:visited {
+	color: $green8;
+	text-decoration: none;
+}
+
+a:hover,
+a:active,
+a:focus {
+	outline: 0;
+	text-decoration: underline;
 }
 
 /*
@@ -87,6 +101,20 @@ p {
 .header a.router-link-active {
 	color: $gray1;
 	border-color: $gray1;
+}
+
+.footer {
+	margin: 0 0 40px 0;
+}
+
+.footer > * {
+	line-height: 24px;
+	display: table;
+	margin: 0 auto;
+}
+
+.footer span {
+	color: $gray6;
 }
 
 /*
@@ -258,8 +286,12 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 
 .table-header {
 	background: $gray1;
-	padding: 24px 24px 23px 24px;
+	padding: 24px 24px 15px 24px;
 	border-bottom: 1px solid $gray2;
+}
+
+.table-header .table-controls {
+	padding-bottom: 8px;
 }
 
 .table-container {
@@ -342,7 +374,7 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 */
 
 .pagination {
-	margin: 24px 0;
+	margin-top: 24px;
 }
 
 .pagination button svg {
@@ -398,7 +430,7 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 .loader {
 	height: 64px;
 	width: 64px;
-	margin: 64px auto 0 auto;
+	margin: 64px auto;
 	position: relative;
 	-webkit-animation: rotation 1s infinite linear;
 	-moz-animation: rotation 1s infinite linear;

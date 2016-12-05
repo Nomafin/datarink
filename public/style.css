@@ -16,7 +16,19 @@ h1 {
 
 p {
   font-size: 14px;
-  line-height: 20px; }
+  line-height: 20px;
+  margin: 0; }
+
+a,
+a:visited {
+  color: #2b7b4c;
+  text-decoration: none; }
+
+a:hover,
+a:active,
+a:focus {
+  outline: 0;
+  text-decoration: underline; }
 
 /*
 *
@@ -56,6 +68,17 @@ p {
 .header a.router-link-active {
   color: #f8f9f9;
   border-color: #f8f9f9; }
+
+.footer {
+  margin: 0 0 40px 0; }
+
+.footer > * {
+  line-height: 24px;
+  display: table;
+  margin: 0 auto; }
+
+.footer span {
+  color: #64686b; }
 
 /*
 *
@@ -199,8 +222,11 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 */
 .table-header {
   background: #f8f9f9;
-  padding: 24px 24px 23px 24px;
+  padding: 24px 24px 15px 24px;
   border-bottom: 1px solid #d9dadb; }
+
+.table-header .table-controls {
+  padding-bottom: 8px; }
 
 .table-container {
   overflow-x: auto;
@@ -268,7 +294,7 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 *
 */
 .pagination {
-  margin: 24px 0; }
+  margin-top: 24px; }
 
 .pagination button svg {
   width: 16px;
@@ -315,7 +341,7 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 .loader {
   height: 64px;
   width: 64px;
-  margin: 64px auto 0 auto;
+  margin: 64px auto;
   position: relative;
   -webkit-animation: rotation 1s infinite linear;
   -moz-animation: rotation 1s infinite linear;

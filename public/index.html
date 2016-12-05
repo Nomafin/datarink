@@ -13,7 +13,7 @@
 		<div>
 			<div class="table-header">
 				<h1>Teams: 2016-2017</h1>
-				<div v-if="teams">
+				<div class="table-controls" v-if="teams">
 					<select v-model="strengthSit">
 						<option value="all">All situations</option>
 						<option value="ev5">5 on 5</option>
@@ -106,7 +106,7 @@
 		<div>
 			<div class="table-header">
 				<h1>Skaters: 2016-2017</h1>
-				<div v-if="players">
+				<div class="table-controls" v-if="players">
 					<select v-model="strengthSit">
 						<option value="all">All situations</option>
 						<option value="ev5">5 on 5</option>
@@ -274,6 +274,11 @@
 		</div>
 		<router-view>
 		</router-view>
+	</div>
+	<div class="footer">
+		<span>Contact</span>
+		<a href="mailto:datarink@gmail.com">datarink@gmail.com</a>
+		<a href="http://www.twitter.com/datarink">@datarink</a>
 	</div>
 	<script src="lodash.js"></script>
 	<script src="vue.js"></script>
