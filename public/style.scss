@@ -18,6 +18,8 @@ $gray8: #313639;
 $green4: #40b771;
 $green8: #2b7b4c;
 
+$yellow4: #eec170;
+
 body {
 	font-family: $font-stack;
 	color: $gray8;
@@ -117,6 +119,10 @@ a:focus {
 	color: $gray6;
 }
 
+.system-message {
+	background: $yellow4;
+	padding: 12px 24px;
+}
 /*
 *
 * Input controls

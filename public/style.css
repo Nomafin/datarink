@@ -80,6 +80,10 @@ a:focus {
 .footer span {
   color: #64686b; }
 
+.system-message {
+  background: #eec170;
+  padding: 12px 24px; }
+
 /*
 *
 * Input controls
