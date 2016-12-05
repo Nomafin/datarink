@@ -36,6 +36,9 @@ var playersViewComponent = {
 	},
 	created: function() {
 		this.fetchData();
+		// Google Analytics
+		ga("set", "page", "/players");
+		ga("send", "pageview");
 	},
 	watch: {
 		strengthSit: function() {

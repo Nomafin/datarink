@@ -26,6 +26,9 @@ var teamsViewComponent = {
 	},
 	created: function() {
 		this.fetchData();
+		// Google Analytics
+		ga("set", "page", "/teams");
+		ga("send", "pageview");
 	},
 	watch: {
 		strengthSit: function() {
