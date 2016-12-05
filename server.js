@@ -72,7 +72,7 @@ function start() {
 				+ " FROM game_stats AS s"
 				+ " 	LEFT JOIN game_rosters AS r"
 				+ " 	ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
-				+ " WHERE s.player_id > 0 AND r.position <> 'na' AND r.position <> 'g'"
+				+ " WHERE s.player_id > 2 AND r.position <> 'na' AND r.position <> 'g'"
 				+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit"
 			+ " ) AS result1"
 			+ " LEFT JOIN"
@@ -178,7 +178,7 @@ function start() {
 				+ " SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
 				+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
 				+ " FROM game_stats"
-				+ " WHERE player_id = 0 "
+				+ " WHERE player_id < 2 "
 				+ " GROUP BY team, score_sit, strength_sit"
 			+ " ) AS result1"
 			+ " LEFT JOIN"
@@ -232,7 +232,7 @@ function start() {
 
 			// Group rows by team:
 			// { "edm": [rows for edm], "tor": [rows for tor] }
-			var groupedRows = _.groupBy(statRows, "team");		
+			var groupedRows = _.groupBy(statRows, "team");
 
 			//
 			// Calculate the number of points won

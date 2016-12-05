@@ -91,7 +91,7 @@ var playersViewComponent = {
 			// To aggregate data, use a method that we can explicitly call instead of a computed property
 			// Using a computed property caused laggy input fields - it seemed like each time an input changed, 
 			// the computed property would check each player and stat to see if any values changed
-			var sits = this.strengthSit === "all" ? ["ev5", "pp", "sh", "penShot", "other"] : [this.strengthSit];
+			var sits = this.strengthSit === "all" ? ["ev5", "pp", "sh", "penShot", "noOppG", "noOwnG", "other"] : [this.strengthSit];
 			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj", "cf_off", "ca_off"];
 			this.players.forEach(function(p) {
 				stats.forEach(function(st) {
@@ -100,18 +100,35 @@ var playersViewComponent = {
 						function(row) { return row[st]; }
 					);
 				});
-			});	
+			});
+
 			// Compute additional stats
+			var self = this;
 			this.players.forEach(function(p) {
+
 				p["ip1"] = p["ig"] + p["ia1"];
 				p["i_sh_pct"] = p["is"] === 0 ? 0 : p["ig"] / p["is"];
 				p["g_diff"] = p["gf"] - p["ga"];
 				p["sh_pct"] = p["sf"] === 0 ? 0 : p["gf"] / p["sf"];
-				p["sv_pct"] = p["sa"] === 0 ? 0 : 1 - p["ga"] / p["sa"];
 				p["cf_pct"] = p["cf"] + p["ca"] === 0 ? 0 : p["cf"] / (p["cf"] + p["ca"]);
 				p["cf_pct_rel"] = (p["cf"] + p["ca"] === 0 || p["cf_off"] + p["ca_off"] === 0) ? 0 : p["cf"] / (p["cf"] + p["ca"]) - p["cf_off"] / (p["cf_off"] + p["ca_off"]);
 				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
+
+				// For the "all" strengthSit, exclude ga and sa while a player's own net is empty when calculating svPct
+				var noOwnG_ga = 0;
+				var noOwnG_sa = 0;
+				if (self.strengthSit === "all") {
+					var noOwnG_row = p.data.find(function(row) { return row["strength_sit"] === "noOwnG"; });
+					if (noOwnG_row) {
+						noOwnG_ga = noOwnG_row["ga"];
+						noOwnG_sa = noOwnG_row["sa"];						
+					}
+				}
+				var svPctGa = p["ga"] - noOwnG_ga;
+				var svPctSa = p["sa"] - noOwnG_sa;
+				p["sv_pct"] = svPctSa === 0 ? 0 : 1 - svPctGa / svPctSa;
 			});
+
 			// Refilter and resort players based on updated stats
 			this.filterPlayers();
 			this.sortPlayers();

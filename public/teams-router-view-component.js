@@ -64,7 +64,7 @@ var teamsViewComponent = {
 		},
 		aggregateTeamData: function() {
 			var teams = this.teams;
-			var sits = this.strengthSit === "all" ? ["ev5", "pp", "sh", "penShot", "other"] : [this.strengthSit];
+			var sits = this.strengthSit === "all" ? ["ev5", "pp", "sh", "penShot", "noOppG", "noOwnG", "other"] : [this.strengthSit];
 			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
 			teams.forEach(function(p) {
 				stats.forEach(function(st) {
@@ -74,14 +74,31 @@ var teamsViewComponent = {
 					);
 				});
 			});
+
 			// Compute additional stats
+			var self = this;
 			teams.forEach(function(p) {
+
 				p["g_diff"] = p["gf"] - p["ga"];
 				p["sh_pct"] = p["sf"] === 0 ? 0 : p["gf"] / p["sf"];
-				p["sv_pct"] = p["sa"] === 0 ? 0 : 1 - p["ga"] / p["sa"];
 				p["cf_pct"] = p["cf"] + p["ca"] === 0 ? 0 : p["cf"] / (p["cf"] + p["ca"]);
 				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
+
+				// For the "all" strengthSit, exclude ga and sa while a team's own net is empty when calculating svPct
+				var noOwnG_ga = 0;
+				var noOwnG_sa = 0;
+				if (self.strengthSit === "all") {
+					var noOwnG_row = p.data.find(function(row) { return row["strength_sit"] === "noOwnG"; });
+					if (noOwnG_row) {
+						noOwnG_ga = noOwnG_row["ga"];
+						noOwnG_sa = noOwnG_row["sa"];						
+					}
+				}
+				var svPctGa = p["ga"] - noOwnG_ga;
+				var svPctSa = p["sa"] - noOwnG_sa;
+				p["sv_pct"] = svPctSa === 0 ? 0 : 1 - svPctGa / svPctSa;
 			});
+
 			// Force the sortedPlayers computed property to be recomputed by setting this.teamsWithAggregatedData = [] before actually updating it
 			// This is faster than using a deep watcher on teamsWithAggregatedData (which seems to check every property in teamsWithAggregatedData)
 			this.teamsWithAggregatedData = [];
