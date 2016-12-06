@@ -37,7 +37,7 @@ a:focus {
 */
 .header {
   height: 56px;
-  background: #313639; }
+  background: #d9dadb; }
 
 .header > svg {
   display: inline-block;
@@ -55,19 +55,33 @@ a:focus {
 .header a {
   display: inline-block;
   vertical-align: top;
-  color: #babdbe;
+  color: #313639;
   text-decoration: none;
   border-bottom: 2px solid transparent;
   margin: 18px 0 20px 24px; }
 
 .header a:hover,
 .header a:focus {
-  border-color: #babdbe;
+  border-color: #9ca0a1;
   outline: 0; }
 
 .header a.router-link-active {
-  color: #f8f9f9;
-  border-color: #f8f9f9; }
+  color: #313639;
+  border-color: #313639; }
+
+.header .test-tag {
+  display: inline-block;
+  background: #5bb271;
+  color: #313639;
+  font-size: 11px;
+  line-height: 20px;
+  font-weight: 700;
+  padding: 6px 8px;
+  float: right;
+  margin: 12px 24px 12px 0;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: -0.5px; }
 
 .footer {
   padding: 48px 24px 32px 24px; }
@@ -80,11 +94,6 @@ a:focus {
 
 .footer span {
   color: #64686b; }
-
-.system-message {
-  background: #eec170;
-  padding: 12px 24px;
-  text-align: center; }
 
 /*
 *

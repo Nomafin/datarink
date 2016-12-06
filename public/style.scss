@@ -18,8 +18,6 @@ $gray8: #313639;
 $green4: #5bb271;
 $green8: #008050;
 
-$yellow4: #eec170;
-
 body {
 	font-family: $font-stack;
 	color: $gray8;
@@ -64,7 +62,7 @@ a:focus {
 
 .header {
 	height: 56px;
-	background: $gray8;
+	background: $gray2;
 }
 
 .header > svg {
@@ -87,7 +85,7 @@ a:focus {
 	display: inline-block;
 	vertical-align: top;
 
-	color: $gray3;
+	color: $gray8;
 	text-decoration: none;
 
 	border-bottom: 2px solid transparent;
@@ -96,13 +94,28 @@ a:focus {
 
 .header a:hover,
 .header a:focus {
-	border-color: $gray3;
+	border-color: $gray4;
 	outline: 0;
 }
 
 .header a.router-link-active {
-	color: $gray1;
-	border-color: $gray1;
+	color: $gray8;
+	border-color: $gray8;
+}
+
+.header .test-tag {
+	display: inline-block;
+	background: $green4;
+	color: $gray8;
+	font-size: 11px;
+	line-height: $base-line-height;
+	font-weight: 700;
+	padding: 6px 8px;
+	float: right;
+	margin: 12px 24px 12px 0;
+	border-radius: 4px;
+	text-transform: uppercase;
+	letter-spacing: -0.5px;
 }
 
 .footer {
@@ -119,12 +132,6 @@ a:focus {
 
 .footer span {
 	color: $gray6;
-}
-
-.system-message {
-	background: $yellow4;
-	padding: 12px 24px;
-	text-align: center;
 }
 
 /*
