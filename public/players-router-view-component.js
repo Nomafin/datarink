@@ -12,7 +12,7 @@ var playersViewComponent = {
 				onIceCorsi: false
 			},
 			sort: {
-				col: "ip1",
+				col: "ip",
 				order: -1
 			},
 			search: {
@@ -106,7 +106,7 @@ var playersViewComponent = {
 			var self = this;
 			this.players.forEach(function(p) {
 
-				p["ip1"] = p["ig"] + p["ia1"];
+				p["ip"] = p["ig"] + p["ia1"] + p["ia2"];
 				p["i_sh_pct"] = p["is"] === 0 ? 0 : p["ig"] / p["is"];
 				p["g_diff"] = p["gf"] - p["ga"];
 				p["sh_pct"] = p["sf"] === 0 ? 0 : p["gf"] / p["sf"];

@@ -15,8 +15,8 @@ $gray6: #64686b;
 $gray7: #4a4f51;
 $gray8: #313639;
 
-$green4: #40b771;
-$green8: #2b7b4c;
+$green4: #5bb271;
+$green8: #008050;
 
 $yellow4: #eec170;
 
@@ -72,7 +72,7 @@ a:focus {
 	vertical-align: top;
 	width: 32px;
 	height: 32px;
-	margin: 12px 4px 12px 24px;
+	margin: 12px 0px 12px 24px;
 }
 
 .header svg .logo-r {
@@ -106,13 +106,15 @@ a:focus {
 }
 
 .footer {
-	margin: 0 0 40px 0;
+	padding: 48px 24px 32px 24px;
 }
 
 .footer > * {
-	line-height: 24px;
-	display: table;
-	margin: 0 auto;
+	display: inline-block;
+}
+
+.footer > * + * {
+	margin-left: 16px;
 }
 
 .footer span {
@@ -124,6 +126,7 @@ a:focus {
 	padding: 12px 24px;
 	text-align: center;
 }
+
 /*
 *
 * Input controls
@@ -443,10 +446,10 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 	-moz-animation: rotation 1s infinite linear;
 	-o-animation: rotation 1s infinite linear;
 	animation: rotation 1s infinite linear;
-	border-left: 8px solid $green4;
-	border-right: 8px solid $green4;
-	border-bottom: 8px solid $green4;
-	border-top: 8px solid #fff;
+	border-left: 6px solid $green4;
+	border-right: 6px solid $green4;
+	border-bottom: 6px solid $green4;
+	border-top: 6px solid #fff;
 	border-radius: 50%;
 }
 

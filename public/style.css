@@ -21,7 +21,7 @@ p {
 
 a,
 a:visited {
-  color: #2b7b4c;
+  color: #008050;
   text-decoration: none; }
 
 a:hover,
@@ -44,13 +44,13 @@ a:focus {
   vertical-align: top;
   width: 32px;
   height: 32px;
-  margin: 12px 4px 12px 24px; }
+  margin: 12px 0px 12px 24px; }
 
 .header svg .logo-r {
-  fill: #40b771; }
+  fill: #5bb271; }
 
 .header svg .logo-d {
-  fill: #2b7b4c; }
+  fill: #008050; }
 
 .header a {
   display: inline-block;
@@ -70,12 +70,13 @@ a:focus {
   border-color: #f8f9f9; }
 
 .footer {
-  margin: 0 0 40px 0; }
+  padding: 48px 24px 32px 24px; }
 
 .footer > * {
-  line-height: 24px;
-  display: table;
-  margin: 0 auto; }
+  display: inline-block; }
+
+.footer > * + * {
+  margin-left: 16px; }
 
 .footer span {
   color: #64686b; }
@@ -152,7 +153,7 @@ input[type="text"]:focus,
 input[type="number"]:focus,
 button:focus {
   outline: 0;
-  border-color: #40b771; }
+  border-color: #5bb271; }
 
 select::-ms-expand {
   display: none; }
@@ -178,7 +179,7 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
   display: block;
   width: 3px;
   height: 6px;
-  border: solid #2b7b4c;
+  border: solid #008050;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
   margin-top: 2px;
@@ -259,7 +260,7 @@ table td.uppercased {
   text-transform: uppercase; }
 
 table th {
-  color: #2b7b4c;
+  color: #008050;
   cursor: pointer;
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
@@ -280,7 +281,7 @@ table th:active {
   background: #babdbe; }
 
 table th:focus {
-  border-color: #2b7b4c;
+  border-color: #008050;
   outline: 0; }
 
 table th span.pct,
@@ -352,10 +353,10 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
   -moz-animation: rotation 1s infinite linear;
   -o-animation: rotation 1s infinite linear;
   animation: rotation 1s infinite linear;
-  border-left: 8px solid #40b771;
-  border-right: 8px solid #40b771;
-  border-bottom: 8px solid #40b771;
-  border-top: 8px solid #fff;
+  border-left: 6px solid #5bb271;
+  border-right: 6px solid #5bb271;
+  border-bottom: 6px solid #5bb271;
+  border-top: 6px solid #fff;
   border-radius: 50%; }
 
 @-webkit-keyframes rotation {

@@ -175,9 +175,9 @@
 							<th @click="sortBy('ia2');" @keyup.enter="sortBy('ia2');" class="cols-individual" tabindex=0
 								v-bind:class="[ sort.col === 'ia2' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>A2</th>
-							<th @click="sortBy('ip1');" @keyup.enter="sortBy('ip1');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'ip1' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>P1</th>
+							<th @click="sortBy('ip');" @keyup.enter="sortBy('ip');" class="cols-individual" tabindex=0
+								v-bind:class="[ sort.col === 'ip' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								>P</th>
 							<th @click="sortBy('ic');" @keyup.enter="sortBy('ic');" class="cols-individual" tabindex=0
 								v-bind:class="[ sort.col === 'ic' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>C</th>
@@ -226,7 +226,7 @@
 							<td class="cols-individual">{{ p.ig }}</td>
 							<td class="cols-individual">{{ p.ia1 }}</td>
 							<td class="cols-individual">{{ p.ia2 }}</td>
-							<td class="cols-individual">{{ p.ip1 }}</td>
+							<td class="cols-individual">{{ p.ip }}</td>
 							<td class="cols-individual">{{ p.ic }}</td>
 							<td class="cols-individual">{{ p.i_sh_pct | percentage }}<span class="pct">%</span></td>
 							<td class="cols-on-ice-goals">{{ p.gf }}</td>
@@ -264,7 +264,7 @@
 	</script>
 	<!-- Root element for application -->
 	<div id="app">
-		<p class="system-message"><strong>Sorry if the site's slow!</strong> This is a test run to estimate hosting requirements.</p>
+		<p class="system-message"><strong>Sorry if the site's slow!</strong> This is a test run to estimate hosting costs.</p>
 		<div class="header">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
 				<path class="logo-r" d="M16,8V32h8V16h8V8Z"/>
