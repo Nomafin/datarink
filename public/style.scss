@@ -6,14 +6,14 @@ $small-line-height: 16px;
 
 $control-height: 32px;
 
-$gray1: #f8f9f9;
-$gray2: #d9dadb;
-$gray3: #babdbe;
-$gray4: #9ca0a1;
-$gray5: #808485;
-$gray6: #64686b;
-$gray7: #4a4f51;
-$gray8: #313639;
+$gray1: #eceff1;
+$gray2: #cfd8dc;
+$gray3: #b0bec5;
+$gray4: #90a4ae;
+$gray5: #78909c;
+$gray6: #607d8b;
+$gray7: #546e7a;
+$gray8: #37474f;
 
 $green4: #5bb271;
 $green8: #008050;
@@ -128,10 +128,6 @@ a:focus {
 
 .footer > * + * {
 	margin-left: 16px;
-}
-
-.footer span {
-	color: $gray6;
 }
 
 /*
@@ -303,8 +299,7 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 
 .table-header {
 	background: $gray1;
-	padding: 24px 24px 15px 24px;
-	border-bottom: 1px solid $gray2;
+	padding: 24px 24px 16px 24px;
 }
 
 .table-header .table-controls {
@@ -328,7 +323,7 @@ table td {
 	padding: 8px;
 	margin: 0;
 	text-align: right;
-	border-bottom: 1px solid $gray2;
+	border-bottom: 1px solid #dee3e7;
 }
 
 table th.left-aligned,

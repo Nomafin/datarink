@@ -39,7 +39,6 @@ function start() {
 
 	// Add user authentication if AUTHENTICATION isn't set to 'off'
 	if (process.env.AUTHENTICATION.toLowerCase() !== "off") {
-		console.log("User authentication enabled");
 		var basic = auth.basic(
 			{ },
 			(username, password, callback) => { 
@@ -85,20 +84,13 @@ function start() {
 
 		// Run query
 		pool.connect(function(err, client, done) {
-			if (err) { returnError("Error fetching client from pool: " + err); }
+			if (err) { return response.status(500).send("Error fetching client from pool: " + err); }
 			client.query(queryString, function(err, result) {
 				done(); // Return client to pool
-				if (err) { returnError("Error running query: " + err); }
+				if (err) { return response.status(500).send("Error running query: " + err); }
 				processResults(result.rows);
 			});
 		});
-
-		// Return errors
-		function returnError(responseStr) {
-			return response
-				.status(500)
-				.send(responseStr);
-		}
 
 		// Process query results
 		function processResults(rows) {
@@ -159,9 +151,7 @@ function start() {
 				});
 			}
 
-			return response
-				.status(200)
-				.send(result);
+			return response.status(200).send(result);
 		}
 	});
 
@@ -194,22 +184,17 @@ function start() {
 		// Run queries
 		pool.connect(function(err, client, done) {
 			if (err) { returnError("Error fetching client from pool: " + err); }
+			// Run 1st query
 			client.query(statsQueryString, function(err, gameStats) {
-				if (err) { returnError("Error running query: " + err); }
+				if (err) { return response.status(500).send("Error running query: " + err); }
 				// Run 2nd query
 				client.query(resultsQueryString, function(err, gameResults) {
 					done();
+					if (err) { return response.status(500).send("Error running query: " + err); }
 					processResults(gameStats.rows, gameResults.rows);
 				});
 			});
 		});
-
-		// Return errors
-		function returnError(responseStr) {
-			return response
-				.status(500)
-				.send(responseStr);
-		}
 
 		// Process query results
 		function processResults(statRows, resultRows) {
@@ -283,9 +268,7 @@ function start() {
 				});
 			}
 
-			return response
-				.status(200)
-				.send(result);
+			return response.status(200).send(result);
 		}
 	});
 

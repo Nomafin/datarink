@@ -1,7 +1,7 @@
 @charset "UTF-8";
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: #313639;
+  color: #37474f;
   font-size: 14px;
   line-height: 20px;
   margin: 0;
@@ -37,7 +37,7 @@ a:focus {
 */
 .header {
   height: 56px;
-  background: #d9dadb; }
+  background: #cfd8dc; }
 
 .header > svg {
   display: inline-block;
@@ -55,24 +55,24 @@ a:focus {
 .header a {
   display: inline-block;
   vertical-align: top;
-  color: #313639;
+  color: #37474f;
   text-decoration: none;
   border-bottom: 2px solid transparent;
   margin: 18px 0 20px 24px; }
 
 .header a:hover,
 .header a:focus {
-  border-color: #9ca0a1;
+  border-color: #90a4ae;
   outline: 0; }
 
 .header a.router-link-active {
-  color: #313639;
-  border-color: #313639; }
+  color: #37474f;
+  border-color: #37474f; }
 
 .header .test-tag {
   display: inline-block;
   background: #5bb271;
-  color: #313639;
+  color: #37474f;
   font-size: 11px;
   line-height: 20px;
   font-weight: 700;
@@ -92,9 +92,6 @@ a:focus {
 .footer > * + * {
   margin-left: 16px; }
 
-.footer span {
-  color: #64686b; }
-
 /*
 *
 * Input controls
@@ -113,11 +110,11 @@ button {
   box-sizing: border-box;
   height: 32px;
   line-height: 20px;
-  border: 1px solid #d9dadb;
+  border: 1px solid #cfd8dc;
   padding: 5px 15px;
   font-size: 14px;
-  color: #313639;
-  background: #d9dadb;
+  color: #37474f;
+  background: #cfd8dc;
   margin: 0 8px 8px 0;
   border-radius: 4px; }
 
@@ -149,13 +146,13 @@ input[type="number"] {
 
 select:hover,
 button:hover {
-  background: #babdbe;
-  border-color: #babdbe; }
+  background: #b0bec5;
+  border-color: #b0bec5; }
 
 select:active,
 button:active {
-  background: #9ca0a1;
-  border-color: #9ca0a1; }
+  background: #90a4ae;
+  border-color: #90a4ae; }
 
 select:focus,
 input[type="text"]:focus,
@@ -179,7 +176,7 @@ button.toggle-button span.checkbox-container {
   width: 16px;
   margin-top: 2px;
   margin-right: 8px;
-  border: 1px solid #babdbe;
+  border: 1px solid #b0bec5;
   border-radius: 2px;
   background: #fff; }
 
@@ -223,8 +220,8 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
   right: 0;
   margin: 4px 0 0 0;
   padding: 8px 16px;
-  background: #313639;
-  color: #f8f9f9;
+  background: #37474f;
+  color: #eceff1;
   z-index: 100; }
 
 .search-with-menu input[type="text"]:focus + .tooltip {
@@ -236,9 +233,8 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 *
 */
 .table-header {
-  background: #f8f9f9;
-  padding: 24px 24px 15px 24px;
-  border-bottom: 1px solid #d9dadb; }
+  background: #eceff1;
+  padding: 24px 24px 16px 24px; }
 
 .table-header .table-controls {
   padding-bottom: 8px; }
@@ -258,7 +254,7 @@ table td {
   padding: 8px;
   margin: 0;
   text-align: right;
-  border-bottom: 1px solid #d9dadb; }
+  border-bottom: 1px solid #dee3e7; }
 
 table th.left-aligned,
 table td.left-aligned {
@@ -284,10 +280,10 @@ table th.sort-desc:after {
   content: " ↓"; }
 
 table th:hover {
-  background: #d9dadb; }
+  background: #cfd8dc; }
 
 table th:active {
-  background: #babdbe; }
+  background: #b0bec5; }
 
 table th:focus {
   border-color: #008050;
@@ -315,7 +311,7 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
   width: 16px;
   height: 16px;
   margin: 2px;
-  fill: #313639; }
+  fill: #37474f; }
 
 .pagination button {
   margin: 0;
@@ -338,9 +334,9 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 .pagination > div {
   height: 32px;
   box-sizing: border-box;
-  border-top: 1px solid #d9dadb;
-  border-bottom: 1px solid #d9dadb;
-  background: #f8f9f9;
+  border-top: 1px solid #cfd8dc;
+  border-bottom: 1px solid #cfd8dc;
+  background: #eceff1;
   padding: 5px 4px;
   min-width: 80px;
   text-align: center; }
