@@ -57,14 +57,14 @@
 							<th @click="sortBy('ga');" @keyup.enter="sortBy('ga');" class="cols-on-ice-goals" tabindex=0
 								v-bind:class="[ sort.col === 'ga' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>GA</th>
-							<th @click="sortBy('gDiff');" @keyup.enter="sortBy('gDiff');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'gDiff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('g_diff');" @keyup.enter="sortBy('g_diff');" class="cols-on-ice-goals" tabindex=0
+								v-bind:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>G diff</th>
-							<th @click="sortBy('shPct');" @keyup.enter="sortBy('shPct');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'shPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('sh_pct');" @keyup.enter="sortBy('sh_pct');" class="cols-on-ice-goals" tabindex=0
+								v-bind:class="[ sort.col === 'sh_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Sh%</th>
-							<th @click="sortBy('svPct');" @keyup.enter="sortBy('svPct');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'svPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('sv_pct');" @keyup.enter="sortBy('sv_pct');" class="cols-on-ice-goals" tabindex=0
+								v-bind:class="[ sort.col === 'sv_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Sv%</th>
 							<th @click="sortBy('cf');" @keyup.enter="sortBy('cf');" class="cols-on-ice-corsi" tabindex=0
 								v-bind:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
@@ -72,11 +72,11 @@
 							<th @click="sortBy('ca');" @keyup.enter="sortBy('ca');" class="cols-on-ice-corsi" tabindex=0
 								v-bind:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CA</th>
-							<th @click="sortBy('cfPct');" @keyup.enter="sortBy('cfPct');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cfPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cf_pct');" @keyup.enter="sortBy('cf_pct');" class="cols-on-ice-corsi" tabindex=0
+								v-bind:class="[ sort.col === 'cf_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%</th>
-							<th @click="sortBy('cfPctAdj');" @keyup.enter="sortBy('cfPctAdj');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cfPctAdj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cf_pct_adj');" @keyup.enter="sortBy('cf_pct_adj');" class="cols-on-ice-corsi" tabindex=0
+								v-bind:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%, score-adj</th>
 						</tr>
 					</thead>
@@ -181,8 +181,8 @@
 							<th @click="sortBy('ic');" @keyup.enter="sortBy('ic');" class="cols-individual" tabindex=0
 								v-bind:class="[ sort.col === 'ic' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>C</th>
-							<th @click="sortBy('iShPct');" @keyup.enter="sortBy('iShPct');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'iShPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('i_sh_pct');" @keyup.enter="sortBy('i_sh_pct');" class="cols-individual" tabindex=0
+								v-bind:class="[ sort.col === 'i_sh_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Own Sh%</th>
 							<th @click="sortBy('gf');" @keyup.enter="sortBy('gf');" class="cols-on-ice-goals" tabindex=0
 								v-bind:class="[ sort.col === 'gf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
@@ -190,14 +190,14 @@
 							<th @click="sortBy('ga');" @keyup.enter="sortBy('ga');" class="cols-on-ice-goals" tabindex=0
 								v-bind:class="[ sort.col === 'ga' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>GA</th>
-							<th @click="sortBy('gDiff');" @keyup.enter="sortBy('gDiff');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'gDiff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('g_diff');" @keyup.enter="sortBy('g_diff');" class="cols-on-ice-goals" tabindex=0
+								v-bind:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>G diff</th>
-							<th @click="sortBy('shPct');" @keyup.enter="sortBy('shPct');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'shPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('sh_pct');" @keyup.enter="sortBy('sh_pct');" class="cols-on-ice-goals" tabindex=0
+								v-bind:class="[ sort.col === 'sh_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Sh%</th>
-							<th @click="sortBy('svPct');" @keyup.enter="sortBy('svPct');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'svPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('sv_pct');" @keyup.enter="sortBy('sv_pct');" class="cols-on-ice-goals" tabindex=0
+								v-bind:class="[ sort.col === 'sv_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Sv%</th>
 							<th @click="sortBy('cf');" @keyup.enter="sortBy('cf');" class="cols-on-ice-corsi" tabindex=0
 								v-bind:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
@@ -205,14 +205,14 @@
 							<th @click="sortBy('ca');" @keyup.enter="sortBy('ca');" class="cols-on-ice-corsi" tabindex=0
 								v-bind:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CA</th>
-							<th @click="sortBy('cfPct');" @keyup.enter="sortBy('cfPct');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cfPct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cf_pct');" @keyup.enter="sortBy('cf_pct');" class="cols-on-ice-corsi" tabindex=0
+								v-bind:class="[ sort.col === 'cf_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%</th>
-							<th @click="sortBy('cfPctRel');" @keyup.enter="sortBy('cfPctRel');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cfPctRel' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cf_pct_rel');" @keyup.enter="sortBy('cf_pct_rel');" class="cols-on-ice-corsi" tabindex=0
+								v-bind:class="[ sort.col === 'cf_pct_rel' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%, rel</th>
-							<th @click="sortBy('cfPctAdj');" @keyup.enter="sortBy('cfPctAdj');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cfPctAdj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cf_pct_adj');" @keyup.enter="sortBy('cf_pct_adj');" class="cols-on-ice-corsi" tabindex=0
+								v-bind:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>CF%, score-adj</th>
 						</tr>
 					</thead>

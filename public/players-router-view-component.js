@@ -28,7 +28,7 @@ var playersViewComponent = {
 	},
 	filters: {
 		percentage: function(value) {
-			return isNaN(value) ? 0 : Math.round(value * 100);
+			return isNaN(value) ? 0 : (Math.round(value * 1000) / 10).toFixed(1);
 		},
 		signed: function(value) {
 			return value > 0 ? "+" + value : value;
