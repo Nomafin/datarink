@@ -77,7 +77,8 @@ function start() {
 			+ " LEFT JOIN"
 			+ " ( "
 				+ " SELECT player_id, COUNT(DISTINCT game_id) AS gp"
-				+ " FROM game_rosters" 
+				+ " FROM game_rosters"
+				+ " WHERE position != 'na'"
 				+ " GROUP BY player_id"
 			+ " ) AS result2"
 			+ " ON result1.player_id = result2.player_id";
