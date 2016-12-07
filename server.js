@@ -5,6 +5,7 @@ var _ = require("lodash");
 var url = require("url");
 var auth = require("http-auth");
 var throng = require("throng");
+var compression = require("compression");
 var constants = require("./server-constants.json");
 
 var PORT = process.env.PORT || 5000;
@@ -53,6 +54,7 @@ function start() {
 	server.use(express.static("node_modules/vue/dist"));
 	server.use(express.static("node_modules/vue-router/dist"));
 	server.use(express.static("node_modules/lodash"));
+	server.use(compression());
 
 	//
 	// Handle GET request for players api
@@ -127,7 +129,7 @@ function start() {
 				// Get all teams and positions the player has been on
 				var teams = _.uniqBy(groupedRows[pId], "teams").map(function(d) { return d.team; });
 				var positions = _.uniqBy(groupedRows[pId], "position").map(function(d) { return d.position; });
-				
+
 				result["players"].push({
 					player_id: +pId,
 					teams: teams,
