@@ -126,8 +126,8 @@ function start() {
 
 				// Get all teams and positions the player has been on
 				var teams = _.uniqBy(groupedRows[pId], "teams").map(function(d) { return d.team; });
-				var positions = _.uniqBy(groupedRows[pId], "teams").map(function(d) { return d.position; });
-
+				var positions = _.uniqBy(groupedRows[pId], "position").map(function(d) { return d.position; });
+				
 				result["players"].push({
 					player_id: +pId,
 					teams: teams,
