@@ -6,7 +6,7 @@ var url = require("url");
 var auth = require("http-auth");
 var throng = require("throng");
 var compression = require("compression");
-var constants = require("./server-constants.json");
+var constants = require("./analysis-constants.json");
 
 var PORT = process.env.PORT || 5000;
 var WORKERS = process.env.WEB_CONCURRENCY || 1;
@@ -86,37 +86,29 @@ function start() {
 			+ " ON result1.player_id = result2.player_id";
 
 		// Run query
-		pool.connect(function(err, client, done) {
-			if (err) { return response.status(500).send("Error fetching client from pool: " + err); }
-			client.query(queryString, function(err, result) {
-				done(); // Return client to pool
-				if (err) { return response.status(500).send("Error running query: " + err); }
-				processResults(result.rows);
-			});
+		var statRows;
+		query(queryString, [], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			statRows = rows;
+			processResults();
 		});
 
 		// Process query results
-		function processResults(rows) {
-
-			// rows is an array of Anonymous objects - use stringify and parse to convert it to json
-			rows = JSON.parse(JSON.stringify(rows));
+		function processResults() {
 
 			// Postgres aggregate functions like SUM return strings, so cast them as ints
-			rows.forEach(function(r) {
+			// Calculate score-adjusted corsi
+			statRows.forEach(function(r) {
 				["gp", "toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
 					r[col] = +r[col];
 				});
-			});
-
-			// Calculate score-adjusted corsi for each row
-			rows.forEach(function(r) {
 				r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
 				r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
 			});
 
 			// Group rows by playerId:
 			//	{ 123: [rows for player 123], 234: [rows for player 234] }
-			var groupedRows = _.groupBy(rows, "player_id");
+			var groupedRows = _.groupBy(statRows, "player_id");
 
 			// Structure results as an array of objects:
 			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
@@ -164,8 +156,8 @@ function start() {
 
 	server.get("/api/teams/", function(request, response) {
 
-		// Create query strings
-		var statsQueryString = "SELECT result1.*, result2.gp"
+		// Create query string for stats by game
+		var statQueryString = "SELECT result1.*, result2.gp"
 			+ " FROM "
 			+ " ( "
 				+ " SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
@@ -182,38 +174,37 @@ function start() {
 			+ " ) AS result2"
 			+ " ON result1.team = result2.team";
 
-		var resultsQueryString = "SELECT * FROM game_results WHERE game_id < 30000"; // Exclude playoff games from points calculation
+		// Create query string for wins and losses - exclude playoff games
+		var resultQueryString = "SELECT * FROM game_results WHERE game_id < 30000";
 
 		// Run queries
-		pool.connect(function(err, client, done) {
-			if (err) { returnError("Error fetching client from pool: " + err); }
-			// Run 1st query
-			client.query(statsQueryString, function(err, gameStats) {
-				if (err) { return response.status(500).send("Error running query: " + err); }
-				// Run 2nd query
-				client.query(resultsQueryString, function(err, gameResults) {
-					done();
-					if (err) { return response.status(500).send("Error running query: " + err); }
-					processResults(gameStats.rows, gameResults.rows);
-				});
-			});
+		var statRows;
+		var resultRows;
+		query(statQueryString, [], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			statRows = rows;
+			processResults();
+		});
+		query(resultQueryString, [], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			resultRows = rows;
+			processResults();
 		});
 
 		// Process query results
-		function processResults(statRows, resultRows) {
+		function processResults() {
 
-			// rows is an array of Anonymous objects - use stringify and parse to convert it to json
-			statRows = JSON.parse(JSON.stringify(statRows));
+			// Only start processing once all queries are finished
+			if (!statRows || !resultRows) {
+				return;
+			}
 
 			// Postgres aggregate functions like SUM return strings, so cast them as ints
+			// Calculate score-adjusted corsi
 			statRows.forEach(function(r) {
 				["gp", "toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
 					r[col] = +r[col];
 				});
-			});
-
-			// Calculate score-adjusted corsi for each row
-			statRows.forEach(function(r) {
 				r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
 				r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
 			});
@@ -234,7 +225,6 @@ function start() {
 			}
 
 			// Loop through game_result rows and increment points
-			resultRows = JSON.parse(JSON.stringify(resultRows));
 			resultRows.forEach(function(r) {
 				if (r["a_final"] > r["h_final"]) {
 					groupedRows[r["a_team"]].pts += 2;
@@ -280,4 +270,19 @@ function start() {
 		if (error) { throw error; }
 		console.log("Listening on " + PORT);
 	});
+
+	// Query the database and return result rows in json format
+	// 'values' is an array of values for parameterized queries
+	function query(text, values, cb) {
+		pool.connect(function(err, client, done) {
+			if (err) { returnError("Error fetching client from pool: " + err); }
+			client.query(text, values, function(err, result) {
+				done();
+				// result.rows is is an array of Anonymous objects
+				// Convert it to json using stringify and parse before returning it
+				var returnedRows = err ? [] : JSON.parse(JSON.stringify(result.rows));
+				cb(err, returnedRows);
+			});
+		});
+	}
 }
