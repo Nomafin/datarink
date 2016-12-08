@@ -23,7 +23,31 @@ var playersViewComponent = {
 				rowsPerPage: 20,
 				current: 0,
 				total: 0
-			}
+			},
+			columns: [
+				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
+				{ key: "name", heading: "Name", sortable: true, classes: "left-aligned" },
+				{ key: "positions", heading: "Pos", sortable: true, classes: "left-aligned" },
+				{ key: "teams", heading: "Team", sortable: true, classes: "left-aligned" },
+				{ key: "gp", heading: "GP", sortable: true, classes: "" },
+				{ key: "toi", heading: "Mins", sortable: true, classes: "" },
+				{ key: "ig", heading: "G", sortable: true, classes: "cols-individual" },
+				{ key: "ia", heading: "A", sortable: true, classes: "cols-individual" },
+				{ key: "ip1", heading: "P1", sortable: true, classes: "cols-individual" },
+				{ key: "ip", heading: "P", sortable: true, classes: "cols-individual" },
+				{ key: "ic", heading: "C", sortable: true, classes: "cols-individual" },
+				{ key: "i_sh_pct", heading: "Own Sh%", sortable: true, classes: "cols-individual" },
+				{ key: "gf", heading: "GF", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "ga", heading: "GA", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "g_diff", heading: "G diff", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "sh_pct", heading: "Sh%", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "sv_pct", heading: "Sv%", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "cf", heading: "CF", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "ca", heading: "CA", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "cf_pct", heading: "CF%", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "cf_pct_rel", heading: "CF%, rel", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "cf_pct_adj", heading: "CF%, score-adj", sortable: true, classes: "cols-on-ice-corsi" }
+			]
 		}
 	},
 	filters: {

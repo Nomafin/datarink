@@ -260,10 +260,6 @@ table th.left-aligned,
 table td.left-aligned {
   text-align: left; }
 
-table th.uppercased,
-table td.uppercased {
-  text-transform: uppercase; }
-
 table th {
   color: #008050;
   border-top-left-radius: 4px;

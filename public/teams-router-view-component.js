@@ -13,7 +13,23 @@ var teamsViewComponent = {
 			sort: {
 				col: "pts",
 				order: -1
-			}
+			},
+			columns: [
+				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
+				{ key: "name", heading: "Name", sortable: true, classes: "left-aligned" },
+				{ key: "pts", heading: "Pts", sortable: true, classes: "" },
+				{ key: "gp", heading: "GP", sortable: true, classes: "" },
+				{ key: "toi", heading: "Mins", sortable: true, classes: "" },
+				{ key: "gf", heading: "GF", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "ga", heading: "GA", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "g_diff", heading: "G diff", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "sh_pct", heading: "Sh%", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "sv_pct", heading: "Sv%", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "cf", heading: "CF", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "ca", heading: "CA", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "cf_pct", heading: "CF%", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "cf_pct_adj", heading: "CF%, score-adj", sortable: true, classes: "cols-on-ice-corsi" }
+			]
 		}
 	},
 	filters: {

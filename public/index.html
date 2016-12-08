@@ -8,7 +8,9 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-	<!-- Template for teamsViewComponent -->
+	<!--
+	Template for teamsViewComponent
+	-->
 	<script type="text/x-template" id="teams-view-template">
 		<div>
 			<div class="table-header">
@@ -39,46 +41,15 @@
 				<table v-bind:class="{ 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
 					<thead>
 						<tr>
-							<th><!-- rank column --></th>
-							<th @click="sortBy('team');" @keyup.enter="sortBy('team');" class="left-aligned" tabindex=0
-								v-bind:class="[ sort.col === 'team' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Name</th>
-							<th @click="sortBy('pts');" @keyup.enter="sortBy('pts');" tabindex=0
-								v-bind:class="[ sort.col === 'pts' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Pts</th>
-							<th @click="sortBy('gp');" @keyup.enter="sortBy('gp');" tabindex=0
-								v-bind:class="[ sort.col === 'gp' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>GP</th>
-							<th @click="sortBy('toi');" @keyup.enter="sortBy('toi');" tabindex=0
-								v-bind:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Mins</th>
-							<th @click="sortBy('gf');" @keyup.enter="sortBy('gf');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'gf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>GF</th>
-							<th @click="sortBy('ga');" @keyup.enter="sortBy('ga');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'ga' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>GA</th>
-							<th @click="sortBy('g_diff');" @keyup.enter="sortBy('g_diff');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>G diff</th>
-							<th @click="sortBy('sh_pct');" @keyup.enter="sortBy('sh_pct');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'sh_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Sh%</th>
-							<th @click="sortBy('sv_pct');" @keyup.enter="sortBy('sv_pct');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'sv_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Sv%</th>
-							<th @click="sortBy('cf');" @keyup.enter="sortBy('cf');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CF</th>
-							<th @click="sortBy('ca');" @keyup.enter="sortBy('ca');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CA</th>
-							<th @click="sortBy('cf_pct');" @keyup.enter="sortBy('cf_pct');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cf_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CF%</th>
-							<th @click="sortBy('cf_pct_adj');" @keyup.enter="sortBy('cf_pct_adj');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CF%, score-adj</th>
+							<th v-for="c in columns"
+								@click="if (c.sortable) { sortBy(c.key); }"
+								@keyup.enter="if (c.sortable) { sortBy(c.key); }"
+								v-bind:tabindex="c.sortable === true ? 0 : null"
+								v-bind:class="[
+									sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
+									c.classes
+								]"
+							>{{ c.heading }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -103,7 +74,9 @@
 			</div>
 		</div>
 	</script>
-	<!-- Template for playersViewComponent -->
+	<!--
+	Template for playersViewComponent
+	-->
 	<script type="text/x-template" id="players-view-template">
 		<div>
 			<div class="table-header">
@@ -153,78 +126,23 @@
 				<table v-bind:class="{ 'cols-individual': visibleColumns.individual, 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
 					<thead>
 						<tr>
-							<th><!-- rank column --></th>
-							<th @click="sortBy('name');" @keyup.enter="sortBy('name');" class="left-aligned" tabindex=0
-								v-bind:class="[ sort.col === 'name' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Name</th>
-							<th @click="sortBy('positions');" @keyup.enter="sortBy('positions');" class="left-aligned" tabindex=0
-								v-bind:class="[ sort.col === 'positions' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Pos</th>
-							<th @click="sortBy('teams');" @keyup.enter="sortBy('teams');" class="left-aligned" tabindex=0
-								v-bind:class="[ sort.col === 'teams' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Team</th>
-							<th @click="sortBy('gp');" @keyup.enter="sortBy('gp');" tabindex=0
-								v-bind:class="[ sort.col === 'gp' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>GP</th>
-							<th @click="sortBy('toi');" @keyup.enter="sortBy('toi');" tabindex=0
-								v-bind:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Mins</th>
-							<th @click="sortBy('ig');" @keyup.enter="sortBy('ig');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'ig' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>G</th>
-							<th @click="sortBy('ia');" @keyup.enter="sortBy('ia');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'ia' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>A</th>
-							<th @click="sortBy('ip1');" @keyup.enter="sortBy('ip1');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'ip1' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>P1</th>
-							<th @click="sortBy('ip');" @keyup.enter="sortBy('ip');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'ip' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>P</th>
-							<th @click="sortBy('ic');" @keyup.enter="sortBy('ic');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'ic' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>C</th>
-							<th @click="sortBy('i_sh_pct');" @keyup.enter="sortBy('i_sh_pct');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'i_sh_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Own Sh%</th>
-							<th @click="sortBy('gf');" @keyup.enter="sortBy('gf');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'gf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>GF</th>
-							<th @click="sortBy('ga');" @keyup.enter="sortBy('ga');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'ga' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>GA</th>
-							<th @click="sortBy('g_diff');" @keyup.enter="sortBy('g_diff');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>G diff</th>
-							<th @click="sortBy('sh_pct');" @keyup.enter="sortBy('sh_pct');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'sh_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Sh%</th>
-							<th @click="sortBy('sv_pct');" @keyup.enter="sortBy('sv_pct');" class="cols-on-ice-goals" tabindex=0
-								v-bind:class="[ sort.col === 'sv_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>Sv%</th>
-							<th @click="sortBy('cf');" @keyup.enter="sortBy('cf');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CF</th>
-							<th @click="sortBy('ca');" @keyup.enter="sortBy('ca');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CA</th>
-							<th @click="sortBy('cf_pct');" @keyup.enter="sortBy('cf_pct');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cf_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CF%</th>
-							<th @click="sortBy('cf_pct_rel');" @keyup.enter="sortBy('cf_pct_rel');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cf_pct_rel' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CF%, rel</th>
-							<th @click="sortBy('cf_pct_adj');" @keyup.enter="sortBy('cf_pct_adj');" class="cols-on-ice-corsi" tabindex=0
-								v-bind:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>CF%, score-adj</th>
+							<th v-for="c in columns"
+								@click="if (c.sortable) { sortBy(c.key); }"
+								@keyup.enter="if (c.sortable) { sortBy(c.key); }"
+								v-bind:tabindex="c.sortable === true ? 0 : null"
+								v-bind:class="[
+									sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
+									c.classes
+								]"
+							>{{ c.heading }}</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr v-for="p in playersOnPage">
 							<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
 							<td class="left-aligned">{{ p.first + " " + p.last }}</td>			
-							<td class="left-aligned uppercased">{{ p.positions }}</td>
-							<td class="left-aligned uppercased">{{ p.teams }}</td>
+							<td class="left-aligned">{{ p.positions.toUpperCase() }}</td>
+							<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
 							<td>{{ p.gp }}</td>
 							<td>{{ Math.round(p.toi / 60) }}</td>
 							<td class="cols-individual">{{ p.ig }}</td>
@@ -266,7 +184,9 @@
 			</div>
 		</div>
 	</script>
-	<!-- Root element for application -->
+	<!--
+	Root element for application
+	-->
 	<div id="app">
 		<div class="header">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
