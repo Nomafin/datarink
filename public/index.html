@@ -23,22 +23,31 @@
 						<option value="pp">Power play</option>
 					</select
 					><button type="button" class="toggle-button"
-						v-on:click="visibleColumns.onIceGoals === false ? visibleColumns.onIceGoals = true : visibleColumns.onIceGoals = false"
+						v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
 						v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
 						<span class="checkbox-container">
 							<span class="checkbox-checkmark"></span>
 						</span>On-ice goals</button
 					><button type="button" class="toggle-button"
-						v-on:click="visibleColumns.onIceCorsi === false ? visibleColumns.onIceCorsi = true : visibleColumns.onIceCorsi = false"
+						v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
 						v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
 						<span class="checkbox-container">
 							<span class="checkbox-checkmark"></span>
-						</span>On-ice corsi</button>
+						</span>On-ice corsi</button
+					><button type="button" class="toggle-button"
+						v-on:click="isRatesEnabled = !isRatesEnabled; aggregateTeamData();"
+						v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
+						<span class="checkbox-container">
+							<span class="checkbox-checkmark"></span>
+						</span>Per 60 minutes</button>
 				</div>
 			</div>
 			<div class="loader" v-if="!teams"></div>
 			<div class="table-container" v-if="teams">
-				<table v-bind:class="{ 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
+				<table v-bind:class="{
+					'cols-on-ice-goals': visibleColumns.onIceGoals,
+					'cols-on-ice-corsi': visibleColumns.onIceCorsi }"
+				>
 					<thead>
 						<tr>
 							<th v-for="c in columns"
@@ -49,7 +58,7 @@
 									sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
 									c.classes
 								]"
-							>{{ c.heading }}</th>
+							>{{ c.heading }}<span v-if="isRatesEnabled && c.hasRate">/60</span></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -59,15 +68,15 @@
 							<td>{{ p.pts }}</td>
 							<td>{{ p.gp }}</td>
 							<td>{{ Math.round(p.toi / 60) }}</td>
-							<td class="cols-on-ice-goals">{{ p.gf }}</td>
-							<td class="cols-on-ice-goals">{{ p.ga }}</td>
-							<td class="cols-on-ice-goals">{{ p.g_diff | signed }}</td>
-							<td class="cols-on-ice-goals">{{ p.sh_pct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-goals">{{ p.sv_pct | percentage }}<span class="pct">%</span></td>					
-							<td class="cols-on-ice-corsi">{{ p.cf }}</td>
-							<td class="cols-on-ice-corsi">{{ p.ca }}</td>
-							<td class="cols-on-ice-corsi">{{ p.cf_pct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | percentage }}<span class="pct">%</span></td>			
+							<td class="cols-on-ice-goals">{{ p.gf | maxDecimalPlaces(1) }}</td>
+							<td class="cols-on-ice-goals">{{ p.ga | maxDecimalPlaces(1) }}</td>
+							<td class="cols-on-ice-goals">{{ p.g_diff | maxDecimalPlaces(1) | signed }}</td>
+							<td class="cols-on-ice-goals">{{ p.sh_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-goals">{{ p.sv_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>					
+							<td class="cols-on-ice-corsi">{{ p.cf | maxDecimalPlaces(1) }}</td>
+							<td class="cols-on-ice-corsi">{{ p.ca | maxDecimalPlaces(1) }}</td>
+							<td class="cols-on-ice-corsi">{{ p.cf_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | maxDecimalPlaces(1) }}<span class="pct">%</span></td>			
 						</tr>
 					</tbody>
 				</table>
@@ -89,23 +98,29 @@
 						<option value="pp">Power play</option>
 					</select
 					><button type="button" class="toggle-button"
-						v-on:click="visibleColumns.individual === false ? visibleColumns.individual = true : visibleColumns.individual = false"
+						v-on:click="visibleColumns.individual = !visibleColumns.individual"
 						v-bind:class="{ 'toggle-button-checked': visibleColumns.individual }">
 						<span class="checkbox-container">
 							<span class="checkbox-checkmark"></span>
 						</span>Own production</button
 					><button type="button" class="toggle-button"
-						v-on:click="visibleColumns.onIceGoals === false ? visibleColumns.onIceGoals = true : visibleColumns.onIceGoals = false"
+						v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
 						v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
 						<span class="checkbox-container">
 							<span class="checkbox-checkmark"></span>
 						</span>On-ice goals</button
 					><button type="button" class="toggle-button"
-						v-on:click="visibleColumns.onIceCorsi === false ? visibleColumns.onIceCorsi = true : visibleColumns.onIceCorsi = false"
+						v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
 						v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
 						<span class="checkbox-container">
 							<span class="checkbox-checkmark"></span>
 						</span>On-ice corsi</button
+					><button type="button" class="toggle-button"
+						v-on:click="isRatesEnabled = !isRatesEnabled; aggregatePlayerData();"
+						v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
+						<span class="checkbox-container">
+							<span class="checkbox-checkmark"></span>
+						</span>Per 60 minutes</button
 					><div class="search-with-menu">
 						<select v-model="search.col" v-on:change="search.query = '';">
 							<option value="name">Name:</option>
@@ -123,7 +138,11 @@
 			</div>
 			<div class="loader" v-if="!players"></div>
 			<div class="table-container" v-if="players">
-				<table v-bind:class="{ 'cols-individual': visibleColumns.individual, 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
+				<table v-bind:class="{
+					'cols-individual': visibleColumns.individual,
+					'cols-on-ice-goals': visibleColumns.onIceGoals,
+					'cols-on-ice-corsi': visibleColumns.onIceCorsi }"
+				>
 					<thead>
 						<tr>
 							<th v-for="c in columns"
@@ -134,7 +153,7 @@
 									sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
 									c.classes
 								]"
-							>{{ c.heading }}</th>
+							>{{ c.heading }}<span v-if="isRatesEnabled && c.hasRate">/60</span></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -145,22 +164,22 @@
 							<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
 							<td>{{ p.gp }}</td>
 							<td>{{ Math.round(p.toi / 60) }}</td>
-							<td class="cols-individual">{{ p.ig }}</td>
-							<td class="cols-individual">{{ p.ia }}</td>
-							<td class="cols-individual">{{ p.ip1 }}</td>
-							<td class="cols-individual">{{ p.ip }}</td>
-							<td class="cols-individual">{{ p.ic }}</td>
-							<td class="cols-individual">{{ p.i_sh_pct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-goals">{{ p.gf }}</td>
-							<td class="cols-on-ice-goals">{{ p.ga }}</td>
-							<td class="cols-on-ice-goals">{{ p.g_diff | signed }}</td>
-							<td class="cols-on-ice-goals">{{ p.sh_pct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-goals">{{ p.sv_pct | percentage }}<span class="pct">%</span></td>					
-							<td class="cols-on-ice-corsi">{{ p.cf }}</td>
-							<td class="cols-on-ice-corsi">{{ p.ca }}</td>
-							<td class="cols-on-ice-corsi">{{ p.cf_pct | percentage }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsi">{{ p.cf_pct_rel | percentage | signed }}<span class="pct">%</span></td>
-							<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | percentage }}<span class="pct">%</span></td>			
+							<td class="cols-individual">{{ p.ig | maxDecimalPlaces(1) }}</td>
+							<td class="cols-individual">{{ p.ia | maxDecimalPlaces(1) }}</td>
+							<td class="cols-individual">{{ p.ip1 | maxDecimalPlaces(1) }}</td>
+							<td class="cols-individual">{{ p.ip | maxDecimalPlaces(1) }}</td>
+							<td class="cols-individual">{{ p.ic | maxDecimalPlaces(1) }}</td>
+							<td class="cols-individual">{{ p.i_sh_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-goals">{{ p.gf | maxDecimalPlaces(1) }}</td>
+							<td class="cols-on-ice-goals">{{ p.ga | maxDecimalPlaces(1) }}</td>
+							<td class="cols-on-ice-goals">{{ p.g_diff | maxDecimalPlaces(1) | signed }}</td>
+							<td class="cols-on-ice-goals">{{ p.sh_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-goals">{{ p.sv_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>					
+							<td class="cols-on-ice-corsi">{{ p.cf | maxDecimalPlaces(1) }}</td>
+							<td class="cols-on-ice-corsi">{{ p.ca | maxDecimalPlaces(1) }}</td>
+							<td class="cols-on-ice-corsi">{{ p.cf_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cf_pct_rel | maxDecimalPlaces(1) | signed }}<span class="pct">%</span></td>
+							<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | maxDecimalPlaces(1) }}<span class="pct">%</span></td>			
 						</tr>
 					</tbody>
 				</table>

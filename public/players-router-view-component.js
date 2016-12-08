@@ -4,6 +4,7 @@ var playersViewComponent = {
 		// Once the api populates 'players' so that it's not null, the loading spinner will disappear
 		return {
 			players: null,
+			isRatesEnabled: false,
 			strengthSit: "all",
 			minimumToi: 0,
 			visibleColumns: {
@@ -25,25 +26,25 @@ var playersViewComponent = {
 				total: 0
 			},
 			columns: [
-				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
+				{ key: "rank", heading: "", classes: "left-aligned" },
 				{ key: "name", heading: "Name", sortable: true, classes: "left-aligned" },
 				{ key: "positions", heading: "Pos", sortable: true, classes: "left-aligned" },
 				{ key: "teams", heading: "Team", sortable: true, classes: "left-aligned" },
-				{ key: "gp", heading: "GP", sortable: true, classes: "" },
-				{ key: "toi", heading: "Mins", sortable: true, classes: "" },
-				{ key: "ig", heading: "G", sortable: true, classes: "cols-individual" },
-				{ key: "ia", heading: "A", sortable: true, classes: "cols-individual" },
-				{ key: "ip1", heading: "P1", sortable: true, classes: "cols-individual" },
-				{ key: "ip", heading: "P", sortable: true, classes: "cols-individual" },
-				{ key: "ic", heading: "C", sortable: true, classes: "cols-individual" },
+				{ key: "gp", heading: "GP", sortable: true },
+				{ key: "toi", heading: "Mins", sortable: true },
+				{ key: "ig", heading: "G", sortable: true, hasRate: true, classes: "cols-individual" },
+				{ key: "ia", heading: "A", sortable: true, hasRate: true, classes: "cols-individual" },
+				{ key: "ip1", heading: "P1", sortable: true, hasRate: true, classes: "cols-individual" },
+				{ key: "ip", heading: "P", sortable: true, hasRate: true, classes: "cols-individual" },
+				{ key: "ic", heading: "C", sortable: true, hasRate: true, classes: "cols-individual" },
 				{ key: "i_sh_pct", heading: "Own Sh%", sortable: true, classes: "cols-individual" },
-				{ key: "gf", heading: "GF", sortable: true, classes: "cols-on-ice-goals" },
-				{ key: "ga", heading: "GA", sortable: true, classes: "cols-on-ice-goals" },
-				{ key: "g_diff", heading: "G diff", sortable: true, classes: "cols-on-ice-goals" },
+				{ key: "gf", heading: "GF", sortable: true, hasRate: true, classes: "cols-on-ice-goals" },
+				{ key: "ga", heading: "GA", sortable: true, hasRate: true, classes: "cols-on-ice-goals" },
+				{ key: "g_diff", heading: "G diff", sortable: true, hasRate: true, classes: "cols-on-ice-goals" },
 				{ key: "sh_pct", heading: "Sh%", sortable: true, classes: "cols-on-ice-goals" },
 				{ key: "sv_pct", heading: "Sv%", sortable: true, classes: "cols-on-ice-goals" },
-				{ key: "cf", heading: "CF", sortable: true, classes: "cols-on-ice-corsi" },
-				{ key: "ca", heading: "CA", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "cf", heading: "CF", sortable: true, hasRate: true, classes: "cols-on-ice-corsi" },
+				{ key: "ca", heading: "CA", sortable: true, hasRate: true, classes: "cols-on-ice-corsi" },
 				{ key: "cf_pct", heading: "CF%", sortable: true, classes: "cols-on-ice-corsi" },
 				{ key: "cf_pct_rel", heading: "CF%, rel", sortable: true, classes: "cols-on-ice-corsi" },
 				{ key: "cf_pct_adj", heading: "CF%, score-adj", sortable: true, classes: "cols-on-ice-corsi" }
@@ -51,8 +52,9 @@ var playersViewComponent = {
 		}
 	},
 	filters: {
-		percentage: function(value) {
-			return isNaN(value) ? 0 : (Math.round(value * 1000) / 10).toFixed(1);
+		maxDecimalPlaces: function(value, places) {
+			var factor = Math.pow(10, places);
+			return Math.round(value * factor) / factor;
 		},
 		signed: function(value) {
 			return value > 0 ? "+" + value : value;
@@ -128,6 +130,17 @@ var playersViewComponent = {
 				});
 			});
 
+			// Convert to rates (per 60 minutes) if enabled
+			if (this.isRatesEnabled) {
+				this.players.forEach(function(p) {
+					stats.forEach(function(st) {
+						if (st !== "toi") {
+							p[st] = (p[st] / p["toi"]) * 60 * 60;
+						}
+					});
+				});
+			}
+
 			// Compute additional stats
 			var self = this;
 			this.players.forEach(function(p) {
@@ -135,12 +148,13 @@ var playersViewComponent = {
 				p["ia"] = p["ia1"] + p["ia2"];
 				p["ip1"] = p["ig"] + p["ia1"];
 				p["ip"] = p["ig"] + p["ia1"] + p["ia2"];
-				p["i_sh_pct"] = p["is"] === 0 ? 0 : p["ig"] / p["is"];
+				p["i_sh_pct"] = p["is"] === 0 ? 0 : 100 * p["ig"] / p["is"];
 				p["g_diff"] = p["gf"] - p["ga"];
-				p["sh_pct"] = p["sf"] === 0 ? 0 : p["gf"] / p["sf"];
-				p["cf_pct"] = p["cf"] + p["ca"] === 0 ? 0 : p["cf"] / (p["cf"] + p["ca"]);
-				p["cf_pct_rel"] = (p["cf"] + p["ca"] === 0 || p["cf_off"] + p["ca_off"] === 0) ? 0 : p["cf"] / (p["cf"] + p["ca"]) - p["cf_off"] / (p["cf_off"] + p["ca_off"]);
-				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
+				p["sh_pct"] = p["sf"] === 0 ? 0 : 100 * p["gf"] / p["sf"];
+				p["cf_pct"] = p["cf"] + p["ca"] === 0 ? 0 : 100 * p["cf"] / (p["cf"] + p["ca"]);
+				p["cf_pct_rel"] = (p["cf"] + p["ca"] === 0 || p["cf_off"] + p["ca_off"] === 0) ? 0
+					: 100 * (p["cf"] / (p["cf"] + p["ca"]) - p["cf_off"] / (p["cf_off"] + p["ca_off"]));
+				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : 100 * p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
 
 				// For the "all" strengthSit, exclude ga and sa while a player's own net is empty when calculating svPct
 				var noOwnG_ga = 0;
@@ -154,7 +168,7 @@ var playersViewComponent = {
 				}
 				var svPctGa = p["ga"] - noOwnG_ga;
 				var svPctSa = p["sa"] - noOwnG_sa;
-				p["sv_pct"] = svPctSa === 0 ? 0 : 1 - svPctGa / svPctSa;
+				p["sv_pct"] = svPctSa === 0 ? 0 : 100 * (1 - svPctGa / svPctSa);
 			});
 
 			// Refilter and resort players based on updated stats
