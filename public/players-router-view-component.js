@@ -108,6 +108,8 @@ var playersViewComponent = {
 			var self = this;
 			this.players.forEach(function(p) {
 
+				p["ia"] = p["ia1"] + p["ia2"];
+				p["ip1"] = p["ig"] + p["ia1"];
 				p["ip"] = p["ig"] + p["ia1"] + p["ia2"];
 				p["i_sh_pct"] = p["is"] === 0 ? 0 : p["ig"] / p["is"];
 				p["g_diff"] = p["gf"] - p["ga"];

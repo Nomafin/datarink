@@ -172,12 +172,12 @@
 							<th @click="sortBy('ig');" @keyup.enter="sortBy('ig');" class="cols-individual" tabindex=0
 								v-bind:class="[ sort.col === 'ig' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>G</th>
-							<th @click="sortBy('ia1');" @keyup.enter="sortBy('ia1');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'ia1' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>A1</th>
-							<th @click="sortBy('ia2');" @keyup.enter="sortBy('ia2');" class="cols-individual" tabindex=0
-								v-bind:class="[ sort.col === 'ia2' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-								>A2</th>
+							<th @click="sortBy('ia');" @keyup.enter="sortBy('ia');" class="cols-individual" tabindex=0
+								v-bind:class="[ sort.col === 'ia' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								>A</th>
+							<th @click="sortBy('ip1');" @keyup.enter="sortBy('ip1');" class="cols-individual" tabindex=0
+								v-bind:class="[ sort.col === 'ip1' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								>P1</th>
 							<th @click="sortBy('ip');" @keyup.enter="sortBy('ip');" class="cols-individual" tabindex=0
 								v-bind:class="[ sort.col === 'ip' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>P</th>
@@ -228,8 +228,8 @@
 							<td>{{ p.gp }}</td>
 							<td>{{ Math.round(p.toi / 60) }}</td>
 							<td class="cols-individual">{{ p.ig }}</td>
-							<td class="cols-individual">{{ p.ia1 }}</td>
-							<td class="cols-individual">{{ p.ia2 }}</td>
+							<td class="cols-individual">{{ p.ia }}</td>
+							<td class="cols-individual">{{ p.ip1 }}</td>
 							<td class="cols-individual">{{ p.ip }}</td>
 							<td class="cols-individual">{{ p.ic }}</td>
 							<td class="cols-individual">{{ p.i_sh_pct | percentage }}<span class="pct">%</span></td>
