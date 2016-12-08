@@ -71,7 +71,9 @@ var playersViewComponent = {
 				// Parse json, then append additional properties that don't change based on the strength situation
 				self.players = JSON.parse(xhr.responseText)["players"];
 				self.players.forEach(function(p) {
-					p["name"] = p["first"] + " " + p["last"].toLowerCase();
+					p["first"] = p["first"].replace(/\./g, "");
+					p["last"] = p["last"].replace(/\./g, "");
+					p["name"] = (p["first"] + " " + p["last"]).toLowerCase();
 					p["positions"] = p["positions"].toString().toLowerCase();
 					p["teamNames"] = p["teams"].map(function(t) {
 						return constants.teamNames[t];
@@ -147,6 +149,7 @@ var playersViewComponent = {
 			this.players = _.orderBy(this.players, this.sort.col, order);
 			this.pagination.current = 0;
 			this.flagPlayersOnPage();
+			this.rankPlayers();
 		},
 		filterPlayers: 
 			_.debounce(
@@ -182,9 +185,38 @@ var playersViewComponent = {
 					});
 					// Reset current page to 0
 					this.pagination.current = 0;
+					this.rankPlayers();
 					this.flagPlayersOnPage();
 				}, 350
 			),
+		rankPlayers: function() {
+			// Don't show ranks if sorting by columns like name, position, team
+			var col = this.sort.col;
+			if (["name", "positions", "teams"].indexOf(col) >= 0) {
+				this.players.map(function(p) {
+					p["rank"] = ["", false];
+					return p;
+				});
+			} else {
+				// Only rank players that aren't filtered out
+				var rankedPlayers = this.players.filter(function(p) { return !p.isFilteredOut; });
+				// Get array of sorted values - we'll use this to get a player's rank
+				var values = rankedPlayers.map(function(p) { return p[col]; });
+				// Group players by their stat value - we'll use this to check for tied ranks
+				var valueCounts = _.groupBy(rankedPlayers, col);
+				// Update player ranks
+				this.players.forEach(function(p) {
+					p["rank"] = ["", false];
+					if (!p.isFilteredOut) {
+						// Use idx0 to store rank, idx1 to indicate if tied
+						p["rank"][0] = values.indexOf(+p[col]) + 1;
+						if (valueCounts[p[col]].length > 1) {
+							p["rank"][1] = true;
+						}
+					}
+				});
+			}
+		},
 		flagPlayersOnPage: function() {
 			// Using a function to flag on-page players and a computed property to filter the on-page players results in better performance
 			// This way, we only start flagging players after the filterPlayers debounce

@@ -266,7 +266,6 @@ table td.uppercased {
 
 table th {
   color: #008050;
-  cursor: pointer;
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
   vertical-align: top;
@@ -279,19 +278,36 @@ table th.sort-asc:after {
 table th.sort-desc:after {
   content: " ↓"; }
 
-table th:hover {
+/* Use tabindex="0" to identify sortable columns */
+table th[tabindex="0"] {
+  cursor: pointer; }
+
+table th[tabindex="0"]:hover {
   background: #cfd8dc; }
 
-table th:active {
+table th[tabindex="0"]:active {
   background: #b0bec5; }
 
-table th:focus {
+table th[tabindex="0"]:focus {
   border-color: #008050;
   outline: 0; }
 
 table th span.pct,
 table td span.pct {
   font-size: 12px; }
+
+table th span.rank,
+table td span.rank {
+  position: relative;
+  font-size: 12px; }
+
+table th span.rank.tied:before,
+table td span.rank.tied:before {
+  content: "T";
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  font-size: 8px; }
 
 /* Control column visibility */
 table:not(.cols-individual) .cols-individual,

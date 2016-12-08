@@ -39,6 +39,7 @@
 				<table v-bind:class="{ 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
 					<thead>
 						<tr>
+							<th><!-- rank column --></th>
 							<th @click="sortBy('team');" @keyup.enter="sortBy('team');" class="left-aligned" tabindex=0
 								v-bind:class="[ sort.col === 'team' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Name</th>
@@ -82,6 +83,7 @@
 					</thead>
 					<tbody>
 						<tr v-for="p in sortedTeams">
+							<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
 							<td class="left-aligned">{{ p.team.toUpperCase() }}</td>
 							<td>{{ p.pts }}</td>
 							<td>{{ p.gp }}</td>
@@ -151,6 +153,7 @@
 				<table v-bind:class="{ 'cols-individual': visibleColumns.individual, 'cols-on-ice-goals': visibleColumns.onIceGoals, 'cols-on-ice-corsi': visibleColumns.onIceCorsi }">
 					<thead>
 						<tr>
+							<th><!-- rank column --></th>
 							<th @click="sortBy('name');" @keyup.enter="sortBy('name');" class="left-aligned" tabindex=0
 								v-bind:class="[ sort.col === 'name' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 								>Name</th>
@@ -218,6 +221,7 @@
 					</thead>
 					<tbody>
 						<tr v-for="p in playersOnPage">
+							<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
 							<td class="left-aligned">{{ p.first + " " + p.last }}</td>			
 							<td class="left-aligned uppercased">{{ p.positions }}</td>
 							<td class="left-aligned uppercased">{{ p.teams }}</td>

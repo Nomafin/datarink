@@ -40,7 +40,30 @@ var teamsViewComponent = {
 	computed: {
 		sortedTeams: function() {
 			var order = this.sort.order < 0 ? "desc" : "asc";
-			return _.orderBy(this.teamsWithAggregatedData, this.sort.col, order);
+			var col = this.sort.col;
+			var teams = _.orderBy(this.teamsWithAggregatedData, col, order);
+			// Add rankings
+			if (col === "name") {
+				teams.map(function(p) {
+					p["rank"] = ["", false];
+					return p;
+				});
+			} else {
+				// Get array of sorted values - we'll use this to get a team's rank
+				var values = teams.map(function(p) { return p[col]; });
+				// Group teams by their stat value - we'll use this to check for tied ranks
+				var valueCounts = _.groupBy(teams, col);
+				// Update team ranks
+				teams.forEach(function(p) {
+					// Use idx0 to store rank, idx1 to indicate if tied
+					p["rank"] = ["", false];
+					p["rank"][0] = values.indexOf(+p[col]) + 1;
+					if (valueCounts[p[col]].length > 1) {
+						p["rank"][1] = true;
+					}
+				});
+			}
+			return teams;
 		}
 	},
 	methods: {
