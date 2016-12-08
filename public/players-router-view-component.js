@@ -204,14 +204,16 @@ var playersViewComponent = {
 				var values = rankedPlayers.map(function(p) { return p[col]; });
 				// Group players by their stat value - we'll use this to check for tied ranks
 				var valueCounts = _.groupBy(rankedPlayers, col);
-				// Update player ranks
+				// Update player ranks - don't display ranks if there's only 1 player in the table
 				this.players.forEach(function(p) {
 					p["rank"] = ["", false];
-					if (!p.isFilteredOut) {
-						// Use idx0 to store rank, idx1 to indicate if tied
-						p["rank"][0] = values.indexOf(+p[col]) + 1;
-						if (valueCounts[p[col]].length > 1) {
-							p["rank"][1] = true;
+					if (rankedPlayers.length > 1) {
+						if (!p.isFilteredOut) {
+							// Use idx0 to store rank, idx1 to indicate if tied
+							p["rank"][0] = values.indexOf(+p[col]) + 1;
+							if (valueCounts[p[col]].length > 1) {
+								p["rank"][1] = true;
+							}
 						}
 					}
 				});
