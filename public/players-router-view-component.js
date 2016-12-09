@@ -6,7 +6,6 @@ var playersViewComponent = {
 			players: null,
 			isRatesEnabled: false,
 			strengthSit: "all",
-			minimumToi: 0,
 			visibleColumns: {
 				individual: true,
 				onIceGoals: false,
@@ -19,6 +18,10 @@ var playersViewComponent = {
 			search: {
 				col: "name",
 				query: ""
+			},
+			filter: {
+				col: "toi",
+				query: 0
 			},
 			pagination: {
 				rowsPerPage: 20,
@@ -76,8 +79,9 @@ var playersViewComponent = {
 			handler: "filterPlayers",
 			deep: true
 		},
-		minimumToi: function() {
-			this.filterPlayers();
+		filter: {
+			handler: "filterPlayers",
+			deep: true
 		}
 	},
 	computed: {
@@ -209,10 +213,12 @@ var playersViewComponent = {
 							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0; });
 						}
 					}
-					// Find players satisying minimum toi
-					if (this.minimumToi) {
-						var min = this.minimumToi;
-						matchedPlayers = matchedPlayers.filter(function(p) { return Math.round(p["toi"] / 60) >= min; });
+					// Find players satisying minimum toi or gp
+					if (this.filter.query) {
+						var min = this.filter.query;
+						var col = this.filter.col;
+						var factor = col === "toi" ? 60 : 1;
+						matchedPlayers = matchedPlayers.filter(function(p) { return Math.round(p[col] / factor) >= min; });
 					}
 					// Update filter players' flag
 					this.players.map(function(p) { 

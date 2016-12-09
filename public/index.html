@@ -131,8 +131,11 @@
 						<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
 					</div
 					><div class="search-with-menu">
-						<label for="minimum-toi">Minimum minutes:</label
-						><input id="minimum-toi" v-model.number="minimumToi" v-on:keyup.enter="blurInput($event);" type="number" style="width: 62px;">
+						<select v-model="filter.col" v-on:change="filter.query = 0;">
+							<option value="toi">Minimum minutes:</option>
+							<option value="gp">Minimum games:</option>
+						</select
+						><input v-model.number="filter.query" v-on:keyup.enter="blurInput($event);" type="number" style="width: 62px;">
 					</div>
 				</div>
 			</div>
