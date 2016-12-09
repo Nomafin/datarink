@@ -85,11 +85,14 @@ function getGameIds() {
 
 //
 // Loop through each gameId one at a time aysnchronously 
-// Wait 2 seconds between games to avoid overloading api and database
 //
+
+var unfinishedGameIds = [];	// Log games that were not scraped because they weren't final
+var noInputGameIds = [];	// Log games that we were unable to get input jsons for
 
 function startScrape() {
 	async.eachSeries(gameIds, function(gId, callback) {
+		// Wait a bit between games to avoid overloading api and database
 		setTimeout(function() {
 			getData(gId);
 			callback(); // Callback to start next iteration
@@ -101,7 +104,12 @@ function startScrape() {
 		}
 		// Wait a bit for the last iteration to finish before closing connection
 		setTimeout(function() {
-			console.log("Finished scraping yesterday's games (" + reqDateStr + "): " + gameIds.toString());
+			// Remove duplicates from noInputGameIds before logging results
+			noInputGameIds = _.uniq(noInputGameIds);
+			console.log("Finished scraping yesterday's games (" + reqDateStr + "): " + gameIds.toString()
+				+ "\n-- Games not final: " + unfinishedGameIds.toString()
+				+ "\n-- Unable to get data for games: " + noInputGameIds.toString());
+			// Close connection
 			client.end();
 		}, 9000);
 	});
@@ -127,6 +135,7 @@ function getData(gId, callback) {
 			processData(gId, pbpJson, shiftJson);
 		} else {
 			console.log("Game " + gId + ": Unable to get pbp json: " + error);
+			noInputGameIds.push(gId);
 		}
 	});
 
@@ -137,6 +146,7 @@ function getData(gId, callback) {
 			processData(gId, pbpJson, shiftJson);
 		} else {
 			console.log("Game " + gId + ": Unable to get shift json: " + error);
+			noInputGameIds.push(gId);
 		}
 	});
 }
@@ -157,6 +167,7 @@ function processData(gId, pbpJson, shiftJson) {
 	// Only process game results that are final
 	if (pbpJson.gameData.status.abstractGameState.toLowerCase() !== "final") {
 		console.log("Game " + gId + ": Results are not final");
+		unfinishedGameIds.push(gId);
 		return;
 	}
 
