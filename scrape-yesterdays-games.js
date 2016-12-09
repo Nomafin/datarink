@@ -79,7 +79,7 @@ function getGameIds() {
 		var gId = +g["gamePk"].toString().substring(5);
 		gameIds.push(gId);
 	});
-	console.log("Games to scrape: " + gameIds);
+	console.log("Games to scrape: " + gameIds.toString());
 	startScrape();
 }
 
@@ -99,7 +99,7 @@ function startScrape() {
 		if (err) {
 			return next(err);
 		}
-		console.log("Done iterating through games");
+		console.log("Finished scraping yesterday's games (" + reqDateStr + "): " + gameIds.toString());
 		// Wait a bit for the last iteration to finish before closing connection
 		setTimeout(function() {
 			client.end();
