@@ -1,7 +1,5 @@
 # datarink
 
-
-
 ## Installation
 
 Clone the `datarink` repository:
@@ -50,11 +48,9 @@ pg_ctl -D /usr/local/var/postgres stop -s -m fast
 
 If you're using Postgres a bunch it's likely worth setting your computer to have it run when your computer starts up. You can find out how to set that up with [LaunchAgents](https://chartio.com/resources/tutorials/how-to-start-postgresql-server-on-mac-os-x/).
 
-
 ### Postgres.app
 
 An alternative way to install Postgres is through  [Postgres.app](http://postgresapp.com/). Follow the instructions on the download page to install it.
-
 
 ## pgAdmin
 
@@ -62,14 +58,11 @@ Now that Postgres is installed and running you'll need to download the pgAdmin c
 
 Once installed you can create a database called `datarink`. You'll also need to specify a username and password for the data that you'll use later when setting up the app's environment variables.
 
-
 ## Populating the database
 
 Once you have a database called `datarink`, you'll need to setup its structure. The queries for the structure can be found in `table-creation-queries.md`.
 
-
 Once you've run the above queries in pgAdmin's Query Tool you'll need to populate the database with data. Do this using the [node-game-scraper](https://github.com/kevkan/node-game-scraper) repo. `node-game-scraper` scrapes data from a few sources and inserts it into the correct columns and tables in the Postgres database. Make sure your local `node-game-scraper` is pointed to the `datarink` database that was just created before scraping.
-
 
 ## Environment variables
 
@@ -85,7 +78,6 @@ If you want an extra level of security you can fill out the `AUTHENTICATION` var
 
 _Note: if you're connecting to a local Postgres database you may need to change the `ssl` key in the `pgConfig` object defined in `server.js` to `false`._
 
-
 ## Running the server
 
 Now that you have a database connected to the datarink app you can start it by running:
@@ -94,12 +86,18 @@ Now that you have a database connected to the datarink app you can start it by r
 heroku local web
 ```
 
-## CSS
+## Building the front-end
 
-For style changes you'll need a SASS to CSS compiler. An easy one to get running is the `sass` npm module. You can install it globally with:
+To build datarink's front-end:
 
-```bash
-npm install -g sass
+```
+npm run build
 ```
 
-Now you can run `sass --watch style.scss:style.css` in the `/public` directory to have it compile as you make changes to `style.scss`.
+Browserify will bundle the /vue-src/*.vue templates into /public/build.css and /public/build.js, where they are used by index.html. When the application is deployed to Heroku, the postinstall script in package.json will automatically run and build the front-end.
+
+For local development with hot-reloading:
+
+```
+npm run dev
+```

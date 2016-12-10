@@ -1,3 +1,41 @@
+<template>
+	<div id="app">
+		<div class="header">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+				<path class="logo-r" d="M16,8V32h8V16h8V8Z"/>
+				<path class="logo-d" d="M16,24v8H0V8H16V0h8v8H16v8H8v8Z"/>
+			</svg
+			><router-link to="/teams">Teams</router-link
+			><router-link to="/skaters">Skaters</router-link
+			><span class="test-tag">Test run</span>
+		</div>
+		<router-view></router-view>
+		<div class="footer">
+			<span>Contact</span>
+			<a href="mailto:datarink@gmail.com">datarink@gmail.com</a>
+			<a href="http://www.twitter.com/datarink">@datarink</a>
+		</div>
+	</div>
+</template>
+
+<script>
+if (window.location.hostname.toLowerCase() !== "localhost") {
+	(function(i,s,o,g,r,a,m){i["GoogleAnalyticsObject"]=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,"script","https://www.google-analytics.com/analytics.js","ga");
+	ga("create", "UA-88347694-1", "auto");
+}
+</script>
+
+<style lang="scss">
+
+/* 
+*
+* Use App.vue's style element to define global styles
+*
+*/
+
 $font-stack: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
 $base-font-size: 14px;
 $base-line-height: 20px;
@@ -475,8 +513,8 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 }
 
 @-moz-keyframes rotation {
-  from { -moz-transform: rotate(0deg); }
-  to { -moz-transform: rotate(360deg); }
+	from { -moz-transform: rotate(0deg); }
+	to { -moz-transform: rotate(360deg); }
 }
 
 @-o-keyframes rotation {
@@ -485,6 +523,7 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 }
 
 @keyframes rotation {
-  from { transform: rotate(0deg);
-  } to { transform: rotate(360deg); }
+	from { transform: rotate(0deg);
+	} to { transform: rotate(360deg); }
 }
+</style>

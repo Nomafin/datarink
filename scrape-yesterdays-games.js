@@ -107,8 +107,8 @@ function startScrape() {
 			// Remove duplicates from noInputGameIds before logging results
 			noInputGameIds = _.uniq(noInputGameIds);
 			console.log("Finished scraping yesterday's games (" + reqDateStr + "): " + gameIds.toString()
-				+ "\n-- Games not final: " + unfinishedGameIds.toString()
-				+ "\n-- Unable to get data for games: " + noInputGameIds.toString());
+				+ " -- State not final: " + unfinishedGameIds.toString()
+				+ " -- Data unavailable: " + noInputGameIds.toString());
 			// Close connection
 			client.end();
 		}, 9000);
