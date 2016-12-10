@@ -61,8 +61,8 @@
 				<thead>
 					<tr>
 						<th v-for="c in columns"
-							@click="c.sortable ? sortBy(c.key) : null"
-							@keyup.enter="c.sortable ? sortBy(c.key) : null"
+							@click="sortBy(c.sortable, c.key)"
+							@keyup.enter="sortBy(c.sortable, c.key)"
 							v-bind:tabindex="c.sortable ? 0 : null"
 							v-bind:class="[
 								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
@@ -152,7 +152,7 @@ module.exports = {
 				total: 0
 			},
 			columns: [
-				{ key: "rank", heading: "", classes: "left-aligned" },
+				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
 				{ key: "name", heading: "Name", sortable: true, classes: "left-aligned" },
 				{ key: "positions", heading: "Pos", sortable: true, classes: "left-aligned" },
 				{ key: "teams", heading: "Team", sortable: true, classes: "left-aligned" },
@@ -302,14 +302,16 @@ module.exports = {
 			this.filterPlayers();
 			this.sortPlayers();
 		},
-		sortBy: function(newSortCol) {
-			if (newSortCol === this.sort.col) {
-				this.sort.order *= -1;
-			} else {
-				this.sort.col = newSortCol;
-				this.sort.order = -1;
+		sortBy: function(isSortable, newSortCol) {
+			if (isSortable) {
+				if (newSortCol === this.sort.col) {
+					this.sort.order *= -1;
+				} else {
+					this.sort.col = newSortCol;
+					this.sort.order = -1;
+				}
+				this.sortPlayers();
 			}
-			this.sortPlayers();
 		},
 		sortPlayers: function() {
 			var order = this.sort.order < 0 ? "desc" : "asc";

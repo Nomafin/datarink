@@ -9,6 +9,7 @@ var Skaters = require("./components/Skaters.vue");
 
 const router = new VueRouter({
 	routes: [
+		{ path: "/", redirect: "/teams" },
 		{ path: "/teams", component: Teams },
 		{ path: "/skaters", component: Skaters }
 	]

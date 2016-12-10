@@ -38,8 +38,8 @@
 				<thead>
 					<tr>
 						<th v-for="c in columns"
-							@click="c.sortable ? sortBy(c.key) : null"
-							@keyup.enter="c.sortable ? sortBy(c.key) : null"
+							@click="sortBy(c.sortable, c.key)"
+							@keyup.enter="sortBy(c.sortable, c.key)"
 							v-bind:tabindex="c.sortable ? 0 : null"
 							v-bind:class="[
 								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
@@ -90,7 +90,7 @@ module.exports = {
 				order: -1
 			},
 			columns: [
-				{ key: "rank", heading: "", classes: "left-aligned" },
+				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
 				{ key: "team", heading: "Name", sortable: true, classes: "left-aligned" },
 				{ key: "pts", heading: "Pts", sortable: true },
 				{ key: "gp", heading: "GP", sortable: true },
@@ -169,12 +169,14 @@ module.exports = {
 			}
 			xhr.send();
 		},
-		sortBy: function(newSortCol) {
-			if (newSortCol === this.sort.col) {
-				this.sort.order *= -1;
-			} else {
-				this.sort.col = newSortCol;
-				this.sort.order = -1;
+		sortBy: function(isSortable, newSortCol) {
+			if (isSortable) {
+				if (newSortCol === this.sort.col) {
+					this.sort.order *= -1;
+				} else {
+					this.sort.col = newSortCol;
+					this.sort.order = -1;
+				}
 			}
 		},
 		aggregateTeamData: function() {
