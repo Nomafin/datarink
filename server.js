@@ -37,6 +37,7 @@ function start() {
 	// Create an Express server
 	var express = require("express");
 	var server = express();
+	server.use(compression());
 
 	// Add user authentication if AUTHENTICATION isn't set to 'off'
 	if (process.env.AUTHENTICATION.toLowerCase() !== "off") {
@@ -51,8 +52,7 @@ function start() {
 
 	// Serve static files, including the Vue application in public/index.html
 	server.use(express.static("public"));
-	server.use(compression());
-
+	
 	//
 	// Handle GET request for players api
 	//
