@@ -1,4 +1,4 @@
-var constants = {
+module.exports = {
 	"teamNames": {
 		"car": "Carolina Hurricanes",
 		"cbj": "Columbus Blue Jackets",

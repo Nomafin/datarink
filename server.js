@@ -51,9 +51,6 @@ function start() {
 
 	// Serve static files, including the Vue application in public/index.html
 	server.use(express.static("public"));
-	server.use(express.static("node_modules/vue/dist"));
-	server.use(express.static("node_modules/vue-router/dist"));
-	server.use(express.static("node_modules/lodash"));
 	server.use(compression());
 
 	//

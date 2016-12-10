@@ -1,5 +1,79 @@
-var teamsViewComponent = {
-	template: "#teams-view-template",
+<template>
+	<div>
+		<div class="table-header">
+			<h1>Teams: 2016-2017</h1>
+			<div class="table-controls" v-if="teams">
+				<select v-model="strengthSit">
+					<option value="all">All situations</option>
+					<option value="ev5">5 on 5</option>
+					<option value="sh">Short handed</option>
+					<option value="pp">Power play</option>
+				</select
+				><button type="button" class="toggle-button"
+					v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
+					v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
+					<span class="checkbox-container">
+						<span class="checkbox-checkmark"></span>
+					</span>On-ice goals</button
+				><button type="button" class="toggle-button"
+					v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
+					v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
+					<span class="checkbox-container">
+						<span class="checkbox-checkmark"></span>
+					</span>On-ice corsi</button
+				><button type="button" class="toggle-button"
+					v-on:click="isRatesEnabled = !isRatesEnabled; aggregateTeamData();"
+					v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
+					<span class="checkbox-container">
+						<span class="checkbox-checkmark"></span>
+					</span>Per 60 minutes</button>
+			</div>
+		</div>
+		<div class="loader" v-if="!teams"></div>
+		<div class="table-container" v-if="teams">
+			<table v-bind:class="{
+				'cols-on-ice-goals': visibleColumns.onIceGoals,
+				'cols-on-ice-corsi': visibleColumns.onIceCorsi }"
+			>
+				<thead>
+					<tr>
+						<th v-for="c in columns"
+							@click="c.sortable ? sortBy(c.key) : null"
+							@keyup.enter="c.sortable ? sortBy(c.key) : null"
+							v-bind:tabindex="c.sortable ? 0 : null"
+							v-bind:class="[
+								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
+								c.classes
+							]"
+						>{{ c.heading }}<span v-if="isRatesEnabled && c.hasRate">/60</span></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="p in sortedTeams">
+						<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
+						<td class="left-aligned">{{ p.team.toUpperCase() }}</td>
+						<td>{{ p.pts }}</td>
+						<td>{{ p.gp }}</td>
+						<td>{{ Math.round(p.toi / 60) }}</td>
+						<td class="cols-on-ice-goals">{{ p.gf | maxDecimalPlaces(1) }}</td>
+						<td class="cols-on-ice-goals">{{ p.ga | maxDecimalPlaces(1) }}</td>
+						<td class="cols-on-ice-goals">{{ p.g_diff | maxDecimalPlaces(1) | signed }}</td>
+						<td class="cols-on-ice-goals">{{ p.sh_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-goals">{{ p.sv_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>					
+						<td class="cols-on-ice-corsi">{{ p.cf | maxDecimalPlaces(1) }}</td>
+						<td class="cols-on-ice-corsi">{{ p.ca | maxDecimalPlaces(1) }}</td>
+						<td class="cols-on-ice-corsi">{{ p.cf_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | maxDecimalPlaces(1) }}<span class="pct">%</span></td>			
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</template>
+
+<script>
+var _ = require("lodash");
+module.exports = {
 	data: function() {
 		// Once the api populates 'teams' so that it's not null, the loading spinner will disappear
 		return {
@@ -17,7 +91,7 @@ var teamsViewComponent = {
 			},
 			columns: [
 				{ key: "rank", heading: "", classes: "left-aligned" },
-				{ key: "name", heading: "Name", sortable: true, classes: "left-aligned" },
+				{ key: "team", heading: "Name", sortable: true, classes: "left-aligned" },
 				{ key: "pts", heading: "Pts", sortable: true },
 				{ key: "gp", heading: "GP", sortable: true },
 				{ key: "toi", heading: "Mins", sortable: true },
@@ -61,7 +135,7 @@ var teamsViewComponent = {
 			var col = this.sort.col;
 			var teams = _.orderBy(this.teamsWithAggregatedData, col, order);
 			// Add rankings
-			if (col === "name") {
+			if (col === "team") {
 				teams.map(function(p) {
 					p["rank"] = ["", false];
 					return p;
@@ -158,3 +232,4 @@ var teamsViewComponent = {
 		}
 	}
 }
+</script>

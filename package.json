@@ -1,21 +1,20 @@
 {
   "name": "datarink",
-  "version": "1.0.0",
   "description": "datarink web application",
+  "author": "datarink",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kevkan/datarink.git"
   },
-  "author": "datarink",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/kevkan/datarink/issues"
+  "scripts": {
+    "start": "node server.js",
+    "watchify": "watchify -vd -p browserify-hmr -e ./vue-src/app.js -o ./public/build.js",
+    "serve": "http-server ./public -o -s -c 1 -a localhost -p 5000",
+    "dev": "npm-run-all --parallel watchify serve",
+    "build": "browserify ./vue-src/app.js | uglifyjs -c > ./public/build.js"
   },
-  "homepage": "https://github.com/kevkan/datarink#readme",
   "dependencies": {
     "async": "^2.1.4",
     "compression": "^1.6.2",
@@ -27,5 +26,22 @@
     "throng": "^4.0.0",
     "vue": "^2.0.8",
     "vue-router": "^2.0.3"
+  },
+  "devDependencies": {
+    "browserify": "^13.1.1",
+    "browserify-hmr": "^0.3.5",
+    "http-server": "^0.9.0",
+    "npm-run-all": "^3.1.2",
+    "uglify-js": "^2.7.5",
+    "vueify": "^9.4.0",
+    "watchify": "^3.7.0"
+  },
+  "browser": {
+    "vue": "vue/dist/vue.common"
+  },
+  "browserify": {
+    "transform": [
+      "vueify"
+    ]
   }
 }

@@ -4,4 +4,4 @@ node_modules
 /*.env
 npm-debug.log
 .DS_Store
-users.htpasswd
+public/build.js
