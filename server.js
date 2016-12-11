@@ -118,7 +118,7 @@ function start() {
 				}
 
 				// Get all teams and positions the player has been on
-				var teams = _.uniqBy(statRows[pId], "teams").map(function(d) { return d.team; });
+				var teams = _.uniqBy(statRows[pId], "team").map(function(d) { return d.team; });
 				var positions = _.uniqBy(statRows[pId], "position").map(function(d) { return d.position; });
 
 				result["players"].push({
@@ -130,20 +130,20 @@ function start() {
 					gp: statRows[pId][0]["gp"],
 					data: statRows[pId]
 				});
-
-				// Set redundant properties in 'data' to be undefined - this removes them from the response
-				// Setting the properties to undefined is ~10sec faster than deleting the properties completely
-				result["players"].forEach(function(p) {
-					p.data.forEach(function(r) {
-						r.team = undefined;
-						r.player_id = undefined;
-						r.first = undefined;
-						r.last = undefined;
-						r.position = undefined;
-						r.gp = undefined;
-					});
-				});
 			}
+
+			// Set redundant properties in each player's data rows to be undefined - this removes them from the response
+			// Setting the properties to undefined is ~10sec faster than deleting the properties completely
+			result["players"].forEach(function(p) {
+				p.data.forEach(function(r) {
+					r.team = undefined;
+					r.player_id = undefined;
+					r.first = undefined;
+					r.last = undefined;
+					r.position = undefined;
+					r.gp = undefined;
+				});
+			});
 
 			return response.status(200).send(result);
 		}
@@ -164,13 +164,13 @@ function start() {
 		var queryStr = "SELECT sh.*"
 			+ " FROM game_rosters AS p"
 			+ " LEFT JOIN ("
-				+ " SELECT s.season, s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"position\""
+				+ " SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"position\""
 				+ " FROM game_shifts AS s"
 				+ " LEFT JOIN game_rosters as r"
 				+ " ON s.season = r.season AND s.game_id = r.game_id AND s.player_id = r.player_id"
 				+ " WHERE r.\"position\" != 'g' AND r.\"position\" != 'na' AND s.season = $1"
 			+ " ) AS sh"
-			+ " ON p.season = sh.season AND p.game_id = sh.game_id AND p.team = sh.team"
+			+ " ON p.game_id = sh.game_id AND p.team = sh.team"
 			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
 
 		var shiftRows;
@@ -181,7 +181,54 @@ function start() {
 		});
 
 		function processResults() {
-			return response.status(200).send(shiftRows);
+
+			// Group rows by playerId:
+			//	{ 123: [rows for player 123], 234: [rows for player 234] }
+			shiftRows = _.groupBy(shiftRows, "player_id");
+
+			// Structure results as an array of objects:
+			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
+			var result = { players: [] };
+			for (var pId in shiftRows) {
+				if (!shiftRows.hasOwnProperty(pId)) {
+					continue;
+				}
+
+				// Get all teams and positions the player has been on
+				var teams = _.uniqBy(shiftRows[pId], "team").map(function(d) { return d.team; });
+				var positions = _.uniqBy(shiftRows[pId], "position").map(function(d) { return d.position; });
+
+				result["players"].push({
+					player_id: +pId,
+					teams: teams,
+					positions: positions,
+					first: shiftRows[pId][0]["first"],
+					last: shiftRows[pId][0]["last"],
+					shiftsByPeriod: shiftRows[pId]
+				});
+			}
+
+			// Remove redundant properties from the rows in 'data'
+			// Transform shifts into an array of [start, end] pairs
+			// In the database, shifts are stored as a string: start-end;start-end;start-end,...
+			result["players"].forEach(function(p) {
+				p.shiftsByPeriod.forEach(function(r) {
+					r.player_id = undefined;
+					r.team = undefined;
+					r.position = undefined;
+					r.first = undefined;
+					r.last = undefined;
+					// Split the string into an array of 'start-end' strings
+					r.shifts = r.shifts.split(";");
+					// Convert each 'start-end' string into a [start, end] pair
+					r.shifts = r.shifts.map(function(s) {
+						var times = s.split("-");
+						return [+times[0], +times[1]];
+					});
+				});
+			});
+
+			return response.status(200).send(result);
 		}
 
 	});
@@ -288,14 +335,15 @@ function start() {
 					gp: statRows[tricode][0]["gp"],
 					data: statRows[tricode]
 				});
-				// Set redundant properties in 'data' to be undefined - this removes them from the response
-				result["teams"].forEach(function(t) {
-					t.data.forEach(function(r) {
-						r.team = undefined;
-						r.gp = undefined;
-					});
-				});
 			}
+
+			// Set redundant properties in each team's data rows to be undefined - this removes them from the response
+			result["teams"].forEach(function(t) {
+				t.data.forEach(function(r) {
+					r.team = undefined;
+					r.gp = undefined;
+				});
+			});
 
 			return response.status(200).send(result);
 		}
