@@ -74,7 +74,7 @@
 				<tbody>
 					<tr v-for="p in playersOnPage">
 						<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
-						<td class="left-aligned">{{ p.first + " " + p.last }}</td>			
+						<td class="left-aligned"><router-link v-bind:to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>			
 						<td class="left-aligned">{{ p.positions.toUpperCase() }}</td>
 						<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
 						<td>{{ p.gp }}</td>
