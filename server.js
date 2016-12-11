@@ -128,20 +128,20 @@ function start() {
 					gp: groupedRows[pId][0]["gp"],
 					data: groupedRows[pId]
 				});
-
-				// Set redundant properties in 'data' to be undefined - this removes them from the response
-				// Setting the properties to undefined is ~10sec faster than deleting the properties completely
-				result["players"].forEach(function(p) {
-					p.data.forEach(function(r) {
-						r.team = undefined;
-						r.player_id = undefined;
-						r.first = undefined;
-						r.last = undefined;
-						r.position = undefined;
-						r.gp = undefined;
-					});
-				});
 			}
+
+			// Set redundant properties in 'data' to be undefined - this removes them from the response
+			// Setting the properties to undefined is ~10sec faster than deleting the properties completely
+			result["players"].forEach(function(p) {
+				p.data.forEach(function(r) {
+					r.team = undefined;
+					r.player_id = undefined;
+					r.first = undefined;
+					r.last = undefined;
+					r.position = undefined;
+					r.gp = undefined;
+				});
+			});
 
 			return response.status(200).send(result);
 		}
@@ -249,15 +249,16 @@ function start() {
 					gp: groupedRows[tricode][0]["gp"],
 					data: groupedRows[tricode]
 				});
-				// Set redundant properties in 'data' to be undefined - this removes them from the response
-				result["teams"].forEach(function(t) {
-					t.data.forEach(function(r) {
-						r.team = undefined;
-						r.gp = undefined;
-					});
-				});
 			}
 
+			// Set redundant properties in 'data' to be undefined - this removes them from the response
+			result["teams"].forEach(function(t) {
+				t.data.forEach(function(r) {
+					r.team = undefined;
+					r.gp = undefined;
+				});
+			});
+			
 			return response.status(200).send(result);
 		}
 	});
