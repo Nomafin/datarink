@@ -173,62 +173,64 @@ function start() {
 			+ " ON p.game_id = sh.game_id AND p.team = sh.team"
 			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
 
-		var shiftRows;
+		var shiftsByPrd;
 		query(queryStr, [season, pId], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
-			shiftRows = rows;
+			shiftsByPrd = rows;
 			processResults();
 		});
 
 		function processResults() {
 
-			// Group rows by playerId:
-			//	{ 123: [rows for player 123], 234: [rows for player 234] }
-			shiftRows = _.groupBy(shiftRows, "player_id");
-
-			// Structure results as an array of objects:
-			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
-			var result = { players: [] };
-			for (var pId in shiftRows) {
-				if (!shiftRows.hasOwnProperty(pId)) {
-					continue;
-				}
-
-				// Get all teams and positions the player has been on
-				var teams = _.uniqBy(shiftRows[pId], "team").map(function(d) { return d.team; });
-				var positions = _.uniqBy(shiftRows[pId], "position").map(function(d) { return d.position; });
-
-				result["players"].push({
-					player_id: +pId,
-					teams: teams,
-					positions: positions,
-					first: shiftRows[pId][0]["first"],
-					last: shiftRows[pId][0]["last"],
-					shiftsByPeriod: shiftRows[pId]
-				});
-			}
-
-			// Remove redundant properties from the rows in 'data'
-			// Transform shifts into an array of [start, end] pairs
-			// In the database, shifts are stored as a string: start-end;start-end;start-end,...
-			result["players"].forEach(function(p) {
-				p.shiftsByPeriod.forEach(function(r) {
-					r.player_id = undefined;
-					r.team = undefined;
-					r.position = undefined;
-					r.first = undefined;
-					r.last = undefined;
-					// Split the string into an array of 'start-end' strings
-					r.shifts = r.shifts.split(";");
-					// Convert each 'start-end' string into a [start, end] pair
-					r.shifts = r.shifts.map(function(s) {
-						var times = s.split("-");
-						return [+times[0], +times[1]];
+			// The 'shift' property in each row of shiftsByPrd is formatted as a string: "start-end;start-end;..."
+			// First split the string into an array of intervals: ["start-end", "start-end", ...]
+			// Then convert each interval into an array of seconds played: [[start, start+1, start+2,..., end], [start, start+1, start+2,..., end]]
+			// Then flatten the nested arrays: [1,2,3,4,10,11,12,13,...]
+			shiftsByPrd.forEach(function(s) {
+				s.shifts = s.shifts
+					.split(";")					
+					.map(function(interval) {
+						var times = interval.split("-");
+						return _.range(+times[0], +times[1]);
 					});
+				s.shifts = [].concat.apply([], s.shifts);
+			});
+
+			// Loop through each of the players' period rows and calculate toi with linemates
+			var linemateResults = {};
+			var pRows = shiftsByPrd.filter(function(d) { return d.player_id === pId; });
+			pRows.forEach(function(pr) {
+				// Select all teammates' period rows that have the same game and period
+				var tmRows = shiftsByPrd.filter(function(tr) { 
+					return tr.player_id !== pId && tr.game_id === pr.game_id && tr.period === pr.period;
+				});
+				// Loop through each teammate row and add their data to the results
+				tmRows.forEach(function(tr) {
+					// Create a result object for the teammate if needed
+					if (!linemateResults.hasOwnProperty(tr.player_id)) {
+						linemateResults[tr.player_id] = {
+							first: tr.first,
+							last: tr.last,
+							positions: [],
+							teams: [],
+							toi: 0
+						}
+					}
+					// Record positions, teams, and increment shared toi
+					var tmObj = linemateResults[tr.player_id];
+					if (tmObj.positions.indexOf(tr.position) < 0) {
+						tmObj.positions.push(tr.position);
+					}
+					if (tmObj.teams.indexOf(tr.team) < 0) {
+						tmObj.teams.push(tr.team);
+					}
+					tmObj.toi += _.intersection(pr.shifts, tr.shifts).length;
 				});
 			});
 
-			return response.status(200).send(result);
+
+
+			return response.status(200).send(linemateResults);
 		}
 
 	});
