@@ -59,7 +59,9 @@ function start() {
 
 	server.get("/api/players/", function(request, response) {
 
-		// Create query string
+		var season = 2016;
+
+		// Create query string: result1 is used to get players' stats; result2 is used to get the number of games played by a player
 		var queryString = "SELECT result1.*, result2.gp"
 			+ " FROM "
 			+ " ( "
@@ -70,21 +72,21 @@ function start() {
 				+ " FROM game_stats AS s"
 				+ " 	LEFT JOIN game_rosters AS r"
 				+ " 	ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
-				+ " WHERE s.player_id > 2 AND r.position <> 'na' AND r.position <> 'g'"
+				+ " WHERE s.player_id > 2 AND r.position <> 'na' AND r.position <> 'g' AND s.season = $1"
 				+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit"
 			+ " ) AS result1"
 			+ " LEFT JOIN"
 			+ " ( "
 				+ " SELECT player_id, COUNT(DISTINCT game_id) AS gp"
 				+ " FROM game_rosters"
-				+ " WHERE position != 'na'"
+				+ " WHERE position != 'na' AND season = $1"
 				+ " GROUP BY player_id"
 			+ " ) AS result2"
 			+ " ON result1.player_id = result2.player_id";
 
 		// Run query
 		var statRows;
-		query(queryString, [], function(err, rows) {
+		query(queryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			statRows = rows;
 			processResults();
@@ -152,8 +154,9 @@ function start() {
 	//
 
 	server.get("/api/players/:id", function(request, response) {
-		
+
 		var pId = +request.params.id;
+		var season = 2016;
 		
 		// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
 		// 'sh' contains all player shifts, including player names
@@ -171,7 +174,7 @@ function start() {
 			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
 
 		var shiftRows;
-		query(queryStr, [2016, pId], function(err, rows) {
+		query(queryStr, [season, pId], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			shiftRows = rows;
 			processResults();
@@ -189,6 +192,8 @@ function start() {
 
 	server.get("/api/teams/", function(request, response) {
 
+		var season = 2016;
+
 		// Create query string for stats by game
 		var statQueryString = "SELECT result1.*, result2.gp"
 			+ " FROM "
@@ -196,29 +201,32 @@ function start() {
 				+ " SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
 				+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
 				+ " FROM game_stats"
-				+ " WHERE player_id < 2 "
+				+ " WHERE player_id < 2 AND season = $1"
 				+ " GROUP BY team, score_sit, strength_sit"
 			+ " ) AS result1"
 			+ " LEFT JOIN"
 			+ " ( "
 				+ " SELECT team, COUNT(DISTINCT game_id) AS gp"
 				+ " FROM game_rosters" 
+				+ " WHERE season = $1"
 				+ " GROUP BY team"
 			+ " ) AS result2"
 			+ " ON result1.team = result2.team";
 
 		// Create query string for wins and losses - exclude playoff games
-		var resultQueryString = "SELECT * FROM game_results WHERE game_id < 30000";
+		var resultQueryString = "SELECT *"
+			+ " FROM game_results"
+			+ " WHERE game_id < 30000 AND season = $1";
 
 		// Run queries
 		var statRows;
 		var resultRows;
-		query(statQueryString, [], function(err, rows) {
+		query(statQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			statRows = rows;
 			processResults();
 		});
-		query(resultQueryString, [], function(err, rows) {
+		query(resultQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			resultRows = rows;
 			processResults();
