@@ -107,28 +107,28 @@ function start() {
 
 			// Group rows by playerId:
 			//	{ 123: [rows for player 123], 234: [rows for player 234] }
-			var groupedRows = _.groupBy(statRows, "player_id");
+			statRows = _.groupBy(statRows, "player_id");
 
 			// Structure results as an array of objects:
 			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
 			var result = { players: [] };
-			for (var pId in groupedRows) {
-				if (!groupedRows.hasOwnProperty(pId)) {
+			for (var pId in statRows) {
+				if (!statRows.hasOwnProperty(pId)) {
 					continue;
 				}
 
 				// Get all teams and positions the player has been on
-				var teams = _.uniqBy(groupedRows[pId], "teams").map(function(d) { return d.team; });
-				var positions = _.uniqBy(groupedRows[pId], "position").map(function(d) { return d.position; });
+				var teams = _.uniqBy(statRows[pId], "teams").map(function(d) { return d.team; });
+				var positions = _.uniqBy(statRows[pId], "position").map(function(d) { return d.position; });
 
 				result["players"].push({
 					player_id: +pId,
 					teams: teams,
 					positions: positions,
-					first: groupedRows[pId][0]["first"],
-					last: groupedRows[pId][0]["last"],
-					gp: groupedRows[pId][0]["gp"],
-					data: groupedRows[pId]
+					first: statRows[pId][0]["first"],
+					last: statRows[pId][0]["last"],
+					gp: statRows[pId][0]["gp"],
+					data: statRows[pId]
 				});
 
 				// Set redundant properties in 'data' to be undefined - this removes them from the response
@@ -181,7 +181,7 @@ function start() {
 		});
 
 		function processResults() {
-			console.log(shiftRows);
+			return response.status(200).send(shiftRows);
 		}
 
 	});
@@ -252,46 +252,41 @@ function start() {
 
 			// Group rows by team:
 			// { "edm": [rows for edm], "tor": [rows for tor] }
-			var groupedRows = _.groupBy(statRows, "team");
+			statRows = _.groupBy(statRows, "team");
 
 			//
 			// Calculate the number of points won
 			//
 
 			// Initialize points counter
-			for (var tricode in groupedRows) {
-				if (groupedRows.hasOwnProperty(tricode)) {
-					groupedRows[tricode]["pts"] = 0;
+			for (var tricode in statRows) {
+				if (statRows.hasOwnProperty(tricode)) {
+					statRows[tricode]["pts"] = 0;
 				}
 			}
 
 			// Loop through game_result rows and increment points
 			resultRows.forEach(function(r) {
-				if (r["a_final"] > r["h_final"]) {
-					groupedRows[r["a_team"]].pts += 2;
-					if (r["periods"] > 3) {
-						groupedRows[r["h_team"]].pts += 1;
-					}
-				} else if (r["h_final"] > r["a_final"]) {
-					groupedRows[r["h_team"]].pts += 2;
-					if (r["periods"] > 3) {
-						groupedRows[r["a_team"]].pts += 1;
-					}
+				var winner = r["a_final"] > r["h_final"] ? "a_team" : "h_team";
+				statRows[r[winner]].pts += 2;
+				if (r["periods"] > 3) {
+					var loser = r["a_final"] < r["h_final"] ? "a_team" : "h_team";
+					statRows[r[loser]].pts += 1;
 				}
 			});
 
 			// Structure results as an array of objects:
 			// [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
 			var result = { teams: [] };
-			for (var tricode in groupedRows) {
-				if (!groupedRows.hasOwnProperty(tricode)) {
+			for (var tricode in statRows) {
+				if (!statRows.hasOwnProperty(tricode)) {
 					continue;
 				}
 				result["teams"].push({
 					team: tricode,
-					pts: groupedRows[tricode]["pts"],
-					gp: groupedRows[tricode][0]["gp"],
-					data: groupedRows[tricode]
+					pts: statRows[tricode]["pts"],
+					gp: statRows[tricode][0]["gp"],
+					data: statRows[tricode]
 				});
 				// Set redundant properties in 'data' to be undefined - this removes them from the response
 				result["teams"].forEach(function(t) {
