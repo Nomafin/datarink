@@ -94,7 +94,7 @@ To build datarink's front-end:
 npm run build
 ```
 
-Browserify will bundle the /vue-src/*.vue templates into /public/build.css and /public/build.js, where they are used by index.html. When the application is deployed to Heroku, the postinstall script in package.json will automatically run and build the front-end.
+Browserify will bundle the `/vue-src/*.vue` templates into `/public/build.css` and `/public/build.js`, where they are used by `index.html`. When the application is deployed to Heroku, the postinstall script in `package.json` will automatically run and build the front-end.
 
 For local development with hot-reloading:
 
