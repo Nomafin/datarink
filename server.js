@@ -148,6 +148,42 @@ function start() {
 	});
 
 	//
+	// Handle GET request for a particular player id
+	//
+
+	server.get("/api/players/:id", function(request, response) {
+		
+		var pId = +request.params.id;
+		
+		// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
+		// 'sh' contains all player shifts, including player names
+		// Join 'p' with 'sh' to get all shifts belonging to the specified player and his teammates
+		var queryStr = "SELECT sh.*"
+			+ " FROM game_rosters AS p"
+			+ " LEFT JOIN ("
+				+ " SELECT s.season, s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"position\""
+				+ " FROM game_shifts AS s"
+				+ " LEFT JOIN game_rosters as r"
+				+ " ON s.season = r.season AND s.game_id = r.game_id AND s.player_id = r.player_id"
+				+ " WHERE r.\"position\" != 'g' AND r.\"position\" != 'na' AND s.season = $1"
+			+ " ) AS sh"
+			+ " ON p.season = sh.season AND p.game_id = sh.game_id AND p.team = sh.team"
+			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
+
+		var shiftRows;
+		query(queryStr, [2016, pId], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			shiftRows = rows;
+			processResults();
+		});
+
+		function processResults() {
+			console.log(shiftRows);
+		}
+
+	});
+
+	//
 	// Handle GET request for teams api
 	//
 
