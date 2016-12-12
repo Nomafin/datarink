@@ -41,6 +41,18 @@ PRIMARY KEY(season, game_id, player_id, period)
 ```
 
 ```
+CREATE TABLE game_strength_situations (
+	season SMALLINT NOT NULL,
+	game_id INTEGER NOT NULL,
+	team VARCHAR(3) NOT NULL,
+	period SMALLINT NOT NULL,
+	strength_sit VARCHAR(16),
+	timeranges VARCHAR(512),
+PRIMARY KEY(season, game_id, team, period, strength_sit)
+);
+```
+
+```
 CREATE TABLE game_stats (
 	season SMALLINT NOT NULL,
 	game_id INTEGER NOT NULL,
