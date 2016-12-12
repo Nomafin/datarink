@@ -410,20 +410,20 @@ function start() {
 				}
 				result["teams"].push({
 					team: tricode,
-					pts: statRows[tricode]["pts"],
-					gp: statRows[tricode][0]["gp"],
-					data: statRows[tricode]
+					pts: groupedRows[tricode]["pts"],
+					gp: groupedRows[tricode][0]["gp"],
+					data: groupedRows[tricode]
 				});
 			}
 
-			// Set redundant properties in each team's data rows to be undefined - this removes them from the response
+			// Set redundant properties in 'data' to be undefined - this removes them from the response
 			result["teams"].forEach(function(t) {
 				t.data.forEach(function(r) {
 					r.team = undefined;
 					r.gp = undefined;
 				});
 			});
-
+			
 			return response.status(200).send(result);
 		}
 	});
