@@ -61,7 +61,9 @@ function start() {
 
 		var season = 2016;
 
-		// Create query string: result1 is used to get players' stats; result2 is used to get the number of games played by a player
+		// Query for player stats
+		// result1 is used to get players' stats
+		// result2 is used to get the number of games played by a player
 		var queryString = "SELECT result1.*, result2.gp"
 			+ " FROM "
 			+ " ( "
@@ -83,8 +85,6 @@ function start() {
 				+ " GROUP BY player_id"
 			+ " ) AS result2"
 			+ " ON result1.player_id = result2.player_id";
-
-		// Run query
 		var statRows;
 		query(queryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
@@ -158,10 +158,11 @@ function start() {
 		var pId = +request.params.id;
 		var season = 2016;
 		
+		// Query for shifts belonging to the player and his teammates
 		// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
 		// 'sh' contains all player shifts, including player names
 		// Join 'p' with 'sh' to get all shifts belonging to the specified player and his teammates
-		var queryStr = "SELECT sh.*"
+		var shiftQueryStr = "SELECT sh.*"
 			+ " FROM game_rosters AS p"
 			+ " LEFT JOIN ("
 				+ " SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"position\""
@@ -172,15 +173,35 @@ function start() {
 			+ " ) AS sh"
 			+ " ON p.game_id = sh.game_id AND p.team = sh.team"
 			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
-
 		var shiftsByPrd;
-		query(queryStr, [season, pId], function(err, rows) {
+		query(shiftQueryStr, [season, pId], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			shiftsByPrd = rows;
 			processResults();
 		});
 
+		// Query for events the player was on-ice for
+		var eventQueryStr = "SELECT *"
+			+ " FROM game_events"
+			+ " WHERE season = $1"
+			+ " AND (type = 'goal' OR type = 'shot' OR type = 'missed_shot' OR type = 'blocked_shot')"
+			+ " AND ("
+				+ " a_s1 = $2 OR a_s2 = $2 OR a_s3 = $2 OR a_s4 = $2 OR a_s5 = $2 OR a_s6 = $2 OR a_g = $2 OR"
+				+ " h_s1 = $2 OR h_s2 = $2 OR h_s3 = $2 OR h_s4 = $2 OR h_s5 = $2 OR h_s6 = $2 OR h_g = $2"
+			+ ")"
+		var eventRows;
+		query(eventQueryStr, [season, pId], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			eventRows = rows;
+			processResults();
+		});
+
 		function processResults() {
+
+			// Only start processing once all queries are finished
+			if (!shiftsByPrd || !eventRows) {
+				return;
+			}
 
 			// The 'shift' property in each row of shiftsByPrd is formatted as a string: "start-end;start-end;..."
 			// First split the string into an array of intervals: ["start-end", "start-end", ...]
@@ -213,7 +234,11 @@ function start() {
 							last: tr.last,
 							positions: [],
 							teams: [],
-							toi: 0
+							toi: 0,
+							all: { cf: 0, ca: 0, gf: 0, ga: 0 },
+							ev5: { cf: 0, ca: 0, gf: 0, ga: 0 },
+							pp:  { cf: 0, ca: 0, gf: 0, ga: 0 },
+							sh:  { cf: 0, ca: 0, gf: 0, ga: 0 }
 						}
 					}
 					// Record positions, teams, and increment shared toi
@@ -228,6 +253,60 @@ function start() {
 				});
 			});
 
+			//
+			// Append event stats to linemateResults
+			//
+
+			eventRows.forEach(function(ev) {
+
+				// Combine the database columns into an array and remove null values
+				ev["a_sIds"] = [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
+				ev["h_sIds"] = [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; });
+
+				// Get the player's venue
+				var isHome = true;
+				if (ev["a_sIds"].indexOf(pId) >= 0) {
+					isHome = false;
+				}
+				
+				// Record whether the shot was for or against the player
+				var suffix = "f";
+				if ((isHome && ev.venue === "away") || (!isHome && ev.venue === "home"))  {
+					suffix = "a";
+				}
+
+				// Get strength situation for the player
+				var strSit;
+				if (ev["a_g"] && ev["h_g"]) {
+					if (ev["a_skaters"] === 5 && ev["h_skaters"] === 5) {
+						strSit = "ev5";
+					} else if (ev["a_skaters"] > ev["h_skaters"] && ev["h_skaters"] >= 3) {
+						strSit = isHome ? "sh" : "pp";
+					} else if (ev["h_skaters"] > ev["a_skaters"] && ev["a_skaters"] >= 3) {
+						strSit = isHome ? "pp" : "sh";
+					}
+				}
+
+				// Loop through linemates and increment stats - ignore the player themselves
+				var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
+				skaters.forEach(function(sId) {
+					if (sId !== pId) {
+						// Increment stat for "all" situation
+						linemateResults[sId]["all"]["c" + suffix]++;
+						if (ev["type"] === "goal") {
+							linemateResults[sId]["all"]["g" + suffix]++;
+						}
+						// Increment stat if the situation is ev5, sh, or pp
+						if (strSit) {
+							linemateResults[sId][strSit]["c" + suffix]++;
+							if (ev["type"] === "goal") {
+								linemateResults[sId][strSit]["g" + suffix]++;
+							}							
+						}
+					}
+				});
+
+			});
 
 
 			return response.status(200).send(linemateResults);
@@ -243,7 +322,7 @@ function start() {
 
 		var season = 2016;
 
-		// Create query string for stats by game
+		// Query for stats by game
 		var statQueryString = "SELECT result1.*, result2.gp"
 			+ " FROM "
 			+ " ( "
@@ -261,20 +340,18 @@ function start() {
 				+ " GROUP BY team"
 			+ " ) AS result2"
 			+ " ON result1.team = result2.team";
-
-		// Create query string for wins and losses - exclude playoff games
-		var resultQueryString = "SELECT *"
-			+ " FROM game_results"
-			+ " WHERE game_id < 30000 AND season = $1";
-
-		// Run queries
 		var statRows;
-		var resultRows;
 		query(statQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			statRows = rows;
 			processResults();
 		});
+
+		// Query for game results to calculate points - exclude playoff games
+		var resultQueryString = "SELECT *"
+			+ " FROM game_results"
+			+ " WHERE game_id < 30000 AND season = $1";
+		var resultRows;
 		query(resultQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			resultRows = rows;
