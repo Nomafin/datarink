@@ -180,6 +180,19 @@ function start() {
 			processResults();
 		});
 
+		// Query for the strength situations the player's team was in
+		var strSitQueryStr = "SELECT s.*"
+			+ " FROM game_rosters AS p"
+			+ " LEFT JOIN game_strength_situations AS s"
+			+ " ON p.season = s.season AND p.game_id = s.game_id AND p.team = s.team" 
+			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
+		var strSitsByPrd;
+		query(strSitQueryStr, [season, pId], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			strSitsByPrd = rows;
+			processResults();
+		});			
+
 		// Query for events the player was on-ice for
 		var eventQueryStr = "SELECT *"
 			+ " FROM game_events"
@@ -199,7 +212,7 @@ function start() {
 		function processResults() {
 
 			// Only start processing once all queries are finished
-			if (!shiftsByPrd || !eventRows) {
+			if (!shiftsByPrd || !strSitsByPrd || !eventRows) {
 				return;
 			}
 
@@ -215,6 +228,17 @@ function start() {
 						return _.range(+times[0], +times[1]);
 					});
 				s.shifts = [].concat.apply([], s.shifts);
+			});
+
+			// Format strSitsByPrd in the same way as shiftsByPrd
+			strSitsByPrd.forEach(function(s) {
+				s.timeranges = s.timeranges
+					.split(";")					
+					.map(function(interval) {
+						var times = interval.split("-");
+						return _.range(+times[0], +times[1]);
+					});
+				s.timeranges = [].concat.apply([], s.timeranges);
 			});
 
 			// Loop through each of the players' period rows and calculate toi with linemates
@@ -234,14 +258,13 @@ function start() {
 							last: tr.last,
 							positions: [],
 							teams: [],
-							toi: 0,
-							all: { cf: 0, ca: 0, gf: 0, ga: 0 },
-							ev5: { cf: 0, ca: 0, gf: 0, ga: 0 },
-							pp:  { cf: 0, ca: 0, gf: 0, ga: 0 },
-							sh:  { cf: 0, ca: 0, gf: 0, ga: 0 }
+							all: { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
+							ev5: { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
+							pp:  { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
+							sh:  { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 }
 						}
 					}
-					// Record positions, teams, and increment shared toi
+					// Record positions and teams
 					var tmObj = linemateResults[tr.player_id];
 					if (tmObj.positions.indexOf(tr.position) < 0) {
 						tmObj.positions.push(tr.position);
@@ -249,7 +272,15 @@ function start() {
 					if (tmObj.teams.indexOf(tr.team) < 0) {
 						tmObj.teams.push(tr.team);
 					}
-					tmObj.toi += _.intersection(pr.shifts, tr.shifts).length;
+					// Select all strSitRow period rows that have the same game and period
+					var strSitRows = strSitsByPrd.filter(function(sr) { 
+						return sr.game_id === pr.game_id && sr.period === pr.period;
+					});
+					// Increment shared toi for each strength situation
+					tmObj["all"]["toi"] += _.intersection(pr.shifts, tr.shifts).length;
+					strSitRows.forEach(function(sr) {
+						tmObj[sr.strength_sit]["toi"] += _.intersection(pr.shifts, tr.shifts, sr.timeranges).length;
+					});
 				});
 			});
 
