@@ -68,13 +68,13 @@ function start() {
 			+ " FROM "
 			+ " ( "
 				+ " SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
-				+ "		SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
-				+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-				+ "		SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
+					+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
+					+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
+					+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
 				+ " FROM game_stats AS s"
-				+ " 	LEFT JOIN game_rosters AS r"
-				+ " 	ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
-				+ " WHERE s.player_id > 2 AND r.position <> 'na' AND r.position <> 'g' AND s.season = $1"
+					+ " LEFT JOIN game_rosters AS r"
+					+ " ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
+				+ " WHERE s.player_id > 2 AND r.position != 'na' AND r.position != 'g' AND s.season = $1"
 				+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit"
 			+ " ) AS result1"
 			+ " LEFT JOIN"
@@ -157,7 +157,12 @@ function start() {
 
 		var pId = +request.params.id;
 		var season = 2016;
+		var result = {};
 		
+		//
+		// Get linemate results
+		//
+
 		// Query for shifts belonging to the player and his teammates
 		// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
 		// 'sh' contains all player shifts, including player names
@@ -177,7 +182,7 @@ function start() {
 		query(shiftQueryStr, [season, pId], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			shiftsByPrd = rows;
-			processResults();
+			processLinemateResults();
 		});
 
 		// Query for the strength situations the player's team was in
@@ -190,7 +195,7 @@ function start() {
 		query(strSitQueryStr, [season, pId], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			strSitsByPrd = rows;
-			processResults();
+			processLinemateResults();
 		});			
 
 		// Query for events the player was on-ice for
@@ -206,10 +211,10 @@ function start() {
 		query(eventQueryStr, [season, pId], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			eventRows = rows;
-			processResults();
+			processLinemateResults();
 		});
 
-		function processResults() {
+		function processLinemateResults() {
 
 			// Only start processing once all queries are finished
 			if (!shiftsByPrd || !strSitsByPrd || !eventRows) {
@@ -339,8 +344,99 @@ function start() {
 
 			});
 
+			result["linemates"] = linemateResults;
+			returnResult();
+		}
 
-			return response.status(200).send(linemateResults);
+		//
+		// Get stats for all players
+		//
+
+		// Query for player stats
+		var skatersQueryString = " SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
+				+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
+				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
+				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off" 
+			+ " FROM game_stats AS s"
+				+ " LEFT JOIN game_rosters AS r"
+				+ " ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
+			+ " WHERE s.player_id > 2 AND r.position != 'na' AND r.position != 'g' AND s.season = $1"
+			+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit";
+		var skaterRows;
+		query(skatersQueryString, [season], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			skaterRows = rows;
+			processSkaterResults();
+		});
+
+		// Process query results
+		function processSkaterResults() {
+
+			// Postgres aggregate functions like SUM return strings, so cast them as ints
+			// Calculate score-adjusted corsi
+			skaterRows.forEach(function(r) {
+				["gp", "toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
+					r[col] = +r[col];
+				});
+				r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
+				r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
+			});
+
+			// Group rows by playerId:
+			//	{ 123: [rows for player 123], 234: [rows for player 234] }
+			skaterRows = _.groupBy(skaterRows, "player_id");
+
+			// Structure results as an array of objects:
+			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
+			var skaterResults = [];
+			for (var pId in skaterRows) {
+				if (!skaterRows.hasOwnProperty(pId)) {
+					continue;
+				}
+
+				// Get all teams and positions the player has been on
+				var teams = _.uniqBy(skaterRows[pId], "team").map(function(d) { return d.team; });
+				var positions = _.uniqBy(skaterRows[pId], "position").map(function(d) { return d.position; });
+
+				skaterResults.push({
+					player_id: +pId,
+					teams: teams,
+					positions: positions,
+					first: skaterRows[pId][0]["first"],
+					last: skaterRows[pId][0]["last"],
+					data: skaterRows[pId]
+				});
+			}
+
+			// Set redundant properties in each player's data rows to be undefined - this removes them from the response
+			// Setting the properties to undefined is ~10sec faster than deleting the properties completely
+			skaterResults.forEach(function(p) {
+				p.data.forEach(function(r) {
+					r.team = undefined;
+					r.player_id = undefined;
+					r.first = undefined;
+					r.last = undefined;
+					r.position = undefined;
+				});
+			});
+
+			result["skaters"] = skaterResults;
+			returnResult();
+		}
+
+		//
+		// Get stats for the individual player, game-by-game
+		//
+
+
+		//
+		// Only return response when all results are ready
+		//
+
+		function returnResult() {	
+			if (result["linemates"] && result["skaters"]) {
+				return response.status(200).send(result);
+			}
 		}
 
 	});
