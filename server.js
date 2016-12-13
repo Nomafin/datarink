@@ -353,7 +353,7 @@ function start() {
 		//
 
 		// Query for player stats
-		var skatersQueryString = " SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
+		var skatersQueryString = "SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
 				+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
 				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
 				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off" 
@@ -389,23 +389,34 @@ function start() {
 			// Structure results as an array of objects:
 			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
 			var skaterResults = [];
-			for (var pId in skaterRows) {
-				if (!skaterRows.hasOwnProperty(pId)) {
+			for (var sId in skaterRows) {
+				if (!skaterRows.hasOwnProperty(sId)) {
 					continue;
 				}
 
 				// Get all teams and positions the player has been on
-				var teams = _.uniqBy(skaterRows[pId], "team").map(function(d) { return d.team; });
-				var positions = _.uniqBy(skaterRows[pId], "position").map(function(d) { return d.position; });
+				var teams = _.uniqBy(skaterRows[sId], "team").map(function(d) { return d.team; });
+				var positions = _.uniqBy(skaterRows[sId], "position").map(function(d) { return d.position; });
 
 				skaterResults.push({
-					player_id: +pId,
+					player_id: +sId,
 					teams: teams,
 					positions: positions,
-					first: skaterRows[pId][0]["first"],
-					last: skaterRows[pId][0]["last"],
-					data: skaterRows[pId]
+					first: skaterRows[sId][0]["first"],
+					last: skaterRows[sId][0]["last"],
+					data: skaterRows[sId]
 				});
+
+				// Store the specified player's information for easier access
+				if (+sId === pId) {
+					result["player"] = {
+						player_id: pId,
+						teams: teams,
+						positions: positions,
+						first: skaterRows[sId][0]["first"],
+						last: skaterRows[sId][0]["last"]		
+					};
+				}
 			}
 
 			// Set redundant properties in each player's data rows to be undefined - this removes them from the response
@@ -428,13 +439,32 @@ function start() {
 		// Get stats for the individual player, game-by-game
 		//
 
+		// Query for player history
+		var historyQueryString = "SELECT s.*, r.datetime"
+			+ " FROM game_stats AS s"
+			+ " LEFT JOIN game_results AS r"
+				+ " ON s.game_id = r.game_id"
+			+ " WHERE s.season = $1 AND s.player_id = $2"
+			+ " ORDER BY r.datetime ASC";
+		var historyRows;
+		query(historyQueryString, [season, pId], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			historyRows = rows;
+			processHistoryResults();
+		});
+
+		// Process query results
+		function processHistoryResults() {
+			result["history"] = historyRows;
+			returnResult();
+		}
 
 		//
 		// Only return response when all results are ready
 		//
 
 		function returnResult() {	
-			if (result["linemates"] && result["skaters"]) {
+			if (result["linemates"] && result["skaters"] && result["history"]) {
 				return response.status(200).send(result);
 			}
 		}
@@ -537,9 +567,9 @@ function start() {
 				}
 				result["teams"].push({
 					team: tricode,
-					pts: groupedRows[tricode]["pts"],
-					gp: groupedRows[tricode][0]["gp"],
-					data: groupedRows[tricode]
+					pts: statRows[tricode]["pts"],
+					gp: statRows[tricode][0]["gp"],
+					data: statRows[tricode]
 				});
 			}
 
