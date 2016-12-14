@@ -1,58 +1,58 @@
 <template>
 	<div>
-		<div class="table-header">
+		<div class="section section-header">
 			<h1>Skaters: 2016-2017</h1>
-			<div class="table-controls" v-if="players">
-				<select v-model="strengthSit">
-					<option value="all">All situations</option>
-					<option value="ev5">5 on 5</option>
-					<option value="sh">Short handed</option>
-					<option value="pp">Power play</option>
+		</div>
+		<div class="section section-control" v-if="players">
+			<select v-model="strengthSit">
+				<option value="all">All situations</option>
+				<option value="ev5">5 on 5</option>
+				<option value="sh">Short handed</option>
+				<option value="pp">Power play</option>
+			</select
+			><button type="button" class="toggle-button"
+				v-on:click="visibleColumns.individual = !visibleColumns.individual"
+				v-bind:class="{ 'toggle-button-checked': visibleColumns.individual }">
+				<span class="checkbox-container">
+					<span class="checkbox-checkmark"></span>
+				</span>Own production</button
+			><button type="button" class="toggle-button"
+				v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
+				v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
+				<span class="checkbox-container">
+					<span class="checkbox-checkmark"></span>
+				</span>On-ice goals</button
+			><button type="button" class="toggle-button"
+				v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
+				v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
+				<span class="checkbox-container">
+					<span class="checkbox-checkmark"></span>
+				</span>On-ice corsi</button
+			><button type="button" class="toggle-button"
+				v-on:click="isRatesEnabled = !isRatesEnabled; aggregatePlayerData();"
+				v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
+				<span class="checkbox-container">
+					<span class="checkbox-checkmark"></span>
+				</span>Per 60 minutes</button
+			><div class="search-with-menu">
+				<select v-model="search.col" v-on:change="search.query = '';">
+					<option value="name">Name:</option>
+					<option value="teams">Team:</option>
+					<option value="positions">Position:</option>
 				</select
-				><button type="button" class="toggle-button"
-					v-on:click="visibleColumns.individual = !visibleColumns.individual"
-					v-bind:class="{ 'toggle-button-checked': visibleColumns.individual }">
-					<span class="checkbox-container">
-						<span class="checkbox-checkmark"></span>
-					</span>Own production</button
-				><button type="button" class="toggle-button"
-					v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
-					v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
-					<span class="checkbox-container">
-						<span class="checkbox-checkmark"></span>
-					</span>On-ice goals</button
-				><button type="button" class="toggle-button"
-					v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
-					v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
-					<span class="checkbox-container">
-						<span class="checkbox-checkmark"></span>
-					</span>On-ice corsi</button
-				><button type="button" class="toggle-button"
-					v-on:click="isRatesEnabled = !isRatesEnabled; aggregatePlayerData();"
-					v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
-					<span class="checkbox-container">
-						<span class="checkbox-checkmark"></span>
-					</span>Per 60 minutes</button
-				><div class="search-with-menu">
-					<select v-model="search.col" v-on:change="search.query = '';">
-						<option value="name">Name:</option>
-						<option value="teams">Team:</option>
-						<option value="positions">Position:</option>
-					</select
-					><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
-					<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
-				</div
-				><div class="search-with-menu">
-					<select v-model="filter.col" v-on:change="filter.query = 0;">
-						<option value="toi">Minimum minutes:</option>
-						<option value="gp">Minimum games:</option>
-					</select
-					><input v-model.number="filter.query" v-on:keyup.enter="blurInput($event);" type="number" style="width: 62px;">
-				</div>
+				><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
+				<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
+			</div
+			><div class="search-with-menu">
+				<select v-model="filter.col" v-on:change="filter.query = 0;">
+					<option value="toi">Minimum minutes:</option>
+					<option value="gp">Minimum games:</option>
+				</select
+				><input v-model.number="filter.query" v-on:keyup.enter="blurInput($event);" type="number" style="width: 62px;">
 			</div>
 		</div>
 		<div class="loader" v-if="!players"></div>
-		<div class="table-container" v-if="players">
+		<div class="section section-table" v-if="players">
 			<table v-bind:class="{
 				'cols-individual': visibleColumns.individual,
 				'cols-on-ice-goals': visibleColumns.onIceGoals,

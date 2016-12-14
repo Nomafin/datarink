@@ -9,7 +9,7 @@
 			><router-link to="/skaters">Skaters</router-link>
 		</div>
 		<router-view></router-view>
-		<div class="footer">
+		<div class="section section-footer">
 			<span>Contact</span>
 			<a href="mailto:datarink@gmail.com">datarink@gmail.com</a>
 			<a href="http://www.twitter.com/datarink">@datarink</a>
@@ -103,8 +103,9 @@ a:focus {
 
 .header {
 	height: 64px;
-	background: $gray1;
 	position: relative;
+	margin-bottom: 32px;
+	background: $gray1;
 }
 
 .header > svg {
@@ -146,15 +147,32 @@ a:focus {
 	border-bottom: 4px solid $green6;
 }
 
-.footer {
-	padding: 48px 24px 32px 24px;
+.section {
+	margin-bottom: 24px;
+	padding: 0 24px;
 }
 
-.footer > * {
+.section.section-header {
+	margin-bottom: 40px;
+}
+
+.section.section-control {
+	margin-bottom: 16px;
+}
+
+.section.section-table {
+	overflow-x: auto;
+}
+
+.section.section-footer {
+	margin: 48px 0;
+}
+
+.section.section-footer > * {
 	display: inline-block;
 }
 
-.footer > * + * {
+.section.section-footer > * + * {
 	margin-left: 16px;
 }
 
@@ -324,23 +342,6 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 * Data tables
 *
 */
-
-.table-header {
-	padding: 32px 24px 0 24px;
-}
-
-.table-header h1 {
-	margin-bottom: 40px;
-}
-
-.table-container {
-	overflow-x: auto;
-	padding: 0 24px;
-}
-
-.table-controls {
-	margin-bottom: 16px;
-}
 
 table {
 	border-collapse: collapse;
