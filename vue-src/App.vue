@@ -6,8 +6,7 @@
 				<path class="logo-d" d="M16,24v8H0V8H16V0h8v8H16v8H8v8Z"/>
 			</svg
 			><router-link to="/teams">Teams</router-link
-			><router-link to="/skaters">Skaters</router-link
-			><span class="test-tag">Test run</span>
+			><router-link to="/skaters">Skaters</router-link>
 		</div>
 		<router-view></router-view>
 		<div class="footer">
@@ -44,17 +43,21 @@ $small-line-height: 16px;
 
 $control-height: 32px;
 
-$gray1: #eceff1;
-$gray2: #cfd8dc;
-$gray3: #b0bec5;
-$gray4: #90a4ae;
-$gray5: #78909c;
-$gray6: #607d8b;
-$gray7: #546e7a;
-$gray8: #37474f;
+$gray1: #f2f3f3;
+$gray2: #e0e2e2;
+$gray3: #c1c3c3;
+$gray4: #a3a7a6;
+$gray5: #858a89;
+$gray6: #696e6e;
+$gray7: #4e5454;
+$gray8: #353b3b;
+$gray9: #121818;
 
-$green4: #5bb271;
-$green8: #008050;
+$green5: #39CC90;
+$green6: #2db27b;
+$green7: #209767;
+$green8: #147e53;
+$green9: #066640;
 
 body {
 	font-family: $font-stack;
@@ -99,8 +102,9 @@ a:focus {
 */
 
 .header {
-	height: 56px;
-	background: $gray2;
+	height: 64px;
+	background: $gray1;
+	position: relative;
 }
 
 .header > svg {
@@ -108,11 +112,11 @@ a:focus {
 	vertical-align: top;
 	width: 32px;
 	height: 32px;
-	margin: 12px 0px 12px 24px;
+	margin: 16px 0px 16px 24px;
 }
 
 .header svg .logo-r {
-	fill: $green4;
+	fill: $green6;
 }
 
 .header svg .logo-d {
@@ -126,34 +130,20 @@ a:focus {
 	color: $gray8;
 	text-decoration: none;
 
-	border-bottom: 2px solid transparent;
-	margin: 18px 0 20px 24px;
+	height: 100%;
+	padding: 22px 0;
+	margin: 0 0 0 24px;
+	box-sizing: border-box;
 }
 
 .header a:hover,
 .header a:focus {
-	border-color: $gray4;
+	border-bottom: 4px solid $gray4;
 	outline: 0;
 }
 
 .header a.router-link-active {
-	color: $gray8;
-	border-color: $gray8;
-}
-
-.header .test-tag {
-	display: inline-block;
-	background: $green4;
-	color: $gray8;
-	font-size: 11px;
-	line-height: $base-line-height;
-	font-weight: 700;
-	padding: 6px 8px;
-	float: right;
-	margin: 12px 24px 12px 0;
-	border-radius: 4px;
-	text-transform: uppercase;
-	letter-spacing: -0.5px;
+	border-bottom: 4px solid $green6;
 }
 
 .footer {
@@ -246,7 +236,7 @@ input[type="text"]:focus,
 input[type="number"]:focus,
 button:focus {
 	outline: 0;
-	border-color: $green4;
+	border-color: $green6;
 }
 
 select::-ms-expand {
@@ -336,17 +326,20 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 */
 
 .table-header {
-	background: $gray1;
-	padding: 24px 24px 16px 24px;
+	padding: 32px 24px 0 24px;
 }
 
-.table-header .table-controls {
-	padding-bottom: 8px;
+.table-header h1 {
+	margin-bottom: 40px;
 }
 
 .table-container {
 	overflow-x: auto;
-	padding: 24px;
+	padding: 0 24px;
+}
+
+.table-controls {
+	margin-bottom: 16px;
 }
 
 table {
@@ -361,7 +354,7 @@ table td {
 	padding: 8px;
 	margin: 0;
 	text-align: right;
-	border-bottom: 1px solid #dee3e7;
+	border-bottom: 1px solid $gray2;
 }
 
 table th.left-aligned,
@@ -370,9 +363,8 @@ table td.left-aligned {
 }
 
 table th {
-	color: $green8;
-	border-top-left-radius: 4px;
-	border-top-right-radius: 4px;
+	border-top: 1px solid $gray2;
+	background: $gray1;
 	vertical-align: top;
 	font-size: $small-font-size;
 	line-height: $small-line-height;
@@ -400,7 +392,7 @@ table th[tabindex="0"]:active {
 }
 
 table th[tabindex="0"]:focus {
-	border-color: $green8;
+	background: $gray2;
 	outline: 0;
 }
 
@@ -500,9 +492,9 @@ table:not(.cols-on-ice-corsi) .cols-on-ice-corsi {
 	-moz-animation: rotation 1s infinite linear;
 	-o-animation: rotation 1s infinite linear;
 	animation: rotation 1s infinite linear;
-	border-left: 6px solid $green4;
-	border-right: 6px solid $green4;
-	border-bottom: 6px solid $green4;
+	border-left: 6px solid $green6;
+	border-right: 6px solid $green6;
+	border-bottom: 6px solid $green6;
 	border-top: 6px solid #fff;
 	border-radius: 50%;
 }
