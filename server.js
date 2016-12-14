@@ -6,6 +6,7 @@ var url = require("url");
 var auth = require("http-auth");
 var throng = require("throng");
 var compression = require("compression");
+var ss = require("simple-statistics");
 var constants = require("./analysis-constants.json");
 
 var PORT = process.env.PORT || 5000;
@@ -54,6 +55,33 @@ function start() {
 	server.use(express.static("public"));
 	
 	//
+	// Common queries
+	//
+
+	// result1 combines all games for a player; result2 returns a list of positions played per game (e.g., c,l,l,l)
+	var skaterStatQueryString = "SELECT result1.*, result2.positions"
+		+ " FROM "
+		+ " ( "
+			+ " SELECT s.team, s.player_id, r.first, r.last, s.score_sit, s.strength_sit,"
+				+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
+				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
+				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
+			+ " FROM game_stats AS s"
+				+ " LEFT JOIN game_rosters AS r"
+				+ " ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
+			+ " WHERE s.player_id > 2 AND r.position != 'na' AND r.position != 'g' AND s.season = $1"
+			+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit"
+		+ " ) AS result1"
+		+ " LEFT JOIN"
+		+ " ( "
+			+ " SELECT player_id, string_agg(position, ',') as positions"
+			+ " FROM game_rosters"
+			+ " WHERE position != 'na' AND position != 'g' AND season = $1"
+			+ " GROUP BY player_id"
+		+ " ) AS result2"
+		+ " ON result1.player_id = result2.player_id";
+
+	//
 	// Handle GET request for players api
 	//
 
@@ -64,29 +92,8 @@ function start() {
 		// Query for player stats
 		// result1 is used to get players' stats
 		// result2 is used to get the number of games played by a player
-		var queryString = "SELECT result1.*, result2.gp"
-			+ " FROM "
-			+ " ( "
-				+ " SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
-					+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
-					+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-					+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
-				+ " FROM game_stats AS s"
-					+ " LEFT JOIN game_rosters AS r"
-					+ " ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
-				+ " WHERE s.player_id > 2 AND r.position != 'na' AND r.position != 'g' AND s.season = $1"
-				+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit"
-			+ " ) AS result1"
-			+ " LEFT JOIN"
-			+ " ( "
-				+ " SELECT player_id, COUNT(DISTINCT game_id) AS gp"
-				+ " FROM game_rosters"
-				+ " WHERE position != 'na' AND season = $1"
-				+ " GROUP BY player_id"
-			+ " ) AS result2"
-			+ " ON result1.player_id = result2.player_id";
 		var statRows;
-		query(queryString, [season], function(err, rows) {
+		query(skaterStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			statRows = rows;
 			processResults();
@@ -98,11 +105,11 @@ function start() {
 			// Postgres aggregate functions like SUM return strings, so cast them as ints
 			// Calculate score-adjusted corsi
 			statRows.forEach(function(r) {
-				["gp", "toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
+				["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
 					r[col] = +r[col];
 				});
-				r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
-				r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
+				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+				r.cf_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 			});
 
 			// Group rows by playerId:
@@ -117,31 +124,29 @@ function start() {
 					continue;
 				}
 
-				// Get all teams and positions the player has been on
+				// Get all teams and positions the player has been on, as well as games played
 				var teams = _.uniqBy(statRows[pId], "team").map(function(d) { return d.team; });
-				var positions = _.uniqBy(statRows[pId], "position").map(function(d) { return d.position; });
-
-				result["players"].push({
+				var positions = statRows[pId][0].positions.split(",");
+				result.players.push({
 					player_id: +pId,
 					teams: teams,
-					positions: positions,
-					first: statRows[pId][0]["first"],
-					last: statRows[pId][0]["last"],
-					gp: statRows[pId][0]["gp"],
+					gp: positions.length,
+					positions: _.uniq(positions),
+					first: statRows[pId][0].first,
+					last: statRows[pId][0].last,
 					data: statRows[pId]
 				});
 			}
 
 			// Set redundant properties in each player's data rows to be undefined - this removes them from the response
-			// Setting the properties to undefined is ~10sec faster than deleting the properties completely
-			result["players"].forEach(function(p) {
+			// Setting the properties to undefined is faster than deleting the properties completely
+			result.players.forEach(function(p) {
 				p.data.forEach(function(r) {
 					r.team = undefined;
 					r.player_id = undefined;
 					r.first = undefined;
 					r.last = undefined;
-					r.position = undefined;
-					r.gp = undefined;
+					r.positions = undefined;
 				});
 			});
 
@@ -158,7 +163,7 @@ function start() {
 		var pId = +request.params.id;
 		var season = 2016;
 		var result = {};
-		
+	
 		//
 		// Get linemate results
 		//
@@ -167,7 +172,8 @@ function start() {
 		// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
 		// 'sh' contains all player shifts, including player names
 		// Join 'p' with 'sh' to get all shifts belonging to the specified player and his teammates
-		var shiftQueryStr = "SELECT sh.*"
+		// Also use this to get all positions the player has played
+		var shiftQueryStr = "SELECT sh.*, p.position"
 			+ " FROM game_rosters AS p"
 			+ " LEFT JOIN ("
 				+ " SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"position\""
@@ -282,9 +288,9 @@ function start() {
 						return sr.game_id === pr.game_id && sr.period === pr.period;
 					});
 					// Increment shared toi for each strength situation
-					tmObj["all"]["toi"] += _.intersection(pr.shifts, tr.shifts).length;
+					tmObj.all.toi += _.intersection(pr.shifts, tr.shifts).length;
 					strSitRows.forEach(function(sr) {
-						tmObj[sr.strength_sit]["toi"] += _.intersection(pr.shifts, tr.shifts, sr.timeranges).length;
+						tmObj[sr.strength_sit].toi += _.intersection(pr.shifts, tr.shifts, sr.timeranges).length;
 					});
 				});
 			});
@@ -341,7 +347,6 @@ function start() {
 						}
 					}
 				});
-
 			});
 
 			result["linemates"] = linemateResults;
@@ -349,113 +354,143 @@ function start() {
 		}
 
 		//
-		// Get stats for all players
+		// Get skater stats
 		//
 
-		// Query for player stats
-		var skatersQueryString = "SELECT s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit,"
-				+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
-				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off" 
-			+ " FROM game_stats AS s"
-				+ " LEFT JOIN game_rosters AS r"
-				+ " ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
-			+ " WHERE s.player_id > 2 AND r.position != 'na' AND r.position != 'g' AND s.season = $1"
-			+ " GROUP BY s.team, s.player_id, r.first, r.last, r.position, s.score_sit, s.strength_sit";
-		var skaterRows;
-		query(skatersQueryString, [season], function(err, rows) {
+		var statRows;
+		query(skaterStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
-			skaterRows = rows;
+			statRows = rows;
 			processSkaterResults();
 		});
 
 		// Process query results
 		function processSkaterResults() {
 
-			// Postgres aggregate functions like SUM return strings, so cast them as ints
-			// Calculate score-adjusted corsi
-			skaterRows.forEach(function(r) {
-				["gp", "toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
-					r[col] = +r[col];
-				});
-				r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
-				r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
-			});
-
 			// Group rows by playerId:
 			//	{ 123: [rows for player 123], 234: [rows for player 234] }
-			skaterRows = _.groupBy(skaterRows, "player_id");
+			statRows = _.groupBy(statRows, "player_id");
 
 			// Structure results as an array of objects:
 			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
-			var skaterResults = [];
-			for (var sId in skaterRows) {
-				if (!skaterRows.hasOwnProperty(sId)) {
+			var playerStats = [];
+			for (var sId in statRows) {
+				if (!statRows.hasOwnProperty(sId)) {
 					continue;
 				}
 
-				// Get all teams and positions the player has been on
-				var teams = _.uniqBy(skaterRows[sId], "team").map(function(d) { return d.team; });
-				var positions = _.uniqBy(skaterRows[sId], "position").map(function(d) { return d.position; });
+				// Get player's teams
+				var teams = _.uniqBy(statRows[pId], "team").map(function(d) { return d.team; });
 
-				skaterResults.push({
+				// Get each player's position, as well as games played
+				var position = "";
+				var positions = statRows[sId][0].positions.split(",");
+				var counts = { fwd: 0, def: 0, last: "" };
+				positions.forEach(function(d) {
+					if (d === "c" || d === "l" || d === "r") {
+						counts.fwd++;
+						counts.last = "f";
+					} else if (d === "d") {
+						counts.def++;
+						counts.last = "d";
+					}
+				});
+				if (counts.fwd > counts.def) {
+					position = "f";
+				} else if (counts.def > counts.fwd) {
+					position = "d";
+				} else if (counts.def === counts.fwd) {
+					position = counts.last;
+				}
+
+				// Store player data
+				playerStats.push({
 					player_id: +sId,
 					teams: teams,
-					positions: positions,
-					first: skaterRows[sId][0]["first"],
-					last: skaterRows[sId][0]["last"],
-					data: skaterRows[sId]
-				});
+					gp: positions.length,
+					position: position,
+					first: statRows[sId][0].first,
+					last: statRows[sId][0].last,
+					data: statRows[sId]
+				});	
 
-				// Store the specified player's information for easier access
+				// Store a reference to the specified player's data
+				// Also remove redundant properties to reduce response size
 				if (+sId === pId) {
-					result["player"] = {
-						player_id: pId,
-						teams: teams,
-						positions: positions,
-						first: skaterRows[sId][0]["first"],
-						last: skaterRows[sId][0]["last"]		
-					};
+					result.player = playerStats[playerStats.length - 1];
+					result.player.data.forEach(function(d) {
+						d.team = undefined;
+						d.player_id = undefined;
+						d.first = undefined;
+						d.last = undefined;
+						d.positions = undefined;
+					});
 				}
 			}
 
-			// Set redundant properties in each player's data rows to be undefined - this removes them from the response
-			// Setting the properties to undefined is ~10sec faster than deleting the properties completely
-			skaterResults.forEach(function(p) {
+			// Only keep data for players with the same position as the specified player
+			playerStats = playerStats.filter(function(d) { return d.position === result.player.position; });
+
+			// Postgres aggregate functions like SUM return strings, so cast them as ints
+			// Calculate score-adjusted corsi
+			playerStats.forEach(function(p) {
 				p.data.forEach(function(r) {
-					r.team = undefined;
-					r.player_id = undefined;
-					r.first = undefined;
-					r.last = undefined;
-					r.position = undefined;
+					["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
+						r[col] = +r[col];
+					});
+					r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+					r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 				});
 			});
 
-			result["skaters"] = skaterResults;
-			returnResult();
-		}
+			result.skaterBreakpoints = {
+				ev5: {
+					toi: [],
+					cfPct: []
+				},
+				pp: {
+					toi: []
+				},
+				sh: {
+					toi: []
+				}
+			};
 
-		//
-		// Get stats for the individual player, game-by-game
-		//
+			// Calculate breakpoints for ev5, pp, sh toi
+			["ev5", "pp", "sh"].forEach(function(strSit) {
+				var numBreaks;
+				if (strSit === "ev5") {
+					numBreaks = result.player.position === "f" ? 4 : 3;
+				} else {
+					numBreaks = 3;
+				}
+				var datapoints = [];
+				var breakpoints = [];
+				playerStats.forEach(function(p) {
+					var sitRows = p.data.filter(function(r) { return r.strength_sit === strSit; });
+					datapoints.push(_.sumBy(sitRows, "toi") / p.gp);
+				});
+				ss.ckmeans(datapoints, numBreaks).forEach(function(cluster) {
+					// ckmeans returns arrays of datapoints in each cluster - get a range by taking the first and last array elements
+					breakpoints.push([cluster[0], cluster[cluster.length -1]]);
+				})
+				result.skaterBreakpoints[strSit].toi = breakpoints;
+			});
 
-		// Query for player history
-		var historyQueryString = "SELECT s.*, r.datetime"
-			+ " FROM game_stats AS s"
-			+ " LEFT JOIN game_results AS r"
-				+ " ON s.game_id = r.game_id"
-			+ " WHERE s.season = $1 AND s.player_id = $2"
-			+ " ORDER BY r.datetime ASC";
-		var historyRows;
-		query(historyQueryString, [season, pId], function(err, rows) {
-			if (err) { return response.status(500).send("Error running query: " + err); }
-			historyRows = rows;
-			processHistoryResults();
-		});
+			var numBreaks = result.player.position === "f" ? 4 : 3;
+			var datapoints = [];
+			var breakpoints = [];
+			playerStats.forEach(function(p) {
+				var sitRows = p.data.filter(function(r) { return r.strength_sit === "ev5"; });
+				datapoints.push(_.sumBy(sitRows, "cf") / (_.sumBy(sitRows, "cf") + _.sumBy(sitRows, "ca")));
+			});
+			ss.ckmeans(datapoints, numBreaks).forEach(function(cluster) {
+				// ckmeans returns arrays of datapoints in each cluster - get a range by taking the first and last array elements
+				breakpoints.push([cluster[0], cluster[cluster.length -1]]);
+			})
+			result.skaterBreakpoints["ev5"].cfPct = breakpoints;
 
-		// Process query results
-		function processHistoryResults() {
-			result["history"] = historyRows;
+			
 			returnResult();
 		}
 
@@ -464,7 +499,7 @@ function start() {
 		//
 
 		function returnResult() {	
-			if (result["linemates"] && result["skaters"] && result["history"]) {
+			if (result.linemates && result.skaterBreakpoints && result.player) {
 				return response.status(200).send(result);
 			}
 		}
@@ -529,8 +564,8 @@ function start() {
 				["gp", "toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
 					r[col] = +r[col];
 				});
-				r["cf_adj"] = constants["cfWeights"][r["score_sit"]] * r["cf"];
-				r["ca_adj"] = constants["cfWeights"][-1 * r["score_sit"]] * r["ca"];
+				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 			});
 
 			// Group rows by team:
@@ -544,16 +579,16 @@ function start() {
 			// Initialize points counter
 			for (var tricode in statRows) {
 				if (statRows.hasOwnProperty(tricode)) {
-					statRows[tricode]["pts"] = 0;
+					statRows[tricode].pts = 0;
 				}
 			}
 
 			// Loop through game_result rows and increment points
 			resultRows.forEach(function(r) {
-				var winner = r["a_final"] > r["h_final"] ? "a_team" : "h_team";
+				var winner = r.a_final > r.h_final ? "a_team" : "h_team";
 				statRows[r[winner]].pts += 2;
-				if (r["periods"] > 3) {
-					var loser = r["a_final"] < r["h_final"] ? "a_team" : "h_team";
+				if (r.periods > 3) {
+					var loser = r.a_final < r.h_final ? "a_team" : "h_team";
 					statRows[r[loser]].pts += 1;
 				}
 			});
@@ -565,16 +600,16 @@ function start() {
 				if (!statRows.hasOwnProperty(tricode)) {
 					continue;
 				}
-				result["teams"].push({
+				result.teams.push({
 					team: tricode,
-					pts: statRows[tricode]["pts"],
-					gp: statRows[tricode][0]["gp"],
+					pts: statRows[tricode].pts,
+					gp: statRows[tricode][0].gp,
 					data: statRows[tricode]
 				});
 			}
 
 			// Set redundant properties in 'data' to be undefined - this removes them from the response
-			result["teams"].forEach(function(t) {
+			result.teams.forEach(function(t) {
 				t.data.forEach(function(r) {
 					r.team = undefined;
 					r.gp = undefined;

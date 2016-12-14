@@ -27,6 +27,7 @@
     "node-sass": "^4.0.0",
     "pg": "^6.1.0",
     "request": "^2.79.0",
+    "simple-statistics": "^2.2.0",
     "throng": "^4.0.0",
     "uglify-js": "^2.7.5",
     "vue": "^2.0.8",
