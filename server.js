@@ -109,7 +109,7 @@ function start() {
 					r[col] = +r[col];
 				});
 				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
-				r.cf_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 			});
 
 			// Group rows by playerId:
