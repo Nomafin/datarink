@@ -6,7 +6,6 @@ var url = require("url");
 var auth = require("http-auth");
 var throng = require("throng");
 var compression = require("compression");
-var ss = require("simple-statistics");
 var constants = require("./analysis-constants.json");
 
 var PORT = process.env.PORT || 5000;
@@ -431,6 +430,9 @@ function start() {
 			// Only keep data for players with the same position as the specified player
 			playerStats = playerStats.filter(function(d) { return d.position === result.player.position; });
 
+			// Remove players who have played less than 10 games
+			playerStats = playerStats.filter(function(d) { return d.gp >= 10; });
+
 			// Postgres aggregate functions like SUM return strings, so cast them as ints
 			// Calculate score-adjusted corsi
 			playerStats.forEach(function(p) {
@@ -443,54 +445,108 @@ function start() {
 				});
 			});
 
-			result.skaterBreakpoints = {
-				ev5: {
-					toi: [],
-					cfPct: []
+			var skaterBreakpoints = {
+				"all_toi": {
+					breakpoints: [],
+					player: null
 				},
-				pp: {
-					toi: []
+				"ev5_cf_adj_per60": {
+					breakpoints: [],
+					player: null
 				},
-				sh: {
-					toi: []
+				"ev5_ca_adj_per60": {
+					breakpoints: [],
+					player: null
+				},
+				"ev5_p1_per60": {
+					breakpoints: [],
+					player: null
+				},
+				"pp_p1_per60": {
+					breakpoints: [],
+					player: null
 				}
 			};
 
-			// Calculate breakpoints for ev5, pp, sh toi
-			["ev5", "pp", "sh"].forEach(function(strSit) {
-				var numBreaks;
-				if (strSit === "ev5") {
-					numBreaks = result.player.position === "f" ? 4 : 3;
-				} else {
-					numBreaks = 3;
-				}
-				var datapoints = [];
-				var breakpoints = [];
-				playerStats.forEach(function(p) {
-					var sitRows = p.data.filter(function(r) { return r.strength_sit === strSit; });
-					datapoints.push(_.sumBy(sitRows, "toi") / p.gp);
-				});
-				ss.ckmeans(datapoints, numBreaks).forEach(function(cluster) {
-					// ckmeans returns arrays of datapoints in each cluster - get a range by taking the first and last array elements
-					breakpoints.push([cluster[0], cluster[cluster.length -1]]);
-				})
-				result.skaterBreakpoints[strSit].toi = breakpoints;
-			});
-
-			var numBreaks = result.player.position === "f" ? 4 : 3;
+			// Calculate summary stats for all situations toi
 			var datapoints = [];
-			var breakpoints = [];
+			var playerPoint;
 			playerStats.forEach(function(p) {
-				var sitRows = p.data.filter(function(r) { return r.strength_sit === "ev5"; });
-				datapoints.push(_.sumBy(sitRows, "cf") / (_.sumBy(sitRows, "cf") + _.sumBy(sitRows, "ca")));
+				var point = _.sumBy(p.data, "toi") / p.gp;
+				datapoints.push(point);
+				if (p.player_id === pId) {
+					skaterBreakpoints.all_toi.player = point;
+				}
 			});
-			ss.ckmeans(datapoints, numBreaks).forEach(function(cluster) {
-				// ckmeans returns arrays of datapoints in each cluster - get a range by taking the first and last array elements
-				breakpoints.push([cluster[0], cluster[cluster.length -1]]);
-			})
-			result.skaterBreakpoints["ev5"].cfPct = breakpoints;
+			datapoints.sort(function(a, b) { return b - a; });
+			[0, 89, 179, 269, 359].forEach(function(rank) {
+				skaterBreakpoints.all_toi.breakpoints.push(datapoints[rank]);
+			});
 
-			
+			// Calculate summary stats for ev5 score-adj cf per 60
+			var datapoints = [];
+			var playerPoint;
+			playerStats.forEach(function(p) {
+				var rows = p.data.filter(function(d) { return d.strength_sit === "ev5"; });
+				var point = _.sumBy(rows, "cf_adj") / _.sumBy(rows, "toi");
+				point *= 60 * 60;
+				datapoints.push(point);
+				if (p.player_id === pId) {
+					skaterBreakpoints.ev5_cf_adj_per60.player = point;
+				}
+			});
+			datapoints.sort(function(a, b) { return b - a; });
+			[0, 89, 179, 269, 359].forEach(function(rank) {
+				skaterBreakpoints.ev5_cf_adj_per60.breakpoints.push(datapoints[rank]);
+			});
+
+			// Calculate summary stats for ev5 score-adj ca per 60
+			var datapoints = [];
+			playerStats.forEach(function(p) {
+				var rows = p.data.filter(function(d) { return d.strength_sit === "ev5"; });
+				var point = _.sumBy(rows, "ca_adj") / _.sumBy(rows, "toi");
+				point *= 60 * 60;
+				datapoints.push(point);
+				if (p.player_id === pId) {
+					skaterBreakpoints.ev5_ca_adj_per60.player = point;
+				}
+			});
+			datapoints.sort(function(a, b) { return b - a; });
+			[0, 89, 179, 269, 359].forEach(function(rank) {
+				skaterBreakpoints.ev5_ca_adj_per60.breakpoints.push(datapoints[rank]);
+			});
+
+			// Calculate summary stats for ev5 primary points per 60
+			var datapoints = [];
+			playerStats.forEach(function(p) {
+				var rows = p.data.filter(function(d) { return d.strength_sit === "ev5"; });
+				var point = (_.sumBy(rows, "ig") + _.sumBy(rows, "ia1")) / _.sumBy(rows, "toi");
+				point *= 60 * 60;
+				datapoints.push(point);
+				if (p.player_id === pId) {
+					skaterBreakpoints.ev5_p1_per60.player = point;
+				}
+			});
+			datapoints.sort(function(a, b) { return b - a; });
+			[0, 89, 179, 269, 359].forEach(function(rank) {
+				skaterBreakpoints.ev5_p1_per60.breakpoints.push(datapoints[rank]);
+			});
+
+			// Calculate summary stats for pp primary points per 60
+			// var datapoints = [];
+			// playerStats.forEach(function(p) {
+			// 	var rows = p.data.filter(function(d) { return d.strength_sit === "pp"; });
+			// 	if (_.sumBy(rows, "toi") > 20 * 60) { // Minimum 20 minutes of pp time - but how will the filtered out players be handled?
+			// 		var point = (_.sumBy(rows, "ig") + _.sumBy(rows, "ia1")) / _.sumBy(rows, "toi");
+			// 		datapoints.push(point * 60 * 60);
+			// 	}
+			// });
+			// datapoints.sort(function(a, b) { return b - a; });
+			// [0, 89, 179].forEach(function(rank) {
+			// 	skaterBreakpoints.pp_p1_per60.push(datapoints[rank]);
+			// });
+
+			result.skaterBreakpoints = skaterBreakpoints;
 			returnResult();
 		}
 
