@@ -164,21 +164,22 @@ function start() {
 			player: {},
 			breakpoints: {}
 		};
-		var allPlayers = []; // An array of player objects
+		var players = []; // An array of player objects
 
 		//
-		// Get skater stats
+		// Get the specified player's data and calculate breakpoints
+		// Also prepare data (e.g., player positions) used for subsequent analyses
 		//
 
 		var statRows;
 		query(skaterStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			statRows = rows;
-			processSkaterResults();
+			getBreakpoints();
 		});
 
 		// Process query results
-		function processSkaterResults() {
+		function getBreakpoints() {
 
 			// Group rows by playerId:
 			//	{ 123: [rows for player 123], 234: [rows for player 234] }
@@ -193,10 +194,10 @@ function start() {
 
 				// Store player data, including their position and games played
 				var positions = statRows[sId][0].positions.split(",");
-				allPlayers.push({
+				players.push({
 					player_id: +sId,
 					gp: positions.length,
-					position: getPosition(positions),
+					f_or_d: isForD(positions),
 					first: statRows[sId][0].first,
 					last: statRows[sId][0].last,
 					data: statRows[sId]
@@ -204,7 +205,7 @@ function start() {
 
 				// Store a reference to the specified player's data. Remove redundant properties to reduce response size
 				if (+sId === pId) {
-					result.player = allPlayers[allPlayers.length - 1];
+					result.player = players[players.length - 1];
 					result.player.data.forEach(function(d) {
 						d.team = undefined;
 						d.player_id = undefined;
@@ -217,12 +218,12 @@ function start() {
 
 			// To calculate breakpoints, only consider players with the same position as the specified player
 			// Remove players with less than 10 games played
-			var samePosPlayers = allPlayers.filter(function(d) { return d.position === result.player.position; });
-			samePosPlayers = samePosPlayers.filter(function(d) { return d.gp >= 10; });
+			var breakpointPlayers = players.filter(function(d) { return d.f_or_d === result.player.f_or_d; });
+			breakpointPlayers = breakpointPlayers.filter(function(d) { return d.gp >= 10; });
 
 			// Postgres aggregate functions like SUM return strings, so cast them as ints
 			// Calculate score-adjusted corsi
-			samePosPlayers.forEach(function(p) {
+			breakpointPlayers.forEach(function(p) {
 				p.data.forEach(function(r) {
 					["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
 						r[col] = +r[col];
@@ -240,7 +241,7 @@ function start() {
 
 				// Get the datapoints for which we want a distribution
 				var datapoints = [];
-				samePosPlayers.forEach(function(p) {
+				breakpointPlayers.forEach(function(p) {
 					var datapoint;
 					if (s === "all_toi") {
 						datapoint = _.sumBy(p.data, "toi") / p.gp;
@@ -273,147 +274,196 @@ function start() {
 
 				// Sort datapoints in descending order and find breakpoints
 				datapoints.sort(function(a, b) { return b - a; });
-				var ranks = result.player.position === "f" ? [0, 89, 179, 269, 359] : [0, 59, 119, 179];
+				var ranks = result.player.f_or_d === "f" ? [0, 89, 179, 269, 359] : [0, 59, 119, 179];
 				ranks.forEach(function(rank) {
 					result.breakpoints[s].breakpoints.push(datapoints[rank]);
 				})
 			});
 
-			returnResult();
+			queryLinemates();
 		}
 
-		/*
 		//
-		// Get linemate results
+		// Query linemate data and get results
 		//
 
-		// Query for shifts belonging to the player and his teammates
-		// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
-		// 'sh' contains all player shifts, including player names
-		// Join 'p' with 'sh' to get all shifts belonging to the specified player and his teammates
-		// Also use this to get all positions the player has played
-		var shiftQueryStr = "SELECT sh.*, p.position"
-			+ " FROM game_rosters AS p"
-			+ " LEFT JOIN ("
-				+ " SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"position\""
-				+ " FROM game_shifts AS s"
-				+ " LEFT JOIN game_rosters as r"
-				+ " ON s.season = r.season AND s.game_id = r.game_id AND s.player_id = r.player_id"
-				+ " WHERE r.\"position\" != 'g' AND r.\"position\" != 'na' AND s.season = $1"
-			+ " ) AS sh"
-			+ " ON p.game_id = sh.game_id AND p.team = sh.team"
-			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
-		var shiftsByPrd;
-		query(shiftQueryStr, [season, pId], function(err, rows) {
-			if (err) { return response.status(500).send("Error running query: " + err); }
-			shiftsByPrd = rows;
-			processLinemateResults();
-		});
-
-		// Query for the strength situations the player's team was in
-		var strSitQueryStr = "SELECT s.*"
-			+ " FROM game_rosters AS p"
-			+ " LEFT JOIN game_strength_situations AS s"
-			+ " ON p.season = s.season AND p.game_id = s.game_id AND p.team = s.team" 
-			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
-		var strSitsByPrd;
-		query(strSitQueryStr, [season, pId], function(err, rows) {
-			if (err) { return response.status(500).send("Error running query: " + err); }
-			strSitsByPrd = rows;
-			processLinemateResults();
-		});			
-
-		// Query for events the player was on-ice for
-		var eventQueryStr = "SELECT *"
-			+ " FROM game_events"
-			+ " WHERE season = $1"
-			+ " AND (type = 'goal' OR type = 'shot' OR type = 'missed_shot' OR type = 'blocked_shot')"
-			+ " AND ("
-				+ " a_s1 = $2 OR a_s2 = $2 OR a_s3 = $2 OR a_s4 = $2 OR a_s5 = $2 OR a_s6 = $2 OR a_g = $2 OR"
-				+ " h_s1 = $2 OR h_s2 = $2 OR h_s3 = $2 OR h_s4 = $2 OR h_s5 = $2 OR h_s6 = $2 OR h_g = $2"
-			+ ")"
+		var shiftRows;
+		var strSitRows;
 		var eventRows;
-		query(eventQueryStr, [season, pId], function(err, rows) {
-			if (err) { return response.status(500).send("Error running query: " + err); }
-			eventRows = rows;
-			processLinemateResults();
-		});
 
-		function processLinemateResults() {
+		function queryLinemates() {
 
-			// Only start processing once all queries are finished
-			if (!shiftsByPrd || !strSitsByPrd || !eventRows) {
+			// Query for shifts belonging to the player and his teammates
+			// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
+			// 'sh' contains all player shifts, including player names
+			// Join 'p' with 'sh' to get all shifts belonging to the specified player and his teammates
+			// Also use this to get all positions the player has played
+			var queryStr = "SELECT sh.*"
+				+ " FROM game_rosters AS p"
+				+ " LEFT JOIN ("
+					+ " SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"position\""
+					+ " FROM game_shifts AS s"
+					+ " LEFT JOIN game_rosters as r"
+					+ " ON s.season = r.season AND s.game_id = r.game_id AND s.player_id = r.player_id"
+					+ " WHERE r.\"position\" != 'g' AND r.\"position\" != 'na' AND s.season = $1"
+				+ " ) AS sh"
+				+ " ON p.game_id = sh.game_id AND p.team = sh.team"
+				+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
+			query(queryStr, [season, pId], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				shiftRows = rows;
+				getLineResults();
+			});
+
+			// Query for the strength situations the player's team was in
+			var queryStr = "SELECT s.*"
+				+ " FROM game_rosters AS p"
+				+ " LEFT JOIN game_strength_situations AS s"
+				+ " ON p.season = s.season AND p.game_id = s.game_id AND p.team = s.team" 
+				+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
+			query(queryStr, [season, pId], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				strSitRows = rows;
+				getLineResults();
+			});			
+
+			// Query for events the player was on-ice for
+			var queryStr = "SELECT *"
+				+ " FROM game_events"
+				+ " WHERE season = $1"
+				+ " AND (type = 'goal' OR type = 'shot' OR type = 'missed_shot' OR type = 'blocked_shot')"
+				+ " AND ("
+					+ " a_s1 = $2 OR a_s2 = $2 OR a_s3 = $2 OR a_s4 = $2 OR a_s5 = $2 OR a_s6 = $2 OR a_g = $2 OR"
+					+ " h_s1 = $2 OR h_s2 = $2 OR h_s3 = $2 OR h_s4 = $2 OR h_s5 = $2 OR h_s6 = $2 OR h_g = $2"
+				+ ")"
+			query(queryStr, [season, pId], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				eventRows = rows;
+				getLineResults();
+			});			
+		}
+
+		function getLineResults() {
+
+			// Only start processing once all linemate-related queries are finished
+			if (!shiftRows || !strSitRows || !eventRows) {
 				return;
 			}
 
-			// The 'shift' property in each row of shiftsByPrd is formatted as a string: "start-end;start-end;..."
+			// Convert the raw timerange data in shiftRows and strSitRows into an array of timepoints
+			shiftRows.forEach(function(s) {
+				s.shifts = getTimepointArray(s.shifts);
+			});
+			strSitRows.forEach(function(s) {
+				s.timeranges = getTimepointArray(s.timeranges);
+			});
+			// 'timeranges' is a string: "start-end;start-end;..."
 			// First split the string into an array of intervals: ["start-end", "start-end", ...]
 			// Then convert each interval into an array of seconds played: [[start, start+1, start+2,..., end], [start, start+1, start+2,..., end]]
 			// Then flatten the nested arrays: [1,2,3,4,10,11,12,13,...]
-			shiftsByPrd.forEach(function(s) {
-				s.shifts = s.shifts
+			function getTimepointArray(timeranges) {
+				timeranges = timeranges
 					.split(";")					
 					.map(function(interval) {
 						var times = interval.split("-");
 						return _.range(+times[0], +times[1]);
 					});
-				s.shifts = [].concat.apply([], s.shifts);
-			});
+				return [].concat.apply([], timeranges);
+			}
 
-			// Format strSitsByPrd in the same way as shiftsByPrd
-			strSitsByPrd.forEach(function(s) {
-				s.timeranges = s.timeranges
-					.split(";")					
-					.map(function(interval) {
-						var times = interval.split("-");
-						return _.range(+times[0], +times[1]);
-					});
-				s.timeranges = [].concat.apply([], s.timeranges);
-			});
-
+			//
 			// Loop through each of the players' period rows and calculate toi with linemates
-			var linemateResults = {};
-			var pRows = shiftsByPrd.filter(function(d) { return d.player_id === pId; });
-			pRows.forEach(function(pr) {
-				// Select all teammates' period rows that have the same game and period
-				var tmRows = shiftsByPrd.filter(function(tr) { 
-					return tr.player_id !== pId && tr.game_id === pr.game_id && tr.period === pr.period;
-				});
-				// Loop through each teammate row and add their data to the results
-				tmRows.forEach(function(tr) {
-					// Create a result object for the teammate if needed
-					if (!linemateResults.hasOwnProperty(tr.player_id)) {
-						linemateResults[tr.player_id] = {
-							first: tr.first,
-							last: tr.last,
-							positions: [],
-							teams: [],
-							all: { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
-							ev5: { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
-							pp:  { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
-							sh:  { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 }
-						}
-					}
-					// Record positions and teams
-					var tmObj = linemateResults[tr.player_id];
-					if (tmObj.positions.indexOf(tr.position) < 0) {
-						tmObj.positions.push(tr.position);
-					}
-					if (tmObj.teams.indexOf(tr.team) < 0) {
-						tmObj.teams.push(tr.team);
-					}
-					// Select all strSitRow period rows that have the same game and period
-					var strSitRows = strSitsByPrd.filter(function(sr) { 
+			//
+
+			var lineResults = [];
+			shiftRows.filter(function(d) { return d.player_id === pId; })
+				.forEach(function(pr) {
+
+					// Select the strSitRow rows that have the same game and period
+					var ssRows = strSitRows.filter(function(sr) { 
 						return sr.game_id === pr.game_id && sr.period === pr.period;
 					});
-					// Increment shared toi for each strength situation
-					tmObj.all.toi += _.intersection(pr.shifts, tr.shifts).length;
-					strSitRows.forEach(function(sr) {
-						tmObj[sr.strength_sit].toi += _.intersection(pr.shifts, tr.shifts, sr.timeranges).length;
+
+					// Select teammates' period rows that have the same game and period, and play the same position (f or d)
+					var tmRows = shiftRows.filter(function(tr) {
+						return tr.player_id !== pId && tr.game_id === pr.game_id && tr.period === pr.period
+							&& result.player.f_or_d === isForD([tr.position]);
+					});
+
+					// Generate linemate combinations (pairs for defense, triplets for forwards)
+					var uniqLinemates = _.uniqBy(tmRows, "player_id");
+					var linesInPeriod = [];
+					uniqLinemates.forEach(function(lm1) {
+						if (result.player.f_or_d === "d") {
+							createLineObject([lm1]);
+						} else {		
+							uniqLinemates.forEach(function(lm2) {
+								if (lm1.player_id !== lm2.player_id) {
+									createLineObject([lm1, lm2]);
+								}
+							});
+						}
+					});
+
+					// Create an object in lineResults to store a line's players and stats
+					// Record all lines in the period
+					function createLineObject(linemates) {
+						var pIds = [];
+						var firsts = [];
+						var lasts = [];
+						// Sort player ids in ascending order
+						linemates = linemates.sort(function(a, b) { return a.player_id - b.player_id; });
+						linemates.forEach(function(lm) {
+							pIds.push(lm.player_id);
+							firsts.push(lm.first);
+							lasts.push(lm.last);
+						});
+						// Record line as playing in the period
+						if (!linesInPeriod.find(function(d) { return d.toString() === pIds.toString(); })) {
+							linesInPeriod.push(pIds);
+						}
+						// Check if the combination already exists before creating the object
+						if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
+							lineResults.push({
+								player_ids: pIds,
+								firsts: firsts,
+								lasts: lasts,
+								all: { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
+								ev5: { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
+								pp:  { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
+								sh:  { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 }
+							});
+						}
+					};
+
+					// Loop through each line that played in the period and increment toi
+					// 'linesInPeriod' is an array of [playerId, playerId] (or [playerId] for defense)
+					linesInPeriod.forEach(function(l) {
+						// Get shift rows for each linemate
+						var linemateRows = tmRows.filter(function(d) { return l.indexOf(d.player_id) >= 0; });
+						// Get intersection of all linemate shifts and strSits
+						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
+						ssRows.forEach(function(sr) {
+							if (linemateRows.length === 2) {
+								lineObj[sr.strength_sit].toi += _.intersection(pr.shifts, linemateRows[0].shifts, linemateRows[1].shifts, sr.timeranges).length;			
+							} else {
+								lineObj[sr.strength_sit].toi += _.intersection(pr.shifts, linemateRows[0].shifts, sr.timeranges).length;
+							}
+						});
+						// Get toi for all situations
+						if (linemateRows.length === 2) {
+							lineObj.all.toi += _.intersection(pr.shifts, linemateRows[0].shifts, linemateRows[1].shifts).length;
+						} else {
+							lineObj.all.toi += _.intersection(pr.shifts, linemateRows[0].shifts).length;
+						}
 					});
 				});
-			});
 
+			result.lines = lineResults;
+			returnResult();
+		}
+	
+	/*
 			//
 			// Append event stats to linemateResults
 			//
@@ -485,7 +535,7 @@ function start() {
 		}
 
 		// Get the most-played position from an array of positions [l,l,c,c,c]
-		function getPosition(positions) {
+		function isForD(positions) {
 			var position;
 			var counts = { fwd: 0, def: 0, last: "" };
 			positions.forEach(function(d) {
