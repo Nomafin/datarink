@@ -5,25 +5,25 @@
 			<div class="section section-header">
 				<h1>{{ data.player.first + " " + data.player.last }}: 2016-2017</h1>
 			</div>
-			<div class="section legend" v-if="data.player.f_or_d === 'f'" style="padding-left: 16px; padding-right: 16px;">
+			<div class="section" style="padding-left: 0; padding-right: 0; margin-bottom: 8px;">
+				<bullet-chart v-bind:label="'mins/game, total'" v-bind:breakpoints="data.breakpoints.all_toi.breakpoints" v-bind:point="data.breakpoints.all_toi.player" v-bind:isInverted="false"></bullet-chart>
+				<bullet-chart v-bind:label="'CF/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_cf_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_cf_adj_per60.player" v-bind:isInverted="false"></bullet-chart>
+				<bullet-chart v-bind:label="'CA/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_ca_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_ca_adj_per60.player" v-bind:isInverted="true"></bullet-chart>
+				<bullet-chart v-bind:label="'P1/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_p1_per60.breakpoints" v-bind:point="data.breakpoints.ev5_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
+				<bullet-chart v-bind:label="'P1/60, powerplay'" v-bind:breakpoints="data.breakpoints.pp_p1_per60.breakpoints" v-bind:point="data.breakpoints.pp_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
+			</div>
+			<div class="section legend" v-if="data.player.f_or_d === 'f'">
 				<div><span style="background: #209767;"></span><span>Top 90 forwards</span></div>
 				<div><span style="background: #59ad85;"></span><span>91-180</span></div>
 				<div><span style="background: #84c2a3;"></span><span>181-270</span></div>
 				<div><span style="background: #add7c2;"></span><span>261-360</span></div>
 				<div><span style="background: #d6ece3;"></span><span>361+</span></div>
 			</div>
-			<div class="section legend" v-if="data.player.f_or_d === 'd'" style="padding-left: 16px; padding-right: 16px;">
+			<div class="section legend" v-if="data.player.f_or_d === 'd'">
 				<div><span style="background: #209767;"></span><span>Top 60 defenders</span></div>
 				<div><span style="background: #59ad85;"></span><span>61-120</span></div>
 				<div><span style="background: #84c2a3;"></span><span>121-180</span></div>
 				<div><span style="background: #add7c2;"></span><span>181+</span></div>
-			</div>
-			<div class="section" style="padding-left: 0; padding-right: 0;">
-				<bullet-chart v-bind:label="'mins/game, total'" v-bind:breakpoints="data.breakpoints.all_toi.breakpoints" v-bind:point="data.breakpoints.all_toi.player" v-bind:isInverted="false"></bullet-chart>
-				<bullet-chart v-bind:label="'CF/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_cf_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_cf_adj_per60.player" v-bind:isInverted="false"></bullet-chart>
-				<bullet-chart v-bind:label="'CA/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_ca_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_ca_adj_per60.player" v-bind:isInverted="true"></bullet-chart>
-				<bullet-chart v-bind:label="'P1/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_p1_per60.breakpoints" v-bind:point="data.breakpoints.ev5_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
-				<bullet-chart v-bind:label="'P1/60, powerplay'" v-bind:breakpoints="data.breakpoints.pp_p1_per60.breakpoints" v-bind:point="data.breakpoints.pp_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
 			</div>
 		</div>
 	</div>
@@ -85,6 +85,12 @@
 		font-weight: 400;
 		font-size: 14px;
 		margin-left: 6px;
+	}
+	.section.legend {
+		padding-left: 16px;
+		padding-right: 16px;
+		padding-bottom: 39px;
+		border-bottom: 1px solid #e0e2e2;
 	}
 	.legend > div {
 		display: inline-block;
