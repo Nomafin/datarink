@@ -5,8 +5,21 @@
 			<div class="section section-header">
 				<h1>{{ data.player.first + " " + data.player.last }}: 2016-2017</h1>
 			</div>
-			<div class="section">
-				<bullet-chart v-bind:label="'minutes per game'" v-bind:breakpoints="data.breakpoints.all_toi.breakpoints" v-bind:point="data.breakpoints.all_toi.player" v-bind:isInverted="false"></bullet-chart>
+			<div class="section legend" v-if="data.player.f_or_d === 'f'" style="padding-left: 16px; padding-right: 16px;">
+				<div><span style="background: #209767;"></span><span>Top 90 forwards</span></div>
+				<div><span style="background: #59ad85;"></span><span>91-180</span></div>
+				<div><span style="background: #84c2a3;"></span><span>181-270</span></div>
+				<div><span style="background: #add7c2;"></span><span>261-360</span></div>
+				<div><span style="background: #d6ece3;"></span><span>361+</span></div>
+			</div>
+			<div class="section legend" v-if="data.player.f_or_d === 'd'" style="padding-left: 16px; padding-right: 16px;">
+				<div><span style="background: #209767;"></span><span>Top 60 defenders</span></div>
+				<div><span style="background: #59ad85;"></span><span>61-120</span></div>
+				<div><span style="background: #84c2a3;"></span><span>121-180</span></div>
+				<div><span style="background: #add7c2;"></span><span>181+</span></div>
+			</div>
+			<div class="section" style="padding-left: 0; padding-right: 0;">
+				<bullet-chart v-bind:label="'mins/game, total'" v-bind:breakpoints="data.breakpoints.all_toi.breakpoints" v-bind:point="data.breakpoints.all_toi.player" v-bind:isInverted="false"></bullet-chart>
 				<bullet-chart v-bind:label="'CF/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_cf_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_cf_adj_per60.player" v-bind:isInverted="false"></bullet-chart>
 				<bullet-chart v-bind:label="'CA/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_ca_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_ca_adj_per60.player" v-bind:isInverted="true"></bullet-chart>
 				<bullet-chart v-bind:label="'P1/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_p1_per60.breakpoints" v-bind:point="data.breakpoints.ev5_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
@@ -20,8 +33,7 @@
 	.bullet-chart-container {
 		display: inline-block;
 		vertical-align: top;
-		margin-bottom: 24px;
-		margin-right: 40px;
+		margin: 0 24px 24px 24px;
 		width: 240px;
 		position: relative;
 	}
@@ -75,6 +87,24 @@
 		font-size: 14px;
 		margin-left: 6px;
 	}
+	.legend > div {
+		display: inline-block;
+		vertical-align: top;
+		margin: 0 8px 8px 8px;
+	}
+	.legend > div > span {
+		display: inline-block;
+		vertical-align: top;
+		font-size: 14px;
+		line-height: 16px;
+	}
+	.legend > div > span:first-child {
+		height: 12px;
+		width: 12px;
+		margin-top: 2px;
+		border-radius: 4px;
+		margin-right: 6px;
+	}
 </style>
 
 <script>
@@ -107,13 +137,13 @@ var BulletChart = {
 		},
 		axisTicks: function() {
 			var ticks = [0, Math.round(_.max(this.breakpoints))];
-			if (this.label === "minutes per game") {
+			if (this.label === "mins/game, total") {
 				ticks[1] = Math.round(ticks[1] / 60);
 			}
 			return ticks;
 		},
 		titleVal: function() {
-			if (this.label === "minutes per game") {
+			if (this.label === "mins/game, total") {
 				return (this.point / 60).toFixed(1);
 			} else {
 				return this.point.toFixed(1);
