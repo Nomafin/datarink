@@ -504,7 +504,7 @@ function start() {
 				skaters.forEach(function(s1) {
 					if (result.player.f_or_d === "d") {
 						combos.push([s1]);
-					} else {
+					} else if (result.player.f_or_d === "f") {
 						// For forwards, loop through 2 player combinations
 						var skaters2 = skaters.filter(function(s2) { return s2 !== s1; });
 						skaters2.forEach(function(s2) {
@@ -519,23 +519,22 @@ function start() {
 					}
 				});
 
-				/*
-				skaters.forEach(function(sId) {
-					// Increment stat for "all" situation
-					linemateResults[sId]["all"]["c" + suffix]++;
-					if (ev["type"] === "goal") {
-						linemateResults[sId]["all"]["g" + suffix]++;
+				// Increment stats for each combo
+				combos.forEach(function(c) {
+					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
+					// Increment for "all" situations
+					lineObj["all"]["c" + suffix]++;
+					if (ev.type === "goal") {
+						lineObj["all"]["c" + suffix]++;
 					}
-					// Increment stat if the situation is ev5, sh, or pp
+					// Increment for ev5, sh, pp
 					if (strSit) {
-						linemateResults[sId][strSit]["c" + suffix]++;
-						if (ev["type"] === "goal") {
-							linemateResults[sId][strSit]["g" + suffix]++;
-						}							
+						lineObj[strSit]["c" + suffix]++;
+						if (ev.type === "goal") {
+							lineObj[strSit]["g" + suffix]++;
+						}
 					}
 				});
-				*/
-				
 			});
 
 			result.lines = lineResults;
@@ -547,7 +546,7 @@ function start() {
 		//
 
 		function returnResult() {	
-			if (result.breakpoints && result.player) {
+			if (result.breakpoints && result.player && result.lines) {
 				return response.status(200).send(result);
 			}
 		}
