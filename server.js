@@ -459,28 +459,18 @@ function start() {
 					});
 				});
 
-			result.lines = lineResults;
-			returnResult();
-		}
-	
-	/*
 			//
-			// Append event stats to linemateResults
+			// Append event stats to lineResults
 			//
 
 			eventRows.forEach(function(ev) {
 
-				// Combine the database columns into an array and remove null values
+				// Combine the database home/away skater columns into an array, removing null values
 				ev["a_sIds"] = [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
-				ev["h_sIds"] = [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; });
+				ev["h_sIds"] = [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; });		
 
-				// Get the player's venue
-				var isHome = true;
-				if (ev["a_sIds"].indexOf(pId) >= 0) {
-					isHome = false;
-				}
-				
-				// Record whether the shot was for or against the player
+				// Get the player's venue, and whether the event was for or against the player
+				var isHome = ev["h_sIds"].indexOf(pId) >= 0 ? true : false;
 				var suffix = "f";
 				if ((isHome && ev.venue === "away") || (!isHome && ev.venue === "home"))  {
 					suffix = "a";
@@ -498,31 +488,59 @@ function start() {
 					}
 				}
 
-				// Loop through linemates and increment stats - ignore the player themselves
+				// Get the skaters for which to increment stats - remove the specified player
+				// Only include skaters with the same f/d classification as the specified player
 				var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
-				skaters.forEach(function(sId) {
-					if (sId !== pId) {
-						// Increment stat for "all" situation
-						linemateResults[sId]["all"]["c" + suffix]++;
-						if (ev["type"] === "goal") {
-							linemateResults[sId]["all"]["g" + suffix]++;
-						}
-						// Increment stat if the situation is ev5, sh, or pp
-						if (strSit) {
-							linemateResults[sId][strSit]["c" + suffix]++;
-							if (ev["type"] === "goal") {
-								linemateResults[sId][strSit]["g" + suffix]++;
-							}							
-						}
+				skaters = skaters.filter(function(d) { return d !== pId; });
+				skaters = skaters.filter(function(d) { 
+					var linemateObj = players.find(function(p) { return p.player_id === d; });
+					return linemateObj.f_or_d === result.player.f_or_d ? true : false;
+				});
+
+				// Get combinations of linemates for which to increment stats
+				// This handles events with more than 2 defense or more than 3 forwards on the ice
+				// If there are 2 forwards or less (e.g., in 3-on-3), combos will be empty
+				var combos = [];
+				skaters.forEach(function(s1) {
+					if (result.player.f_or_d === "d") {
+						combos.push([s1]);
+					} else {
+						// For forwards, loop through 2 player combinations
+						var skaters2 = skaters.filter(function(s2) { return s2 !== s1; });
+						skaters2.forEach(function(s2) {
+							// Sort player ids in ascending order
+							var pair = [s1, s2];
+							pair = pair.sort(function(a, b) { return a - b; });
+							// Only record combination if it doesn't already exist
+							if (!combos.find(function(d) { return d.toString() === pair.toString(); })) {
+								combos.push(pair);
+							}
+						});
 					}
 				});
+
+				/*
+				skaters.forEach(function(sId) {
+					// Increment stat for "all" situation
+					linemateResults[sId]["all"]["c" + suffix]++;
+					if (ev["type"] === "goal") {
+						linemateResults[sId]["all"]["g" + suffix]++;
+					}
+					// Increment stat if the situation is ev5, sh, or pp
+					if (strSit) {
+						linemateResults[sId][strSit]["c" + suffix]++;
+						if (ev["type"] === "goal") {
+							linemateResults[sId][strSit]["g" + suffix]++;
+						}							
+					}
+				});
+				*/
+				
 			});
 
-			result["linemates"] = linemateResults;
+			result.lines = lineResults;
 			returnResult();
 		}
-		*/
-
 
 		//
 		// Only return response when all results are ready
