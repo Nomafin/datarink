@@ -53,7 +53,7 @@ $gray7: #4e5454;
 $gray8: #353b3b;
 $gray9: #121818;
 
-$green5: #39CC90;
+$green5: #39cc90;
 $green6: #2db27b;
 $green7: #209767;
 $green8: #147e53;

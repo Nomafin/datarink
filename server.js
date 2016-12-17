@@ -273,10 +273,12 @@ function start() {
 
 				// Sort datapoints in descending order and find breakpoints
 				datapoints.sort(function(a, b) { return b - a; });
-				var ranks = result.player.f_or_d === "f" ? [0, 89, 179, 269, 359] : [0, 59, 119, 179];
+				var ranks = result.player.f_or_d === "f" ? [359, 269, 179, 89, 0] : [179, 119, 59, 0];
 				ranks.forEach(function(rank) {
-					result.breakpoints[s].breakpoints.push(datapoints[rank]);
-				})
+					if (datapoints[rank]) {
+						result.breakpoints[s].breakpoints.push(datapoints[rank]);
+					}
+				});
 			});
 
 			queryLinemates();
