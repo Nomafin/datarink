@@ -57,7 +57,8 @@ function start() {
 	// Common queries
 	//
 
-	// result1 combines all games for a player; result2 returns a list of positions played per game (e.g., c,l,l,l)
+	// result1 combines all games for a player
+	// result2 returns a list of positions played per game (e.g., c,l,l,l)
 	var skaterStatQueryString = "SELECT result1.*, result2.positions"
 		+ " FROM "
 		+ " ( "
@@ -89,8 +90,6 @@ function start() {
 		var season = 2016;
 
 		// Query for player stats
-		// result1 is used to get players' stats
-		// result2 is used to get the number of games played by a player
 		var statRows;
 		query(skaterStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
