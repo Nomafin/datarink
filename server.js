@@ -256,16 +256,20 @@ function start() {
 						datapoint = 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
 					} else if (s === "pp_p1_per60") {
 						var rows = p.data.filter(function(d) { return d.strength_sit === "pp"; });
-						// Only consider players with at least 20 mins of pp time
-						if (_.sumBy(rows, "toi") >= 20 * 60) {
-							datapoint = _.sumBy(rows, "ig") + _.sumBy(rows, "ia1");
-							datapoint = 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
+						datapoint = _.sumBy(rows, "ig") + _.sumBy(rows, "ia1");
+						datapoint = 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
+					}
+					// Only calculate powerplay breakpoints for players with at least 20 minutes of pp time
+					if (datapoint) {
+						if (s !== "pp_p1_per60" || (s === "pp_p1_per60" && _.sumBy(rows, "toi") >= 20 * 60)) {
+							datapoints.push(datapoint);
 						}
 					}
-					// Store the datapoint, and add the specified player's own datapoint to the result
-					if (datapoint) {
-						datapoints.push(datapoint);
-						if (p.player_id === pId) {
+					// Store the player's datapoint
+					if (p.player_id === pId) {
+						if (_.sumBy(p.data, "toi") === 0) {
+							result.breakpoints[s].player = 0;
+						} else {
 							result.breakpoints[s].player = datapoint;
 						}
 					}
@@ -273,12 +277,19 @@ function start() {
 
 				// Sort datapoints in descending order and find breakpoints
 				datapoints.sort(function(a, b) { return b - a; });
-				var ranks = result.player.f_or_d === "f" ? [359, 269, 179, 89, 0] : [179, 119, 59, 0];
-				ranks.forEach(function(rank) {
+				var ranks = result.player.f_or_d === "f" ? [0, 89, 179, 269, 359] : [0, 59, 119, 179];
+				var i = 0;
+				var done = false;
+				while (!done && i < ranks.length) {
+					var rank = ranks[i];
 					if (datapoints[rank]) {
 						result.breakpoints[s].breakpoints.push(datapoints[rank]);
-					}
-				});
+					} else {
+						result.breakpoints[s].breakpoints.push(datapoints[datapoints.length - 1]);
+						done = true;
+					}				
+					i++;	
+				}
 			});
 
 			queryLinemates();

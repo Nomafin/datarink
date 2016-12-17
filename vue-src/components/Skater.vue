@@ -1,14 +1,17 @@
 <template>
-	<div v-if="data.player">
-		<div class="section section-header">
-			<h1>{{ data.player.first + " " + data.player.last }}: 2016-2017</h1>
-		</div>
-		<div class="section">
-			<bullet-chart v-bind:label="'minutes per game'" v-bind:breakpoints="data.breakpoints.all_toi.breakpoints" v-bind:point="data.breakpoints.all_toi.player" v-bind:isInverted="false"></bullet-chart>
-			<bullet-chart v-bind:label="'CF/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_cf_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_cf_adj_per60.player" v-bind:isInverted="false"></bullet-chart>
-			<bullet-chart v-bind:label="'CA/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_ca_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_ca_adj_per60.player" v-bind:isInverted="true"></bullet-chart>
-			<bullet-chart v-bind:label="'P1/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_p1_per60.breakpoints" v-bind:point="data.breakpoints.ev5_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
-			<bullet-chart v-bind:label="'P1/60, powerplay'" v-bind:breakpoints="data.breakpoints.pp_p1_per60.breakpoints" v-bind:point="data.breakpoints.pp_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
+	<div>
+		<div class="loader" v-if="!data.player"></div>
+		<div v-if="data.player">
+			<div class="section section-header">
+				<h1>{{ data.player.first + " " + data.player.last }}: 2016-2017</h1>
+			</div>
+			<div class="section">
+				<bullet-chart v-bind:label="'minutes per game'" v-bind:breakpoints="data.breakpoints.all_toi.breakpoints" v-bind:point="data.breakpoints.all_toi.player" v-bind:isInverted="false"></bullet-chart>
+				<bullet-chart v-bind:label="'CF/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_cf_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_cf_adj_per60.player" v-bind:isInverted="false"></bullet-chart>
+				<bullet-chart v-bind:label="'CA/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_ca_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_ca_adj_per60.player" v-bind:isInverted="true"></bullet-chart>
+				<bullet-chart v-bind:label="'P1/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_p1_per60.breakpoints" v-bind:point="data.breakpoints.ev5_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
+				<bullet-chart v-bind:label="'P1/60, powerplay'" v-bind:breakpoints="data.breakpoints.pp_p1_per60.breakpoints" v-bind:point="data.breakpoints.pp_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
+			</div>
 		</div>
 	</div>
 </template>
@@ -85,22 +88,22 @@ var BulletChart = {
 			var ranges = [];
 			// Get width
 			self.breakpoints.forEach(function(p, i) {
-				var delta = i > 0 ? p - self.breakpoints[i - 1] : p;
-				ranges.push({ width: 100 * delta / self.breakpoints[self.breakpoints.length - 1] });
+				var delta = i === self.breakpoints.length - 1 ? p : p - self.breakpoints[i + 1];
+				ranges.push({ width: 100 * delta / self.breakpoints[0] });
 			});
 			// Get colour
 			var colours = ["#209767", "#59ad85", "#84c2a3", "#add7c2", "#d6ece3"];	// Listed from dark to light
 			colours = colours.slice(0, ranges.length);
-			if (!self.isInverted) {
+			if (self.isInverted) {
 				colours.reverse();
 			}
 			ranges.forEach(function(r, i) {
 				r.colour = colours[i];
 			});
-			return ranges;
+			return ranges.reverse();
 		},
 		markerPos: function() {
-			return 100 * this.point / this.breakpoints[this.breakpoints.length - 1];
+			return 100 * this.point / this.breakpoints[0];
 		},
 		axisTicks: function() {
 			var ticks = [0, Math.round(_.max(this.breakpoints))];
@@ -110,12 +113,8 @@ var BulletChart = {
 			return ticks;
 		},
 		titleVal: function() {
-			if (!this.point) {
-				return 0;
-			} if (this.label === "minutes per game") {
-				return Math.round(this.point / 60);
-			} else if (this.label === "CF/60" || this.label === "CA/60") {
-				return Math.round(this.point);
+			if (this.label === "minutes per game") {
+				return (this.point / 60).toFixed(1);
 			} else {
 				return this.point.toFixed(1);
 			}
@@ -128,7 +127,7 @@ var BulletChart = {
 				+ "<div class='ranges'>"
 					+ "<div v-for='(r, i) in ranges' v-bind:style='{ width: r.width + \"%\", background: r.colour }'></div>"
 				+ "</div>"
-				+ "<div v-bind:style='{ left: \"calc(\" + markerPos + \"% - 1px)\" }' class='marker'></div>"
+				+ "<div v-if='markerPos <= 100' v-bind:style='{ left: \"calc(\" + markerPos + \"% - 1px)\" }' class='marker'></div>"
 			+ "</div>"
 			+ "<div class='axis'>"
 				+ "<span>{{ axisTicks[0] }}</span><span>{{ axisTicks[1] }}</span>"
