@@ -34,7 +34,7 @@
 		display: inline-block;
 		vertical-align: top;
 		margin: 0 24px 24px 24px;
-		width: 240px;
+		width: 272px;
 		position: relative;
 	}
 	.bullet-chart-container .chart {
@@ -46,7 +46,6 @@
 		margin-top: 8px;
 		display: inline-block;
 		vertical-align: top;
-		background: #ccc;
 	}
 	.bullet-chart-container .chart .ranges > div:first-child {
 		border-top-left-radius: 4px;
