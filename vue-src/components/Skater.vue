@@ -129,21 +129,58 @@
 				</table>
 			</div>
 			<div class="section section-table">
-				<table>
+				<div class="search-with-menu">
+					<select v-model="search.condition">
+						<option value="includes">Includes:</option>
+						<option value="excludes">Doesn't include:</option>
+					</select
+					><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
+				</div><span style="display: inline-block; vertical-align: top; line-height: 32px; float: right;">Minimum 5 minutes</span>
+				<table style="clear: both;">
 					<thead>
 						<tr>
 							<th>Linemates</th>
 							<th v-if="data.player.f_or_d === 'f'"></th>
-							<th>Mins</th>
-							<th>Goal diff</th>
-							<th>CF% score-adj</th>
-							<th>CF%</th>
-							<th>CF/60</th>
-							<th>CA/60</th>
+							<th
+								@click="sortBy('toi')"
+								@keyup.enter="sortBy('toi')"
+								tabindex="0"
+								v-bind:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>Mins</th>
+							<th
+								@click="sortBy('g_diff')"
+								@keyup.enter="sortBy('g_diff')"
+								tabindex="0"
+								v-bind:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>Goal diff</th>
+							<th
+								@click="sortBy('cf_pct_adj')"
+								@keyup.enter="sortBy(cf_pct_adj)"
+								tabindex="0"
+								v-bind:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CF% score-adj</th>
+							<th
+								@click="sortBy('cf_pct')"
+								@keyup.enter="sortBy(cf_pct)"
+								tabindex="0"
+								v-bind:class="[ sort.col === 'cf_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CF%</th>
+							<th
+								@click="sortBy('cf_per60')"
+								@keyup.enter="sortBy(cf_per60)"
+								tabindex="0"
+								v-bind:class="[ sort.col === 'cf_per60' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CF/60</th>
+							<th
+								@click="sortBy('ca_per60')"
+								@keyup.enter="sortBy(ca_per60)"
+								tabindex="0"
+								v-bind:class="[ sort.col === 'ca_per60' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CA/60</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="l in lineVals">
+						<tr v-for="l in filteredLineData">
 							<td>{{ l.name1 }}</td>
 							<td v-if="data.player.f_or_d === 'f'">{{ l.name2 }}</td>
 							<td>{{ Math.round(l.toi / 60) }}</td>
@@ -152,6 +189,9 @@
 							<td>{{ l.cf_pct | percentage | decimalPlaces(1) }}</td>
 							<td>{{ l.cf_per60 | decimalPlaces(1) }}</td>
 							<td>{{ l.ca_per60 | decimalPlaces(1) }}</td>
+						</tr>
+						<tr v-if="filteredLineData.length === 0">
+							<td v-bind:colspan="data.player.f_or_d === 'f' ? '8' : '7'">No matching lines</td>
 						</tr>
 					</tbody>
 				</table>
@@ -167,7 +207,20 @@ module.exports = {
 	data: function() {
 		return {
 			data: {},
-			strengthSit: "ev5"
+			strengthSit: "ev5",
+			sort: {
+				col: "toi",
+				order: -1
+			},
+			search: {
+				col: "names",
+				condition: "includes",
+				query: ""
+			},
+			filter: {
+				col: "toi",
+				query: 0
+			}
 		}
 	},
 	components: {
@@ -220,7 +273,7 @@ module.exports = {
 			result.ca_per60 = result.toi === 0 ? 0 : 60 * 60 * result.ca / result.toi;
 			return result;
 		},
-		lineVals: function() {
+		aggregatedLineData: function() {
 			var lineData = this.data.lines;
 			var strSit = this.strengthSit;
 			var result = [];
@@ -237,7 +290,23 @@ module.exports = {
 					ca_per60: 60 * 60 * l[strSit].ca / l[strSit].toi
 				});
 			});
-			return result.sort(function(a, b) { return b.toi - a.toi; });
+			return result;
+		},
+		sortedLineData: function() {
+			var order = this.sort.order < 0 ? "desc" : "asc";
+			return _.orderBy(this.aggregatedLineData, this.sort.col, order);
+		},
+		filteredLineData: function() {
+			var query = this.search.query;
+			var data = this.sortedLineData.filter(function(d) { return d.toi >= 5 * 60; });
+			if (query) {
+				if (this.search.condition === "includes") {
+					return data.filter(function(d) { return d.names.indexOf(query) >= 0; });
+				} else if (this.search.condition === "excludes") {
+					return data.filter(function(d) { return d.names.indexOf(query) < 0; });
+				}
+			}
+			return data;
 		}
 	},
 	filters: {
@@ -271,7 +340,18 @@ module.exports = {
 				self.data = JSON.parse(xhr.responseText);
 			}
 			xhr.send();
-		}
+		},
+		sortBy: function(newSortCol) {
+			if (newSortCol === this.sort.col) {
+				this.sort.order *= -1;
+			} else {
+				this.sort.col = newSortCol;
+				this.sort.order = -1;
+			}
+		},
+		blurInput: function(event) {
+			event.target.blur();
+		},
 	}
 };
 </script>
