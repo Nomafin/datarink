@@ -25,13 +25,19 @@
 				<div><span style="background: #84c2a3;"></span><span>121-180</span></div>
 				<div><span style="background: #add7c2;"></span><span>181+</span></div>
 			</div>
-			<div class="section">
-				<select v-model="strengthSit">
+			<div class="section" style="border-top: 1px solid #e0e2e2; border-bottom: 1px solid #e0e2e2; padding-top: 23px; padding-bottom: 7px;">
+				<div class="toggle" style="display: inline-block; vertical-align: top;">
+					<button v-bind:class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Linemates</button
+					><button v-bind:class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Own stats</button>
+				</div
+				><select v-model="strengthSit">
 					<option value="all">All situations</option>
 					<option value="ev5">5 on 5</option>
 					<option value="sh">Short handed</option>
 					<option value="pp">Power play</option>
 				</select>
+			</div>
+			<div class="section" v-show="tabs.active === 'self'">
 				<table>
 					<thead>
 						<tr>
@@ -128,7 +134,7 @@
 					</tr>
 				</table>
 			</div>
-			<div class="section section-table">
+			<div class="section section-table" v-show="tabs.active === 'lines'">
 				<div class="search-with-menu">
 					<select v-model="search.condition">
 						<option value="includes">Includes:</option>
@@ -208,6 +214,9 @@ module.exports = {
 		return {
 			data: {},
 			strengthSit: "ev5",
+			tabs: {
+				active: "lines"
+			},
 			sort: {
 				col: "toi",
 				order: -1
@@ -367,9 +376,7 @@ table th {
 .section.legend {
 	padding-left: 16px;
 	padding-right: 16px;
-	padding-bottom: 39px;
-	border-bottom: 1px solid #e0e2e2;
-	margin-bottom: 48px;
+	padding-bottom: 40px;
 }
 .legend > div {
 	display: inline-block;
@@ -388,5 +395,24 @@ table th {
 	margin-top: 2px;
 	border-radius: 4px;
 	margin-right: 6px;
+}
+.toggle {
+	margin: 0 8px 8px 0;
+}
+.toggle button {
+	margin: 0;
+	border-radius: 0;
+}
+.toggle button:first-child {
+	border-top-left-radius: 4px;
+	border-bottom-left-radius: 4px;
+}
+.toggle button:last-child {
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+}
+.toggle button.selected {
+	background: #39cc90;
+	border-color: #39cc90;
 }
 </style>
