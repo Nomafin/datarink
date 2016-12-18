@@ -568,6 +568,70 @@ function start() {
 			// Remove lines with less than 1min total toi before returning results
 			lineResults = lineResults.filter(function(d) { return d.all.toi >= 60; });
 			result.lines = lineResults;
+			queryHistory();
+		}
+
+		//
+		// Query and process game-by-game history
+		//
+
+		var historyRows;
+
+		function queryHistory() {
+			var queryStr = "SELECT r.game_id, g.datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
+				+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
+				+ " FROM game_rosters AS r"
+				+ " LEFT JOIN game_stats AS s"
+					+ " ON r.season = s.season AND r.game_id = s.game_id AND r.player_id = s.player_id"
+				+ " LEFT JOIN game_results AS g"
+					+ " ON r.season = g.season AND r.game_id = g.game_id"
+				+ " WHERE r.season = $1 AND r.player_id = $2"
+			query(queryStr, [season, pId], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				historyRows = rows;
+				getHistoryResults();
+			});
+		}
+
+		function getHistoryResults() {
+
+			// Calculate score-adjusted corsi
+			historyRows.forEach(function(r) {
+				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+			});
+
+			// Group rows by game_id (each game_id has rows for different strength and score situations)
+			//	{ 123: [rows for game 123], 234: [rows for game 234] }
+			historyRows = _.groupBy(historyRows, "game_id");
+
+			// Structure results as an array of objects:
+			// [ { game }, { game } ]
+			var historyResults = [];
+			for (var gId in historyRows) {
+				if (!historyRows.hasOwnProperty(gId)) {
+					continue;
+				}
+
+				// Store player data, including their position and games played
+				historyResults.push({
+					game_id: +gId,
+					datetime: historyRows[gId][0].datetime,
+					position: historyRows[gId][0].position,
+					data: historyRows[gId]
+				});
+			}
+
+			// Remove redundant properties from each game's data rows
+			historyResults.forEach(function(g) {
+				g.data.forEach(function(r) {
+					r.game_id = undefined,
+					r.datetime = undefined,
+					r.position = undefined
+				});
+			});
+
+			result.history = historyResults;
 			returnResult();
 		}
 
@@ -576,7 +640,7 @@ function start() {
 		//
 
 		function returnResult() {	
-			if (result.breakpoints && result.player && result.lines) {
+			if (result.breakpoints && result.player && result.lines && result.history) {
 				return response.status(200).send(result);
 			}
 		}

@@ -27,8 +27,9 @@
 			</div>
 			<div class="section" style="border-top: 1px solid #e0e2e2; border-bottom: 1px solid #e0e2e2; padding-top: 23px; padding-bottom: 7px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
-					<button v-bind:class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Linemates</button
-					><button v-bind:class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Own stats</button>
+					<button v-bind:class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button
+					><button v-bind:class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Own stats</button
+					><button v-bind:class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button>
 				</div
 				><select v-model="strengthSit">
 					<option value="all">All situations</option>
@@ -137,8 +138,8 @@
 			<div class="section section-table" v-show="tabs.active === 'lines'">
 				<div class="search-with-menu" style="margin-bottom: 16px;">
 					<select v-model="search.condition">
-						<option value="includes">Includes:</option>
-						<option value="excludes">Doesn't include:</option>
+						<option value="includes">Including:</option>
+						<option value="excludes">Excluding:</option>
 					</select
 					><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
 				</div>
