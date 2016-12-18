@@ -70,14 +70,14 @@
 					</tr>
 					<tr>
 						<td>Sh%</td>
-						<td colspan="2">{{ tableVals.i_sh_pct | percentage | decimalPlaces(1) }}%</td>
+						<td colspan="2">{{ tableVals.i_sh_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr>
 						<th colspan="3">On-ice goals</th>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>GF%</td>
-						<td colspan="2">{{ tableVals.gf_pct | percentage | decimalPlaces(1) }}%</td>
+						<td colspan="2">{{ tableVals.gf_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>Differential</td>
@@ -96,26 +96,26 @@
 					</tr>
 					<tr>
 						<td>Sh%</td>
-						<td colspan="2">{{ tableVals.sh_pct | percentage | decimalPlaces(1) }}%</td>
+						<td colspan="2">{{ tableVals.sh_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr>
 						<td>Sv%</td>
-						<td colspan="2">{{ tableVals.sv_pct | percentage | decimalPlaces(1) }}%</td>
+						<td colspan="2">{{ tableVals.sv_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr>
 						<th colspan="3">On-ice corsi</th>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF%</td>
-						<td colspan="2">{{ tableVals.cf_pct | percentage | decimalPlaces(1) }}%</td>
+						<td colspan="2">{{ tableVals.cf_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF% relative</td>
-						<td colspan="2">{{ tableVals.cf_pct_rel | percentage | decimalPlaces(1) }}%</td>
+						<td colspan="2">{{ tableVals.cf_pct_rel | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF% score-adj</td>
-						<td colspan="2">{{ tableVals.cf_pct_adj | percentage | decimalPlaces(1) }}%</td>
+						<td colspan="2">{{ tableVals.cf_pct_adj | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>Differential</td>
@@ -142,7 +142,7 @@
 					</select
 					><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
 				</div>
-				<table style="clear: both;">
+				<table>
 					<thead>
 						<tr>
 							<th>Linemates</th>
@@ -191,8 +191,8 @@
 							<td v-if="data.player.f_or_d === 'f'">{{ l.name2 }}</td>
 							<td>{{ Math.round(l.toi / 60) }}</td>
 							<td>{{ l.g_diff | signedDecimalPlaces(0) }}</td>
-							<td>{{ l.cf_pct_adj | percentage | decimalPlaces(1) }}</td>
-							<td>{{ l.cf_pct | percentage | decimalPlaces(1) }}</td>
+							<td>{{ l.cf_pct_adj | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
+							<td>{{ l.cf_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 							<td>{{ l.cf_per60 | decimalPlaces(1) }}</td>
 							<td>{{ l.ca_per60 | decimalPlaces(1) }}</td>
 						</tr>
