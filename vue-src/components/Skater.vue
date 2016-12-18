@@ -135,13 +135,13 @@
 				</table>
 			</div>
 			<div class="section section-table" v-show="tabs.active === 'lines'">
-				<div class="search-with-menu">
+				<div class="search-with-menu" style="margin-bottom: 16px;">
 					<select v-model="search.condition">
 						<option value="includes">Includes:</option>
 						<option value="excludes">Doesn't include:</option>
 					</select
 					><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
-				</div><span style="display: inline-block; vertical-align: top; line-height: 32px; float: right;">Minimum 5 minutes</span>
+				</div>
 				<table style="clear: both;">
 					<thead>
 						<tr>

@@ -10,9 +10,8 @@
 		</div>
 		<router-view></router-view>
 		<div class="section section-footer">
-			<span>Contact</span>
-			<a href="mailto:datarink@gmail.com">datarink@gmail.com</a>
-			<a href="http://www.twitter.com/datarink">@datarink</a>
+			<a href="mailto:datarink@gmail.com">datarink@gmail.com</a
+			><a href="http://www.twitter.com/datarink">@datarink</a>
 		</div>
 	</div>
 </template>
