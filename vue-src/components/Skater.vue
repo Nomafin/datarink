@@ -35,93 +35,96 @@
 				<table>
 					<thead>
 						<tr>
-							<th>Own production</th>
-							<th colspan="2">{{ tableVals.ig }} G, {{ tableVals.ia1 }} A1, {{ tableVals.ia2 }} A2</th>
+							<th colspan="3">Own production</th>
 						</tr>
 					</thead>
 					<tr>
-						<td>Games played</td>
-						<td>{{ data.player.gp }}</td>
-						<td>{{ (tableVals.toi / (60 * data.player.gp)).toFixed(1) }} mins/game</td>
+						<td>Minutes per game</td>
+						<td>{{ ((tableVals.toi / (60 * data.player.gp))).toFixed(1) }}</td>
+						<td>{{ data.player.gp }} games</td>
+					</tr>
+					<tr>
+						<td>Goals and assists</td>
+						<td colspan="2">{{ tableVals.ig | pluralize("goal") }}, {{ tableVals.ia1 | pluralize("primary assist") }}, {{ tableVals.ia2 | pluralize("secondary assist") }}</th>
 					</tr>
 					<tr>
 						<td>Points</td>
 						<td>{{ tableVals.p }}</td>
-						<td>{{ tableVals.p_per60 }} per 60</td>
+						<td><span v-if="tableVals.p !== 0">{{ tableVals.p_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 					<tr>
 						<td>Primary points</td>
 						<td>{{ tableVals.p1 }}</td>
-						<td>{{ tableVals.p1_per60 }} per 60</td>
+						<td><span v-if="tableVals.p1 !== 0">{{ tableVals.p1_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 					<tr>
 						<td>Corsi</td>
 						<td>{{ tableVals.ic }}</td>
-						<td>{{ tableVals.ic_per60 }} per 60</td>
+						<td><span v-if="tableVals.ic !== 0">{{ tableVals.ic_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 					<tr>
 						<td>Sh%</td>
-						<td colspan="2">{{ tableVals.i_sh_pct }}%</td>
+						<td colspan="2">{{ tableVals.i_sh_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr>
 						<th colspan="3">On-ice goals</th>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>GF%</td>
-						<td colspan="2">{{ tableVals.gf_pct }}%</td>
+						<td colspan="2">{{ tableVals.gf_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>Differential</td>
-						<td>{{ tableVals.g_diff | signed }}</td>
-						<td>{{ tableVals.g_diff_per60 | signed }} per 60</td>
+						<td>{{ tableVals.g_diff | signedDecimalPlaces(0) }}</td>
+						<td><span v-if="tableVals.g_diff !== 0">{{ tableVals.g_diff_per60 | signedDecimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 					<tr>
 						<td>GF</td>
 						<td>{{ tableVals.gf }}</td>
-						<td>{{ tableVals.gf_per60 }} per 60</td>
+						<td><span v-if="tableVals.gf !== 0">{{ tableVals.gf_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 					<tr>
 						<td>GA</td>
 						<td>{{ tableVals.ga }}</td>
-						<td>{{ tableVals.ga_per60 }} per 60</td>
+						<td><span v-if="tableVals.ga !== 0">{{ tableVals.ga_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 					<tr>
 						<td>Sh%</td>
-						<td colspan="2">{{ tableVals.sh_pct }}%</td>
+						<td colspan="2">{{ tableVals.sh_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr>
 						<td>Sv%</td>
-						<td colspan="2">{{ tableVals.sv_pct }}%</td>
+						<td colspan="2">{{ tableVals.sv_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr>
 						<th colspan="3">On-ice corsi</th>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF%</td>
-						<td colspan="2">{{ tableVals.cf_pct }}%</td>
+						<td colspan="2">{{ tableVals.cf_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF% relative</td>
-						<td colspan="2">{{ tableVals.cf_pct_rel | signed }}%</td>
+						<td colspan="2">{{ tableVals.cf_pct_rel | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF% score-adj</td>
-						<td colspan="2">{{ tableVals.cf_pct_adj }}%</td>
+						<td colspan="2">{{ tableVals.cf_pct_adj | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>Differential</td>
-						<td>{{ tableVals.c_diff | signed }}</td>
-						<td>{{ tableVals.c_diff_per60 | signed }} per 60</td>
+						<td>{{ tableVals.c_diff | signedDecimalPlaces(0) }}</td>
+						<td><span v-if="tableVals.c_diff !== 0">{{ tableVals.c_diff_per60 | signedDecimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 					<tr>
 						<td>CF</td>
 						<td>{{ tableVals.cf }}</td>
-						<td>{{ tableVals.cf_per60 }} per 60</td>
+						<td><span v-if="tableVals.cf !== 0">{{ tableVals.cf_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 					<tr>
 						<td>CA</td>
 						<td>{{ tableVals.ca }}</td>
-						<td>{{ tableVals.ca_per60 }} per 60</td>
+						<td><span v-if="tableVals.ca !== 0">{{ tableVals.ca_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
 					</tr>
 				</table>
 			</div>
@@ -300,39 +303,55 @@ module.exports = {
 				p: _.sumBy(tableData, "ig") + _.sumBy(tableData, "ia1") + _.sumBy(tableData, "ia2"),
 				p1: _.sumBy(tableData, "ig") + _.sumBy(tableData, "ia1"),
 				ic: _.sumBy(tableData, "ic"),
-				i_sh_pct: _.sumBy(tableData, "is") === 0 ? 0 : (100 * _.sumBy(tableData, "ig") / _.sumBy(tableData, "is")).toFixed(1),
-				gf_pct: (_.sumBy(tableData, "gf") +  _.sumBy(tableData, "ga")) === 0 ? 0 : (100 * _.sumBy(tableData, "gf") / (_.sumBy(tableData, "gf") +  _.sumBy(tableData, "ga"))).toFixed(1),
+				i_sh_pct: _.sumBy(tableData, "is") === 0 ?
+					0 : _.sumBy(tableData, "ig") / _.sumBy(tableData, "is"),
+				gf_pct: (_.sumBy(tableData, "gf") + _.sumBy(tableData, "ga")) === 0 ?
+					0 : _.sumBy(tableData, "gf") / (_.sumBy(tableData, "gf") + _.sumBy(tableData, "ga")),
 				g_diff: _.sumBy(tableData, "gf") - _.sumBy(tableData, "ga"),
 				gf: _.sumBy(tableData, "gf"),
 				ga: _.sumBy(tableData, "ga"),
-				sh_pct: _.sumBy(tableData, "sf") === 0 ? 0 : (100 * _.sumBy(tableData, "ga") / _.sumBy(tableData, "sf")).toFixed(1),
-				sv_pct: _.sumBy(tableData, "sa") === 0 ? 0 : (100 * _.sumBy(tableData, "ga") / _.sumBy(tableData, "sa")).toFixed(1),
-				cf_pct: (_.sumBy(tableData, "cf") +  _.sumBy(tableData, "ca")) === 0 ?
-					0 : (100 * _.sumBy(tableData, "cf") / (_.sumBy(tableData, "cf") +  _.sumBy(tableData, "ca"))).toFixed(1),
-				cf_pct_rel: ((_.sumBy(tableData, "cf") +  _.sumBy(tableData, "ca")) === 0 || (_.sumBy(tableData, "cf_off") +  _.sumBy(tableData, "ca_off") === 0)) ?
-					0 : (_.sumBy(tableData, "cf") / (_.sumBy(tableData, "cf") +  _.sumBy(tableData, "ca"))) - (_.sumBy(tableData, "cf_off") / (_.sumBy(tableData, "cf_off") +  _.sumBy(tableData, "ca_off"))),
-				cf_pct_adj: (_.sumBy(tableData, "cf_adj") +  _.sumBy(tableData, "ca_adj")) === 0 ?
-					0 : (100 * _.sumBy(tableData, "cf_adj") / (_.sumBy(tableData, "cf_adj") +  _.sumBy(tableData, "ca_adj"))).toFixed(1),
+				sh_pct: _.sumBy(tableData, "sf") === 0 ?
+					0 : _.sumBy(tableData, "gf") / _.sumBy(tableData, "sf"),
+				sv_pct: _.sumBy(tableData, "sa") === 0 ?
+					0 : (1 - (_.sumBy(tableData, "ga") / _.sumBy(tableData, "sa"))),
+				cf_pct: (_.sumBy(tableData, "cf") + _.sumBy(tableData, "ca")) === 0 ?
+					0 : _.sumBy(tableData, "cf") / (_.sumBy(tableData, "cf") + _.sumBy(tableData, "ca")),
+				cf_pct_rel: ((_.sumBy(tableData, "cf") + _.sumBy(tableData, "ca")) === 0 || (_.sumBy(tableData, "cf_off") + _.sumBy(tableData, "ca_off") === 0)) ?
+					0 : (_.sumBy(tableData, "cf") / (_.sumBy(tableData, "cf") + _.sumBy(tableData, "ca"))) - (_.sumBy(tableData, "cf_off") / (_.sumBy(tableData, "cf_off") + _.sumBy(tableData, "ca_off"))),
+				cf_pct_adj: (_.sumBy(tableData, "cf_adj") + _.sumBy(tableData, "ca_adj")) === 0 ?
+					0 : _.sumBy(tableData, "cf_adj") / (_.sumBy(tableData, "cf_adj") + _.sumBy(tableData, "ca_adj")),
 				cf: _.sumBy(tableData, "cf"),
 				ca: _.sumBy(tableData, "ca"),
-				c_diff:  _.sumBy(tableData, "cf") -  _.sumBy(tableData, "ca")
+				c_diff: _.sumBy(tableData, "cf") - _.sumBy(tableData, "ca")
 			};
-			result.p_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.p / result.toi) / 10;
-			result.p1_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.p1 / result.toi) / 10;
-			result.ic_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.ic / result.toi) / 10;
-			result.g_diff_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * (result.gf - result.ga) / result.toi) / 10;
-			result.gf_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.gf / result.toi) / 10;
-			result.ga_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.ga / result.toi) / 10;
-			result.c_diff_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * (result.cf - result.ca) / result.toi) / 10;
-			result.cf_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.cf / result.toi) / 10;
-			result.ca_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.ca / result.toi) / 10;
-			result.cf_pct_rel = Math.round(result.cf_pct_rel * 1000) / 10;
+			result.p_per60 = result.toi === 0 ? 0 : 60 * 60 * result.p / result.toi;
+			result.p1_per60 = result.toi === 0 ? 0 : 60 * 60 * result.p1 / result.toi;
+			result.ic_per60 = result.toi === 0 ? 0 : 60 * 60 * result.ic / result.toi;
+			result.g_diff_per60 = result.toi === 0 ? 0 : 60 * 60 * (result.gf - result.ga) / result.toi;
+			result.gf_per60 = result.toi === 0 ? 0 : 60 * 60 * result.gf / result.toi;
+			result.ga_per60 = result.toi === 0 ? 0 : 60 * 60 * result.ga / result.toi;
+			result.c_diff_per60 = result.toi === 0 ? 0 : 60 * 60 * (result.cf - result.ca) / result.toi;
+			result.cf_per60 = result.toi === 0 ? 0 : 60 * 60 * result.cf / result.toi;
+			result.ca_per60 = result.toi === 0 ? 0 : 60 * 60 * result.ca / result.toi;
 			return result;
 		}
 	},
 	filters: {
-		signed: function(value) {
-			return value > 0 ? "+" + value : value;
+		pluralize: function(value, unit) {
+			if (value === 1) {
+				return value + " " + unit;
+			} else {
+				return value + " " + unit + "s";
+			}
+		},
+		percentage: function(value) {
+			return value * 100;
+		},
+		decimalPlaces: function(value, places) {
+			return value.toFixed(places);
+		},
+		signedDecimalPlaces: function(value, places) {
+			return value > 0 ? "+" + value.toFixed(places) : value.toFixed(places);
 		}
 	},
 	created: function() {
