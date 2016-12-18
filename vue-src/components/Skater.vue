@@ -7,10 +7,10 @@
 			</div>
 			<div class="section" style="padding-left: 0; padding-right: 0; margin-bottom: 8px;">
 				<bullet-chart v-bind:label="'mins/game, total'" v-bind:breakpoints="data.breakpoints.all_toi.breakpoints" v-bind:point="data.breakpoints.all_toi.player" v-bind:isInverted="false"></bullet-chart>
-				<bullet-chart v-bind:label="'CF/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_cf_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_cf_adj_per60.player" v-bind:isInverted="false"></bullet-chart>
-				<bullet-chart v-bind:label="'CA/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_ca_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_ca_adj_per60.player" v-bind:isInverted="true"></bullet-chart>
+				<bullet-chart v-bind:label="'score adj. CF/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_cf_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_cf_adj_per60.player" v-bind:isInverted="false"></bullet-chart>
+				<bullet-chart v-bind:label="'score adj. CA/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_ca_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_ca_adj_per60.player" v-bind:isInverted="true"></bullet-chart>
 				<bullet-chart v-bind:label="'P1/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_p1_per60.breakpoints" v-bind:point="data.breakpoints.ev5_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
-				<bullet-chart v-bind:label="'P1/60, powerplay'" v-bind:breakpoints="data.breakpoints.pp_p1_per60.breakpoints" v-bind:point="data.breakpoints.pp_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
+				<bullet-chart v-bind:label="'P1/60, power play'" v-bind:breakpoints="data.breakpoints.pp_p1_per60.breakpoints" v-bind:point="data.breakpoints.pp_p1_per60.player" v-bind:isInverted="false"></bullet-chart>
 			</div>
 			<div class="section legend" v-if="data.player.f_or_d === 'f'">
 				<div><span style="background: #209767;"></span><span>Top 90 forwards</span></div>
@@ -25,11 +25,118 @@
 				<div><span style="background: #84c2a3;"></span><span>121-180</span></div>
 				<div><span style="background: #add7c2;"></span><span>181+</span></div>
 			</div>
+			<div class="section">
+				<select v-model="strengthSit">
+					<option value="all">All situations</option>
+					<option value="ev5">5 on 5</option>
+					<option value="sh">Short handed</option>
+					<option value="pp">Power play</option>
+				</select>
+				<table>
+					<thead>
+						<tr>
+							<th>Own production</th>
+							<th colspan="2">{{ tableVals.ig }} G, {{ tableVals.ia1 }} A1, {{ tableVals.ia2 }} A2</th>
+						</tr>
+					</thead>
+					<tr>
+						<td>Games played</td>
+						<td>{{ data.player.gp }}</td>
+						<td>{{ (tableVals.toi / (60 * data.player.gp)).toFixed(1) }} mins/game</td>
+					</tr>
+					<tr>
+						<td>Points</td>
+						<td>{{ tableVals.p }}</td>
+						<td>{{ tableVals.p_per60 }} per 60</td>
+					</tr>
+					<tr>
+						<td>Primary points</td>
+						<td>{{ tableVals.p1 }}</td>
+						<td>{{ tableVals.p1_per60 }} per 60</td>
+					</tr>
+					<tr>
+						<td>Corsi</td>
+						<td>{{ tableVals.ic }}</td>
+						<td>{{ tableVals.ic_per60 }} per 60</td>
+					</tr>
+					<tr>
+						<td>Sh%</td>
+						<td colspan="2">{{ tableVals.i_sh_pct }}%</td>
+					</tr>
+					<tr>
+						<th colspan="3">On-ice goals</th>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>GF%</td>
+						<td colspan="2">{{ tableVals.gf_pct }}%</td>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>Differential</td>
+						<td>{{ tableVals.g_diff | signed }}</td>
+						<td>{{ tableVals.g_diff_per60 | signed }} per 60</td>
+					</tr>
+					<tr>
+						<td>GF</td>
+						<td>{{ tableVals.gf }}</td>
+						<td>{{ tableVals.gf_per60 }} per 60</td>
+					</tr>
+					<tr>
+						<td>GA</td>
+						<td>{{ tableVals.ga }}</td>
+						<td>{{ tableVals.ga_per60 }} per 60</td>
+					</tr>
+					<tr>
+						<td>Sh%</td>
+						<td colspan="2">{{ tableVals.sh_pct }}%</td>
+					</tr>
+					<tr>
+						<td>Sv%</td>
+						<td colspan="2">{{ tableVals.sv_pct }}%</td>
+					</tr>
+					<tr>
+						<th colspan="3">On-ice corsi</th>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>CF%</td>
+						<td colspan="2">{{ tableVals.cf_pct }}%</td>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>CF% relative</td>
+						<td colspan="2">{{ tableVals.cf_pct_rel | signed }}%</td>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>CF% score-adj</td>
+						<td colspan="2">{{ tableVals.cf_pct_adj }}%</td>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>Differential</td>
+						<td>{{ tableVals.c_diff | signed }}</td>
+						<td>{{ tableVals.c_diff_per60 | signed }} per 60</td>
+					</tr>
+					<tr>
+						<td>CF</td>
+						<td>{{ tableVals.cf }}</td>
+						<td>{{ tableVals.cf_per60 }} per 60</td>
+					</tr>
+					<tr>
+						<td>CA</td>
+						<td>{{ tableVals.ca }}</td>
+						<td>{{ tableVals.ca_per60 }} per 60</td>
+					</tr>
+				</table>
+			</div>
 		</div>
 	</div>
 </template>
 
 <style>
+	select {
+		margin-bottom: 16px;
+	}
+	table td,
+	table th {
+		text-align: left;
+	}
 	.bullet-chart-container {
 		display: inline-block;
 		vertical-align: top;
@@ -91,6 +198,7 @@
 		padding-right: 16px;
 		padding-bottom: 39px;
 		border-bottom: 1px solid #e0e2e2;
+		margin-bottom: 48px;
 	}
 	.legend > div {
 		display: inline-block;
@@ -173,7 +281,58 @@ var BulletChart = {
 module.exports = {
 	data: function() {
 		return {
-			data: {}
+			data: {},
+			strengthSit: "ev5"
+		}
+	},
+	computed: {
+		tableVals: function() {
+			var tableData = this.data.player.data;
+			if (this.strengthSit === "ev5" || this.strengthSit === "pp" || this.strengthSit === "sh") {
+				var strengthSit = this.strengthSit;
+				tableData = tableData.filter(function(d) { return d.strength_sit === strengthSit; });
+			}
+			var result = {
+				ig: _.sumBy(tableData, "ig"),
+				ia1: _.sumBy(tableData, "ia1"),
+				ia2: _.sumBy(tableData, "ia2"),
+				toi: _.sumBy(tableData, "toi"),
+				p: _.sumBy(tableData, "ig") + _.sumBy(tableData, "ia1") + _.sumBy(tableData, "ia2"),
+				p1: _.sumBy(tableData, "ig") + _.sumBy(tableData, "ia1"),
+				ic: _.sumBy(tableData, "ic"),
+				i_sh_pct: _.sumBy(tableData, "is") === 0 ? 0 : (100 * _.sumBy(tableData, "ig") / _.sumBy(tableData, "is")).toFixed(1),
+				gf_pct: (_.sumBy(tableData, "gf") +  _.sumBy(tableData, "ga")) === 0 ? 0 : (100 * _.sumBy(tableData, "gf") / (_.sumBy(tableData, "gf") +  _.sumBy(tableData, "ga"))).toFixed(1),
+				g_diff: _.sumBy(tableData, "gf") - _.sumBy(tableData, "ga"),
+				gf: _.sumBy(tableData, "gf"),
+				ga: _.sumBy(tableData, "ga"),
+				sh_pct: _.sumBy(tableData, "sf") === 0 ? 0 : (100 * _.sumBy(tableData, "ga") / _.sumBy(tableData, "sf")).toFixed(1),
+				sv_pct: _.sumBy(tableData, "sa") === 0 ? 0 : (100 * _.sumBy(tableData, "ga") / _.sumBy(tableData, "sa")).toFixed(1),
+				cf_pct: (_.sumBy(tableData, "cf") +  _.sumBy(tableData, "ca")) === 0 ?
+					0 : (100 * _.sumBy(tableData, "cf") / (_.sumBy(tableData, "cf") +  _.sumBy(tableData, "ca"))).toFixed(1),
+				cf_pct_rel: ((_.sumBy(tableData, "cf") +  _.sumBy(tableData, "ca")) === 0 || (_.sumBy(tableData, "cf_off") +  _.sumBy(tableData, "ca_off") === 0)) ?
+					0 : (_.sumBy(tableData, "cf") / (_.sumBy(tableData, "cf") +  _.sumBy(tableData, "ca"))) - (_.sumBy(tableData, "cf_off") / (_.sumBy(tableData, "cf_off") +  _.sumBy(tableData, "ca_off"))),
+				cf_pct_adj: (_.sumBy(tableData, "cf_adj") +  _.sumBy(tableData, "ca_adj")) === 0 ?
+					0 : (100 * _.sumBy(tableData, "cf_adj") / (_.sumBy(tableData, "cf_adj") +  _.sumBy(tableData, "ca_adj"))).toFixed(1),
+				cf: _.sumBy(tableData, "cf"),
+				ca: _.sumBy(tableData, "ca"),
+				c_diff:  _.sumBy(tableData, "cf") -  _.sumBy(tableData, "ca")
+			};
+			result.p_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.p / result.toi) / 10;
+			result.p1_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.p1 / result.toi) / 10;
+			result.ic_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.ic / result.toi) / 10;
+			result.g_diff_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * (result.gf - result.ga) / result.toi) / 10;
+			result.gf_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.gf / result.toi) / 10;
+			result.ga_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.ga / result.toi) / 10;
+			result.c_diff_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * (result.cf - result.ca) / result.toi) / 10;
+			result.cf_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.cf / result.toi) / 10;
+			result.ca_per60 = result.toi === 0 ? 0 : Math.round(10 * 60 * 60 * result.ca / result.toi) / 10;
+			result.cf_pct_rel = Math.round(result.cf_pct_rel * 1000) / 10;
+			return result;
+		}
+	},
+	filters: {
+		signed: function(value) {
+			return value > 0 ? "+" + value : value;
 		}
 	},
 	created: function() {

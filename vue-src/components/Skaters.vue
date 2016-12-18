@@ -172,8 +172,8 @@ module.exports = {
 				{ key: "cf", heading: "CF", sortable: true, hasRate: true, classes: "cols-on-ice-corsi" },
 				{ key: "ca", heading: "CA", sortable: true, hasRate: true, classes: "cols-on-ice-corsi" },
 				{ key: "cf_pct", heading: "CF%", sortable: true, classes: "cols-on-ice-corsi" },
-				{ key: "cf_pct_rel", heading: "CF%, rel", sortable: true, classes: "cols-on-ice-corsi" },
-				{ key: "cf_pct_adj", heading: "CF%, score-adj", sortable: true, classes: "cols-on-ice-corsi" }
+				{ key: "cf_pct_rel", heading: "CF% rel", sortable: true, classes: "cols-on-ice-corsi" },
+				{ key: "cf_pct_adj", heading: "CF% score-adj", sortable: true, classes: "cols-on-ice-corsi" }
 			]
 		}
 	},
