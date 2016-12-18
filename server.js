@@ -440,10 +440,10 @@ function start() {
 								player_ids: pIds,
 								firsts: firsts,
 								lasts: lasts,
-								all: { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
-								ev5: { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
-								pp:  { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 },
-								sh:  { toi: 0, cf: 0, ca: 0, gf: 0, ga: 0 }
+								all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+								ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+								pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+								sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
 							});
 						}
 					};
@@ -500,6 +500,12 @@ function start() {
 					}
 				}
 
+				// Get the score situation and score adjustment factor for the player
+				var scoreSit = Math.max(-3, Math.min(3, ev["a_score"] - ev["h_score"])).toString();
+				if (isHome) {
+					scoreSit = Math.max(-3, Math.min(3, ev["h_score"] - ev["a_score"])).toString();
+				}
+
 				// Get the skaters for which to increment stats - remove the specified player
 				// Only include skaters with the same f/d classification as the specified player
 				var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
@@ -536,12 +542,22 @@ function start() {
 					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
 					// Increment for "all" situations
 					lineObj["all"]["c" + suffix]++;
+					if (suffix === "f") {
+						lineObj["all"]["c" + suffix + "_adj"] += constants.cfWeights[scoreSit];
+					} else if (suffix === "a") {
+						lineObj["all"]["c" + suffix + "_adj"] += constants.cfWeights[-1 * scoreSit];
+					}
 					if (ev.type === "goal") {
-						lineObj["all"]["c" + suffix]++;
+						lineObj["all"]["g" + suffix]++;
 					}
 					// Increment for ev5, sh, pp
 					if (strSit) {
 						lineObj[strSit]["c" + suffix]++;
+						if (suffix === "f") {
+							lineObj[strSit]["c" + suffix + "_adj"] += constants.cfWeights[scoreSit];
+						} else if (suffix === "a") {
+							lineObj[strSit]["c" + suffix + "_adj"] += constants.cfWeights[-1 * scoreSit];
+						}
 						if (ev.type === "goal") {
 							lineObj[strSit]["g" + suffix]++;
 						}
@@ -549,6 +565,8 @@ function start() {
 				});
 			});
 
+			// Remove lines with less than 1min total toi before returning results
+			lineResults = lineResults.filter(function(d) { return d.all.toi >= 60; });
 			result.lines = lineResults;
 			returnResult();
 		}

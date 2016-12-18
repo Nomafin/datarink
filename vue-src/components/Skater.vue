@@ -128,6 +128,34 @@
 					</tr>
 				</table>
 			</div>
+			<div class="section section-table">
+				<table>
+					<thead>
+						<tr>
+							<th>Linemates</th>
+							<th v-if="data.player.f_or_d === 'f'"></th>
+							<th>Mins</th>
+							<th>Goal diff</th>
+							<th>CF% score-adj</th>
+							<th>CF%</th>
+							<th>CF/60</th>
+							<th>CA/60</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="l in lineVals">
+							<td>{{ l.name1 }}</td>
+							<td v-if="data.player.f_or_d === 'f'">{{ l.name2 }}</td>
+							<td>{{ Math.round(l.toi / 60) }}</td>
+							<td>{{ l.g_diff | signedDecimalPlaces(0) }}</td>
+							<td>{{ l.cf_pct_adj | percentage | decimalPlaces(1) }}</td>
+							<td>{{ l.cf_pct | percentage | decimalPlaces(1) }}</td>
+							<td>{{ l.cf_per60 | decimalPlaces(1) }}</td>
+							<td>{{ l.ca_per60 | decimalPlaces(1) }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 		</div>
 	</div>
 </template>
@@ -191,6 +219,25 @@ module.exports = {
 			result.cf_per60 = result.toi === 0 ? 0 : 60 * 60 * result.cf / result.toi;
 			result.ca_per60 = result.toi === 0 ? 0 : 60 * 60 * result.ca / result.toi;
 			return result;
+		},
+		lineVals: function() {
+			var lineData = this.data.lines;
+			var strSit = this.strengthSit;
+			var result = [];
+			lineData.forEach(function(l) {
+				result.push({
+					names: (l.firsts[0] + " " + l.lasts[0] + " " + l.firsts[1] + " " + l.lasts[1]).toLowerCase(),
+					name1: l.firsts[0] + " " + l.lasts[0],
+					name2: l.firsts[1] + " " + l.lasts[1],
+					toi: l[strSit].toi,
+					g_diff: l[strSit].gf - l[strSit].ga,
+					cf_pct: l[strSit].cf + l[strSit].ca === 0 ? 0 : l[strSit].cf / (l[strSit].cf + l[strSit].ca),
+					cf_pct_adj: l[strSit].cf_adj + l[strSit].ca_adj === 0 ? 0 : l[strSit].cf_adj / (l[strSit].cf_adj + l[strSit].ca_adj),
+					cf_per60: 60 * 60 * l[strSit].cf / l[strSit].toi,
+					ca_per60: 60 * 60 * l[strSit].ca / l[strSit].toi
+				});
+			});
+			return result.sort(function(a, b) { return b.toi - a.toi; });
 		}
 	},
 	filters: {
