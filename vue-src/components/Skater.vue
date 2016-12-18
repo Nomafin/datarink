@@ -39,8 +39,8 @@
 						</tr>
 					</thead>
 					<tr>
-						<td>Minutes per game</td>
-						<td>{{ ((tableVals.toi / (60 * data.player.gp))).toFixed(1) }}</td>
+						<td>Playing time</td>
+						<td>{{ ((tableVals.toi / (60 * data.player.gp))).toFixed(1) }} mins/game</td>
 						<td>{{ data.player.gp }} games</td>
 					</tr>
 					<tr>
@@ -50,81 +50,81 @@
 					<tr>
 						<td>Points</td>
 						<td>{{ tableVals.p }}</td>
-						<td><span v-if="tableVals.p !== 0">{{ tableVals.p_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.p !== 0">{{ tableVals.p_per60 | decimalPlaces(1) }} per 60</span></td>
 					</tr>
 					<tr>
 						<td>Primary points</td>
 						<td>{{ tableVals.p1 }}</td>
-						<td><span v-if="tableVals.p1 !== 0">{{ tableVals.p1_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.p1 !== 0">{{ tableVals.p1_per60 | decimalPlaces(1) }} per 60</span></td>
 					</tr>
 					<tr>
 						<td>Corsi</td>
 						<td>{{ tableVals.ic }}</td>
-						<td><span v-if="tableVals.ic !== 0">{{ tableVals.ic_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.ic !== 0">{{ tableVals.ic_per60 | decimalPlaces(1) }} per 60</span></td>
 					</tr>
 					<tr>
 						<td>Sh%</td>
-						<td colspan="2">{{ tableVals.i_sh_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
+						<td colspan="2">{{ tableVals.i_sh_pct | percentage | decimalPlaces(1) }}%</td>
 					</tr>
 					<tr>
 						<th colspan="3">On-ice goals</th>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>GF%</td>
-						<td colspan="2">{{ tableVals.gf_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
+						<td colspan="2">{{ tableVals.gf_pct | percentage | decimalPlaces(1) }}%</td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>Differential</td>
 						<td>{{ tableVals.g_diff | signedDecimalPlaces(0) }}</td>
-						<td><span v-if="tableVals.g_diff !== 0">{{ tableVals.g_diff_per60 | signedDecimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.g_diff !== 0">{{ tableVals.g_diff_per60 | signedDecimalPlaces(1) }} per 60</span></td>
 					</tr>
 					<tr>
 						<td>GF</td>
 						<td>{{ tableVals.gf }}</td>
-						<td><span v-if="tableVals.gf !== 0">{{ tableVals.gf_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.gf !== 0">{{ tableVals.gf_per60 | decimalPlaces(1) }} per 60</span></td>
 					</tr>
 					<tr>
 						<td>GA</td>
 						<td>{{ tableVals.ga }}</td>
-						<td><span v-if="tableVals.ga !== 0">{{ tableVals.ga_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.ga !== 0">{{ tableVals.ga_per60 | decimalPlaces(1) }} per 60</span></td>
 					</tr>
 					<tr>
 						<td>Sh%</td>
-						<td colspan="2">{{ tableVals.sh_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
+						<td colspan="2">{{ tableVals.sh_pct | percentage | decimalPlaces(1) }}%</td>
 					</tr>
 					<tr>
 						<td>Sv%</td>
-						<td colspan="2">{{ tableVals.sv_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
+						<td colspan="2">{{ tableVals.sv_pct | percentage | decimalPlaces(1) }}%</td>
 					</tr>
 					<tr>
 						<th colspan="3">On-ice corsi</th>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF%</td>
-						<td colspan="2">{{ tableVals.cf_pct | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
+						<td colspan="2">{{ tableVals.cf_pct | percentage | decimalPlaces(1) }}%</td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF% relative</td>
-						<td colspan="2">{{ tableVals.cf_pct_rel | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
+						<td colspan="2">{{ tableVals.cf_pct_rel | percentage | decimalPlaces(1) }}%</td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>CF% score-adj</td>
-						<td colspan="2">{{ tableVals.cf_pct_adj | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
+						<td colspan="2">{{ tableVals.cf_pct_adj | percentage | decimalPlaces(1) }}%</td>
 					</tr>
 					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
 						<td>Differential</td>
 						<td>{{ tableVals.c_diff | signedDecimalPlaces(0) }}</td>
-						<td><span v-if="tableVals.c_diff !== 0">{{ tableVals.c_diff_per60 | signedDecimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.c_diff !== 0">{{ tableVals.c_diff_per60 | signedDecimalPlaces(1) }} per 60</span></td>
 					</tr>
 					<tr>
 						<td>CF</td>
 						<td>{{ tableVals.cf }}</td>
-						<td><span v-if="tableVals.cf !== 0">{{ tableVals.cf_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.cf !== 0">{{ tableVals.cf_per60 | decimalPlaces(1) }} per 60</span></td>
 					</tr>
 					<tr>
 						<td>CA</td>
 						<td>{{ tableVals.ca }}</td>
-						<td><span v-if="tableVals.ca !== 0">{{ tableVals.ca_per60 | decimalPlaces(1) }}<span class="pct"> per 60</span></span></td>
+						<td><span v-if="tableVals.ca !== 0">{{ tableVals.ca_per60 | decimalPlaces(1) }} per 60</span></td>
 					</tr>
 				</table>
 			</div>
