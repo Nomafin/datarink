@@ -198,7 +198,7 @@
 							<td>{{ l.ca_per60 | decimalPlaces(1) }}</td>
 						</tr>
 						<tr v-if="filteredLineData.length === 0">
-							<td v-bind:colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines</td>
+							<td v-bind:colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines with at least 5 minutes together</td>
 						</tr>
 					</tbody>
 				</table>
@@ -281,6 +281,7 @@ module.exports = {
 				var strengthSit = this.strengthSit;
 				tableData = tableData.filter(function(d) { return d.strength_sit === strengthSit; });
 			}
+			console.log(tableData);
 			var result = {
 				ig: _.sumBy(tableData, "ig"),
 				ia1: _.sumBy(tableData, "ia1"),

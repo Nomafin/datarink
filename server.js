@@ -180,6 +180,16 @@ function start() {
 		// Process query results
 		function getBreakpoints() {
 
+			// Postgres aggregate functions like SUM return strings, so cast them as ints
+			// Calculate score-adjusted corsi
+			statRows.forEach(function(r) {
+				["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
+					r[col] = +r[col];
+				});
+				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+			});
+
 			// Group rows by playerId:
 			//	{ 123: [rows for player 123], 234: [rows for player 234] }
 			statRows = _.groupBy(statRows, "player_id");
@@ -219,18 +229,6 @@ function start() {
 			// Remove players with less than 10 games played
 			var breakpointPlayers = players.filter(function(d) { return d.f_or_d === result.player.f_or_d; });
 			breakpointPlayers = breakpointPlayers.filter(function(d) { return d.gp >= 10; });
-
-			// Postgres aggregate functions like SUM return strings, so cast them as ints
-			// Calculate score-adjusted corsi
-			breakpointPlayers.forEach(function(p) {
-				p.data.forEach(function(r) {
-					["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
-						r[col] = +r[col];
-					});
-					r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
-					r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
-				});
-			});
 
 			// Get breakpoints
 			["all_toi", "ev5_cf_adj_per60", "ev5_ca_adj_per60", "ev5_p1_per60", "pp_p1_per60"].forEach(function(s) {

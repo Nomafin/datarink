@@ -5,7 +5,7 @@
 			<div class="ranges">
 				<div v-for="(r, i) in ranges" v-bind:style="{ width: r.width + '%', background: r.colour }"></div>
 			</div>
-			<div v-if="markerPos <= 100" v-bind:style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
+			<div v-if="markerPos <= 100 && markerPos" v-bind:style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
 		</div>
 		<div class="axis">
 			<span>{{ axisTicks[0] }}</span><span>{{ axisTicks[1] }}</span>
@@ -38,7 +38,7 @@ module.exports = {
 			return ranges.reverse();
 		},
 		markerPos: function() {
-			return 100 * this.point / this.breakpoints[0];
+			return this.point ? 100 * this.point / this.breakpoints[0] : null;
 		},
 		axisTicks: function() {
 			var ticks = [0, Math.round(_.max(this.breakpoints))];
@@ -48,7 +48,9 @@ module.exports = {
 			return ticks;
 		},
 		titleVal: function() {
-			if (this.label === "mins/game, total") {
+			if (!this.point) {
+				return "--";
+			} else if (this.label === "mins/game, total") {
 				return (this.point / 60).toFixed(1);
 			} else {
 				return this.point.toFixed(1);
