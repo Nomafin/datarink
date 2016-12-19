@@ -25,7 +25,7 @@
 				<div><span style="background: #84c2a3;"></span><span>121-180</span></div>
 				<div><span style="background: #add7c2;"></span><span>181+</span></div>
 			</div>
-			<div class="section" style="border-top: 1px solid #e0e2e2; border-bottom: 1px solid #e0e2e2; padding-top: 23px; padding-bottom: 7px;">
+			<div class="section section-control" style="border-top: 1px solid #e0e2e2; border-bottom: 1px solid #e0e2e2; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
 					<button v-bind:class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button
 					><button v-bind:class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Own stats</button
@@ -136,10 +136,10 @@
 				</table>
 			</div>
 			<div class="section section-table" v-show="tabs.active === 'lines'">
-				<div class="search-with-menu" style="margin-bottom: 16px;">
+				<div class="search-with-menu" style="margin-bottom: 24px;">
 					<select v-model="search.condition">
-						<option value="includes">Including:</option>
-						<option value="excludes">Excluding:</option>
+						<option value="includes">With:</option>
+						<option value="excludes">Without:</option>
 					</select
 					><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
 				</div>
@@ -469,9 +469,6 @@ module.exports = {
 </script>
 
 <style>
-select {
-	margin-bottom: 16px;
-}
 table td,
 table th {
 	text-align: left;
@@ -479,7 +476,6 @@ table th {
 .section.legend {
 	padding-left: 16px;
 	padding-right: 16px;
-	padding-bottom: 40px;
 }
 .legend > div {
 	display: inline-block;
