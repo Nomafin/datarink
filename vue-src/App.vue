@@ -197,7 +197,7 @@ button {
 	height: $control-height;
 	line-height: $base-line-height;
 	border: 1px solid $gray2;
-	padding: 5px 15px;
+	padding: 0 15px;
 
 	font-size: $base-font-size;
 	color: $gray8;
