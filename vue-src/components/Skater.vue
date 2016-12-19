@@ -203,6 +203,38 @@
 					</tbody>
 				</table>
 			</div>
+			<div class="section" v-show="tabs.active === 'games'">
+				<table>
+					<thead>
+						<tr>
+							<th>Date</th>
+							<th>Mins</th>
+							<th>Points</th>
+							<th>IC</th>
+							<th>G diff</th>
+							<th>GF</th>
+							<th>GA</th>
+							<th>C diff</th>
+							<th>CF</th>
+							<th>CA</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="r in aggregatedHistoryData">
+							<td>{{ r.date }}</td>
+							<td>{{ r.toi }}</td>
+							<td>{{ r.ig + r.ia1 + r.ia2 }}</td>
+							<td>{{ r.ic }}</td>
+							<td>{{ r.gf - r.ga }}</td>
+							<td>{{ r.gf }}</td>
+							<td>{{ r.ga }}</td>
+							<td>{{ r.cf - r.ca }}</td>
+							<td>{{ r.cf }}</td>
+							<td>{{ r.ca }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 		</div>
 	</div>
 </template>
@@ -210,6 +242,7 @@
 <script>
 var Bulletchart = require("./Bulletchart.vue");
 var _ = require("lodash");
+var constants = require("./../app-constants.js");
 module.exports = {
 	data: function() {
 		return {
@@ -282,6 +315,37 @@ module.exports = {
 			result.cf_per60 = result.toi === 0 ? 0 : 60 * 60 * result.cf / result.toi;
 			result.ca_per60 = result.toi === 0 ? 0 : 60 * 60 * result.ca / result.toi;
 			return result;
+		},
+		aggregatedHistoryData: function() {
+			var strengthSit = this.strengthSit;
+			var result = [];
+			this.data.history.forEach(function(g) {
+				var rows = g.data;
+				if (strengthSit === "ev5" || strengthSit === "pp" || strengthSit === "sh") {
+					rows = rows.filter(function(d) { return d.strength_sit === strengthSit; });
+				}
+				// As a temporary solution, subtract 5 hours from the UTC time to get the correct day in New_York/America
+				var datetime = new Date(g.datetime);
+				datetime.setHours(datetime.getHours() - 5);
+				var datestring = constants.monthNames[datetime.getMonth()] + " " + datetime.getDate();
+				result.push({
+					position: g.position,
+					datetime: datetime,
+					date: datestring,
+					toi: _.sumBy(rows, "toi"),
+					ig: _.sumBy(rows, "ig"),
+					ic: _.sumBy(rows, "ic"),
+					ia1: _.sumBy(rows, "ia1"),
+					ia2: _.sumBy(rows, "ia2"),
+					gf: _.sumBy(rows, "gf"),
+					ga: _.sumBy(rows, "ga"),
+					cf: _.sumBy(rows, "cf"),
+					ca: _.sumBy(rows, "ca"),
+					cf_adj: _.sumBy(rows, "cf_adj"),
+					ca_adj: _.sumBy(rows, "ca_adj")
+				});
+			});
+			return _.orderBy(result, "datetime", "asc");
 		},
 		aggregatedLineData: function() {
 			var lineData = this.data.lines;

@@ -578,7 +578,7 @@ function start() {
 		var historyRows;
 
 		function queryHistory() {
-			var queryStr = "SELECT r.game_id, g.datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
+			var queryStr = "SELECT r.game_id, r.team, g.h_team, g.a_team, g.h_final, g.a_final, g.periods, g.datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
 				+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
 				+ " FROM game_rosters AS r"
 				+ " LEFT JOIN game_stats AS s"
@@ -613,9 +613,24 @@ function start() {
 					continue;
 				}
 
-				// Store player data, including their position and games played
+				// Store game results
+				var team = historyRows[gId][0].team;
+				var isHome = team === historyRows[gId][0].h_team ? true : false;
+				var opp = isHome ? historyRows[gId][0].a_team : historyRows[gId][0].h_team;
+				var teamFinal = historyRows[gId][0].h_final;
+				var oppFinal = historyRows[gId][0].a_final;
+				if (!isHome) {
+					var tmp = teamFinal;
+					teamFinal = oppFinal;
+					oppFinal = tmp;
+				}
 				historyResults.push({
 					game_id: +gId,
+					team: team,
+					opp: opp,
+					team_final: teamFinal,
+					opp_final: oppFinal,
+					periods: historyRows[gId][0].periods,
 					datetime: historyRows[gId][0].datetime,
 					position: historyRows[gId][0].position,
 					data: historyRows[gId]
@@ -627,7 +642,12 @@ function start() {
 				g.data.forEach(function(r) {
 					r.game_id = undefined,
 					r.datetime = undefined,
-					r.position = undefined
+					r.position = undefined,
+					r.team = undefined,
+					r.a_team = undefined,
+					r.h_team = undefined,
+					r.a_score = undefined,
+					r.h_score = undefined
 				});
 			});
 
