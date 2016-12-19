@@ -28,7 +28,7 @@
 			<div class="section section-control" style="border-top: 1px solid #e0e2e2; border-bottom: 1px solid #e0e2e2; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
 					<button v-bind:class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button
-					><button v-bind:class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Own stats</button
+					><button v-bind:class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Stats</button
 					><button v-bind:class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button>
 				</div
 				><select v-model="strengthSit">
@@ -39,7 +39,7 @@
 				</select>
 			</div>
 			<div class="section" v-show="tabs.active === 'self'">
-				<table>
+				<table class="left-aligned">
 					<thead>
 						<tr>
 							<th colspan="3">Own production</th>
@@ -146,8 +146,8 @@
 				<table>
 					<thead>
 						<tr>
-							<th>Linemates</th>
-							<th v-if="data.player.f_or_d === 'f'"></th>
+							<th class="left-aligned">Linemates</th>
+							<th class="left-aligned" v-if="data.player.f_or_d === 'f'"></th>
 							<th
 								@click="sortBy('toi')"
 								@keyup.enter="sortBy('toi')"
@@ -188,8 +188,8 @@
 					</thead>
 					<tbody>
 						<tr v-for="l in filteredLineData">
-							<td>{{ l.name1 }}</td>
-							<td v-if="data.player.f_or_d === 'f'">{{ l.name2 }}</td>
+							<td class="left-aligned">{{ l.name1 }}</td>
+							<td class="left-aligned" v-if="data.player.f_or_d === 'f'">{{ l.name2 }}</td>
 							<td>{{ Math.round(l.toi / 60) }}</td>
 							<td>{{ l.g_diff | signedDecimalPlaces(0) }}</td>
 							<td>{{ l.cf_pct_adj | percentage | decimalPlaces(1) }}<span class="pct">%</span></td>
@@ -207,12 +207,12 @@
 				<table>
 					<thead>
 						<tr>
-							<th>Date</th>
-							<th>Opponent</th>
-							<th>Result</th>
+							<th class="left-aligned">Date</th>
+							<th class="left-aligned">Opponent</th>
+							<th class="left-aligned">Result</th>
+							<th class="left-aligned">Points</th>
 							<th>Mins</th>
-							<th>Points</th>
-							<th>Own corsi</th>
+							<th>Own C</th>
 							<th>GF</th>
 							<th>GA</th>
 							<th>G diff</th>
@@ -223,12 +223,12 @@
 					</thead>
 					<tbody>
 						<tr v-for="r in aggregatedHistoryData">
-							<td>{{ r.date }}</td>
-							<td>{{ r.opp.toUpperCase() }}</td>
-							<td>{{ r.result }}</td>
-							<td v-if="r.position === 'na'" colspan="9">Scratched</td>
+							<td class="left-aligned">{{ r.date }}</td>
+							<td class="left-aligned">{{ r.opp.toUpperCase() }}</td>
+							<td class="left-aligned">{{ r.result }}</td>
+							<td class="left-aligned" v-if="r.position === 'na'" colspan="9">Scratched</td>
+							<td class="left-aligned" v-if="r.position !== 'na'">{{ r.point_string }}</td>
 							<td v-if="r.position !== 'na'">{{ Math.round(r.toi / 60) }}</td>
-							<td v-if="r.position !== 'na'">{{ r.point_string }}</td>
 							<td v-if="r.position !== 'na'">{{ r.ic }}</td>
 							<td v-if="r.position !== 'na'">{{ r.gf }}</td>
 							<td v-if="r.position !== 'na'">{{ r.ga }}</td>
@@ -469,8 +469,8 @@ module.exports = {
 </script>
 
 <style>
-table td,
-table th {
+table.left-aligned th,
+table.left-aligned td {
 	text-align: left;
 }
 .section.legend {
