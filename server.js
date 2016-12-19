@@ -627,6 +627,7 @@ function start() {
 				historyResults.push({
 					game_id: +gId,
 					team: team,
+					is_home: isHome,
 					opp: opp,
 					team_final: teamFinal,
 					opp_final: oppFinal,

@@ -198,19 +198,21 @@
 							<td>{{ l.ca_per60 | decimalPlaces(1) }}</td>
 						</tr>
 						<tr v-if="filteredLineData.length === 0">
-							<td v-bind:colspan="data.player.f_or_d === 'f' ? '8' : '7'">No matching lines</td>
+							<td v-bind:colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines</td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
-			<div class="section" v-show="tabs.active === 'games'">
+			<div class="section section-table" v-show="tabs.active === 'games'">
 				<table>
 					<thead>
 						<tr>
 							<th>Date</th>
+							<th>Opponent</th>
+							<th>Result</th>
 							<th>Mins</th>
 							<th>Points</th>
-							<th>IC</th>
+							<th>Own corsi</th>
 							<th>G diff</th>
 							<th>GF</th>
 							<th>GA</th>
@@ -222,15 +224,18 @@
 					<tbody>
 						<tr v-for="r in aggregatedHistoryData">
 							<td>{{ r.date }}</td>
-							<td>{{ r.toi }}</td>
-							<td>{{ r.ig + r.ia1 + r.ia2 }}</td>
-							<td>{{ r.ic }}</td>
-							<td>{{ r.gf - r.ga }}</td>
-							<td>{{ r.gf }}</td>
-							<td>{{ r.ga }}</td>
-							<td>{{ r.cf - r.ca }}</td>
-							<td>{{ r.cf }}</td>
-							<td>{{ r.ca }}</td>
+							<td>{{ r.opp.toUpperCase() }}</td>
+							<td>{{ r.result }}</td>
+							<td v-if="r.position === 'na'" colspan="9">Scratched</td>
+							<td v-if="r.position !== 'na'">{{ Math.round(r.toi / 60) }}</td>
+							<td v-if="r.position !== 'na'">{{ r.point_string }}</td>
+							<td v-if="r.position !== 'na'">{{ r.ic }}</td>
+							<td v-if="r.position !== 'na'">{{ r.g_diff | signedDecimalPlaces(0) }}</td>
+							<td v-if="r.position !== 'na'">{{ r.gf }}</td>
+							<td v-if="r.position !== 'na'">{{ r.ga }}</td>
+							<td v-if="r.position !== 'na'">{{ r.c_diff | signedDecimalPlaces(0) }}</td>
+							<td v-if="r.position !== 'na'">{{ r.cf }}</td>
+							<td v-if="r.position !== 'na'">{{ r.ca }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -327,25 +332,58 @@ module.exports = {
 				// As a temporary solution, subtract 5 hours from the UTC time to get the correct day in New_York/America
 				var datetime = new Date(g.datetime);
 				datetime.setHours(datetime.getHours() - 5);
-				var datestring = constants.monthNames[datetime.getMonth()] + " " + datetime.getDate();
-				result.push({
+				var dateString = constants.monthNames[datetime.getMonth()] + " " + datetime.getDate();
+				var resultString = g.team_final > g.opp_final ? "W" : "L";
+				resultString += ", " + g.team_final + "-" + g.opp_final;
+				if (g.game_id < 30000 && g.periods > 3) {
+					if (g.periods === 4) {
+						resultString += " (OT)";
+					} else if (g.periods === 5) {
+						resultString += " (SO)";
+					}
+				}
+				var resultObj = {
 					position: g.position,
+					team: g.team,
+					opp: g.is_home ? "@" + g.opp : g.opp,
+					result: resultString,
 					datetime: datetime,
-					date: datestring,
-					toi: _.sumBy(rows, "toi"),
+					date: dateString,
 					ig: _.sumBy(rows, "ig"),
-					ic: _.sumBy(rows, "ic"),
 					ia1: _.sumBy(rows, "ia1"),
 					ia2: _.sumBy(rows, "ia2"),
+					toi: _.sumBy(rows, "toi"),
+					ic: _.sumBy(rows, "ic"),
 					gf: _.sumBy(rows, "gf"),
 					ga: _.sumBy(rows, "ga"),
+					g_diff: _.sumBy(rows, "gf") - _.sumBy(rows, "ga"),
 					cf: _.sumBy(rows, "cf"),
 					ca: _.sumBy(rows, "ca"),
+					c_diff: _.sumBy(rows, "cf") - _.sumBy(rows, "ca"),
 					cf_adj: _.sumBy(rows, "cf_adj"),
 					ca_adj: _.sumBy(rows, "ca_adj")
-				});
+				};
+				// Create string to describe the player's points: 1G, 2A2
+				var pointString = "";
+				if (resultObj.ig > 0) {
+					pointString += resultObj.ig + "G";
+				}
+				if (resultObj.ia1 > 0) {
+					if (pointString.length > 0) {
+						pointString += ", ";
+					}
+					pointString += resultObj.ia1 + "A¹";
+				}
+				if (resultObj.ia2 > 0) {
+					if (pointString.length > 0) {
+						pointString += ", ";
+					}
+					pointString += resultObj.ia2 + "A²";
+				}
+				resultObj.point_string = pointString;
+				result.push(resultObj);
 			});
-			return _.orderBy(result, "datetime", "asc");
+			return _.orderBy(result, "datetime", "desc");
 		},
 		aggregatedLineData: function() {
 			var lineData = this.data.lines;
