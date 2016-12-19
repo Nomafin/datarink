@@ -213,12 +213,12 @@
 							<th>Mins</th>
 							<th>Points</th>
 							<th>Own corsi</th>
-							<th>G diff</th>
 							<th>GF</th>
 							<th>GA</th>
-							<th>C diff</th>
+							<th>G diff</th>
 							<th>CF</th>
 							<th>CA</th>
+							<th>C diff</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -230,12 +230,12 @@
 							<td v-if="r.position !== 'na'">{{ Math.round(r.toi / 60) }}</td>
 							<td v-if="r.position !== 'na'">{{ r.point_string }}</td>
 							<td v-if="r.position !== 'na'">{{ r.ic }}</td>
-							<td v-if="r.position !== 'na'">{{ r.g_diff | signedDecimalPlaces(0) }}</td>
 							<td v-if="r.position !== 'na'">{{ r.gf }}</td>
 							<td v-if="r.position !== 'na'">{{ r.ga }}</td>
-							<td v-if="r.position !== 'na'">{{ r.c_diff | signedDecimalPlaces(0) }}</td>
+							<td v-if="r.position !== 'na'">{{ r.g_diff | signedDecimalPlaces(0) }}</td>
 							<td v-if="r.position !== 'na'">{{ r.cf }}</td>
 							<td v-if="r.position !== 'na'">{{ r.ca }}</td>
+							<td v-if="r.position !== 'na'">{{ r.c_diff | signedDecimalPlaces(0) }}</td>
 						</tr>
 					</tbody>
 				</table>
