@@ -107,7 +107,6 @@ module.exports = {
 }
 .bullet-chart-container .title {
 	font-size: 22px;
-	font-weight: 700;
 	line-height: 24px;
 }
 .bullet-chart-container .title span:last-child {
