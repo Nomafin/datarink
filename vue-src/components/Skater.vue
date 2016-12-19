@@ -13,17 +13,17 @@
 				<bulletchart v-bind:label="'P1/60, power play'" v-bind:data="data.breakpoints.pp_p1_per60" v-bind:isInverted="false"></bulletchart>
 			</div>
 			<div class="section legend" v-if="data.player.f_or_d === 'f'">
-				<div><span style="background: #209767;"></span><span>Top 90 forwards</span></div>
-				<div><span style="background: #59ad85;"></span><span>91-180</span></div>
-				<div><span style="background: #84c2a3;"></span><span>181-270</span></div>
-				<div><span style="background: #add7c2;"></span><span>261-360</span></div>
-				<div><span style="background: #d6ece3;"></span><span>361+</span></div>
+				<div><span style="background: #2db27b;"></span><span>Top 90 forwards</span></div>
+				<div><span style="background: #65c396;"></span><span>91-180</span></div>
+				<div><span style="background: #8ed4b1;"></span><span>181-270</span></div>
+				<div><span style="background: #b5e4cd;"></span><span>261-360</span></div>
+				<div><span style="background: #dbf5ea;"></span><span>361+</span></div>
 			</div>
 			<div class="section legend" v-if="data.player.f_or_d === 'd'">
-				<div><span style="background: #209767;"></span><span>Top 60 defenders</span></div>
-				<div><span style="background: #59ad85;"></span><span>61-120</span></div>
-				<div><span style="background: #84c2a3;"></span><span>121-180</span></div>
-				<div><span style="background: #add7c2;"></span><span>181+</span></div>
+				<div><span style="background: #2db27b;"></span><span>Top 60 defenders</span></div>
+				<div><span style="background: #65c396;"></span><span>61-120</span></div>
+				<div><span style="background: #8ed4b1;"></span><span>121-180</span></div>
+				<div><span style="background: #b5e4cd;"></span><span>181+</span></div>
 			</div>
 			<div class="section section-control" style="border-top: 1px solid #e0e2e2; border-bottom: 1px solid #e0e2e2; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">

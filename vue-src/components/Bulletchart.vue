@@ -27,7 +27,7 @@ module.exports = {
 				ranges.push({ width: 100 * delta / self.data.breakpoints[0] });
 			});
 			// Get colour
-			var colours = ["#209767", "#59ad85", "#84c2a3", "#add7c2", "#d6ece3"];	// Listed from dark to light
+			var colours = ["#2db27b", "#65c396", "#8ed4b1", "#b5e4cd", "#dbf5ea"]; // Listed from dark to light
 			colours = colours.slice(0, ranges.length);
 			if (self.isInverted) {
 				colours.reverse();
