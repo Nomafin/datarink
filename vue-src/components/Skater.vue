@@ -345,7 +345,7 @@ module.exports = {
 				var resultObj = {
 					position: g.position,
 					team: g.team,
-					opp: g.is_home ? "@" + g.opp : g.opp,
+					opp: g.is_home ? g.opp : "@" + g.opp,
 					result: resultString,
 					datetime: datetime,
 					date: dateString,
