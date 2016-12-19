@@ -6,11 +6,11 @@
 				<h1>{{ data.player.first + " " + data.player.last }}: 2016-2017</h1>
 			</div>
 			<div class="section" style="padding-left: 0; padding-right: 0; margin-bottom: 8px;">
-				<bulletchart v-bind:label="'mins/game, total'" v-bind:breakpoints="data.breakpoints.all_toi.breakpoints" v-bind:point="data.breakpoints.all_toi.player" v-bind:isInverted="false"></bulletchart>
-				<bulletchart v-bind:label="'score adj. CF/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_cf_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_cf_adj_per60.player" v-bind:isInverted="false"></bulletchart>
-				<bulletchart v-bind:label="'score adj. CA/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_ca_adj_per60.breakpoints" v-bind:point="data.breakpoints.ev5_ca_adj_per60.player" v-bind:isInverted="true"></bulletchart>
-				<bulletchart v-bind:label="'P1/60, 5 on 5'" v-bind:breakpoints="data.breakpoints.ev5_p1_per60.breakpoints" v-bind:point="data.breakpoints.ev5_p1_per60.player" v-bind:isInverted="false"></bulletchart>
-				<bulletchart v-bind:label="'P1/60, power play'" v-bind:breakpoints="data.breakpoints.pp_p1_per60.breakpoints" v-bind:point="data.breakpoints.pp_p1_per60.player" v-bind:isInverted="false"></bulletchart>
+				<bulletchart v-bind:label="'mins/game, total'" v-bind:data="data.breakpoints.all_toi" v-bind:isInverted="false"></bulletchart>
+				<bulletchart v-bind:label="'score adj. CF/60, 5 on 5'" v-bind:data="data.breakpoints.ev5_cf_adj_per60" v-bind:isInverted="false"></bulletchart>
+				<bulletchart v-bind:label="'score adj. CA/60, 5 on 5'" v-bind:data="data.breakpoints.ev5_ca_adj_per60" v-bind:isInverted="true"></bulletchart>
+				<bulletchart v-bind:label="'P1/60, 5 on 5'" v-bind:data="data.breakpoints.ev5_p1_per60" v-bind:isInverted="false"></bulletchart>
+				<bulletchart v-bind:label="'P1/60, power play'" v-bind:data="data.breakpoints.pp_p1_per60" v-bind:isInverted="false"></bulletchart>
 			</div>
 			<div class="section legend" v-if="data.player.f_or_d === 'f'">
 				<div><span style="background: #209767;"></span><span>Top 90 forwards</span></div>
@@ -281,7 +281,6 @@ module.exports = {
 				var strengthSit = this.strengthSit;
 				tableData = tableData.filter(function(d) { return d.strength_sit === strengthSit; });
 			}
-			console.log(tableData);
 			var result = {
 				ig: _.sumBy(tableData, "ig"),
 				ia1: _.sumBy(tableData, "ia1"),

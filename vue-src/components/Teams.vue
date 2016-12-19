@@ -197,7 +197,7 @@ module.exports = {
 				teams.forEach(function(p) {
 					stats.forEach(function(st) {
 						if (st !== "toi") {
-							p[st] = (p[st] / p["toi"]) * 60 * 60;
+							p[st] = p["toi"] === 0 ? 0 : (p[st] / p["toi"]) * 60 * 60;
 						}
 					});
 				});

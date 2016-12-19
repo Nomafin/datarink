@@ -225,52 +225,27 @@ function start() {
 				}
 			}
 
-			// To calculate breakpoints, only consider players with the same position as the specified player
-			// Remove players with less than 10 games played
-			var breakpointPlayers = players.filter(function(d) { return d.f_or_d === result.player.f_or_d; });
-			breakpointPlayers = breakpointPlayers.filter(function(d) { return d.gp >= 10; });
-
 			// Get breakpoints
+			var player = players.find(function(d) { return d.player_id === pId; });
 			["all_toi", "ev5_cf_adj_per60", "ev5_ca_adj_per60", "ev5_p1_per60", "pp_p1_per60"].forEach(function(s) {
 
+				// To calculate breakpoints, only consider players with the same position as the specified player, and with at least 10gp
+				// For powerplay breakpoints, only consider players with at least 20 minutes of pp time
+				var breakpointPlayers = players.filter(function(d) { return (d.f_or_d === result.player.f_or_d && d.gp >= 10); });
+				if (s === "pp_p1_per60") {
+					breakpointPlayers = breakpointPlayers.filter(function(p) {
+						var rows = p.data.filter(function(d) { return d.strength_sit === "pp"; });
+						return _.sumBy(rows, "toi") >= 20 * 60;
+					});
+				}
+	
 				// Initialize result
-				result.breakpoints[s] = { breakpoints: [], player: null };
+				result.breakpoints[s] = { breakpoints: [], player: null, isPlayerInDistribution: null };
 
 				// Get the datapoints for which we want a distribution
 				var datapoints = [];
 				breakpointPlayers.forEach(function(p) {
-					var datapoint;
-					if (s === "all_toi") {
-						datapoint = _.sumBy(p.data, "toi") / p.gp;
-					} else if (s === "ev5_cf_adj_per60" || s === "ev5_ca_adj_per60" || s === "ev5_p1_per60") {
-						var rows = p.data.filter(function(d) { return d.strength_sit === "ev5"; });
-						if (s === "ev5_cf_adj_per60") {
-							datapoint = _.sumBy(rows, "cf_adj");
-						} else if (s === "ev5_ca_adj_per60") {
-							datapoint = _.sumBy(rows, "ca_adj");
-						} else if (s === "ev5_p1_per60") {
-							datapoint = _.sumBy(rows, "ig") + _.sumBy(rows, "ia1");
-						}
-						datapoint = 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
-					} else if (s === "pp_p1_per60") {
-						var rows = p.data.filter(function(d) { return d.strength_sit === "pp"; });
-						datapoint = _.sumBy(rows, "ig") + _.sumBy(rows, "ia1");
-						datapoint = 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
-					}
-					// Only calculate powerplay breakpoints for players with at least 20 minutes of pp time
-					if (datapoint) {
-						if (s !== "pp_p1_per60" || (s === "pp_p1_per60" && _.sumBy(rows, "toi") >= 20 * 60)) {
-							datapoints.push(datapoint);
-						}
-					}
-					// Store the player's datapoint
-					if (p.player_id === pId) {
-						if (_.sumBy(p.data, "toi") === 0) {
-							result.breakpoints[s].player = 0;
-						} else {
-							result.breakpoints[s].player = datapoint;
-						}
-					}
+					datapoints.push(getDatapoint(p, s));
 				});
 
 				// Sort datapoints in descending order and find breakpoints
@@ -288,9 +263,41 @@ function start() {
 					}				
 					i++;	
 				}
+
+				// Store the player's datapoint
+				result.breakpoints[s].player = getDatapoint(player, s);
+				if (breakpointPlayers.find(function(d) { return d.player_id === pId; })) {
+					result.breakpoints[s].isPlayerInDistribution = true;
+				} else {
+					result.breakpoints[s].isPlayerInDistribution = false;
+				}
 			});
 
 			queryLinemates();
+		}
+
+		// 'p' is a player object
+		// 's' is the stat to be calculated
+		function getDatapoint(p, s) {
+			var datapoint;
+			if (s === "all_toi") {
+				datapoint = _.sumBy(p.data, "toi") / p.gp;
+			} else if (s === "ev5_cf_adj_per60" || s === "ev5_ca_adj_per60" || s === "ev5_p1_per60") {
+				var rows = p.data.filter(function(d) { return d.strength_sit === "ev5"; });
+				if (s === "ev5_cf_adj_per60") {
+					datapoint = _.sumBy(rows, "cf_adj");
+				} else if (s === "ev5_ca_adj_per60") {
+					datapoint = _.sumBy(rows, "ca_adj");
+				} else if (s === "ev5_p1_per60") {
+					datapoint = _.sumBy(rows, "ig") + _.sumBy(rows, "ia1");
+				}
+				datapoint = _.sumBy(rows, "toi") === 0 ? 0 : 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
+			} else if (s === "pp_p1_per60") {
+				var rows = p.data.filter(function(d) { return d.strength_sit === "pp"; });
+				datapoint = _.sumBy(rows, "ig") + _.sumBy(rows, "ia1");
+				datapoint = _.sumBy(rows, "toi") === 0 ? 0 : 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
+			}
+			return datapoint;
 		}
 
 		//

@@ -5,7 +5,7 @@
 			<div class="ranges">
 				<div v-for="(r, i) in ranges" v-bind:style="{ width: r.width + '%', background: r.colour }"></div>
 			</div>
-			<div v-if="markerPos <= 100 && markerPos" v-bind:style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
+			<div v-if="markerPos >= 0 && markerPos <= 100 && data.isPlayerInDistribution" v-bind:style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
 		</div>
 		<div class="axis">
 			<span>{{ axisTicks[0] }}</span><span>{{ axisTicks[1] }}</span>
@@ -16,15 +16,15 @@
 <script>
 var _ = require("lodash");
 module.exports = {
-	props: ["label", "breakpoints", "point", "isInverted"],
+	props: ["label", "data", "isInverted"],
 	computed: {
 		ranges: function() {
 			var self = this;
 			var ranges = [];
 			// Get width
-			self.breakpoints.forEach(function(p, i) {
-				var delta = i === self.breakpoints.length - 1 ? p : p - self.breakpoints[i + 1];
-				ranges.push({ width: 100 * delta / self.breakpoints[0] });
+			self.data.breakpoints.forEach(function(p, i) {
+				var delta = i === self.data.breakpoints.length - 1 ? p : p - self.data.breakpoints[i + 1];
+				ranges.push({ width: 100 * delta / self.data.breakpoints[0] });
 			});
 			// Get colour
 			var colours = ["#209767", "#59ad85", "#84c2a3", "#add7c2", "#d6ece3"];	// Listed from dark to light
@@ -38,22 +38,20 @@ module.exports = {
 			return ranges.reverse();
 		},
 		markerPos: function() {
-			return this.point ? 100 * this.point / this.breakpoints[0] : null;
+			return 100 * this.data.player / this.data.breakpoints[0];
 		},
 		axisTicks: function() {
-			var ticks = [0, Math.round(_.max(this.breakpoints))];
+			var ticks = [0, this.data.breakpoints[0].toFixed(1)];
 			if (this.label === "mins/game, total") {
-				ticks[1] = Math.round(ticks[1] / 60);
+				ticks[1] = Math.ceil(ticks[1] / 60).toFixed(1);
 			}
 			return ticks;
 		},
 		titleVal: function() {
-			if (!this.point) {
-				return "--";
-			} else if (this.label === "mins/game, total") {
-				return (this.point / 60).toFixed(1);
+			if (this.label === "mins/game, total") {
+				return (this.data.player / 60).toFixed(1);
 			} else {
-				return this.point.toFixed(1);
+				return this.data.player.toFixed(1);
 			}
 		}
 	}
