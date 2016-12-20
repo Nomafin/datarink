@@ -28,35 +28,7 @@ if (window.location.hostname.toLowerCase() !== "localhost") {
 
 <style lang="scss">
 
-/* 
-*
-* Use App.vue's style element to define global styles
-*
-*/
-
-$font-stack: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
-$base-font-size: 14px;
-$base-line-height: 20px;
-$small-font-size: 12px;
-$small-line-height: 16px;
-
-$control-height: 32px;
-
-$gray1: #f2f3f3;
-$gray2: #e0e2e2;
-$gray3: #c1c3c3;
-$gray4: #a3a7a6;
-$gray5: #858a89;
-$gray6: #696e6e;
-$gray7: #4e5454;
-$gray8: #353b3b;
-$gray9: #121818;
-
-$green5: #39cc90;
-$green6: #2db27b;
-$green7: #209767;
-$green8: #147e53;
-$green9: #066640;
+@import "variables";
 
 body {
 	font-family: $font-stack;
@@ -116,7 +88,7 @@ a:focus {
 }
 
 .header svg .logo-r {
-	fill: $green6;
+	fill: $green5;
 }
 
 .header svg .logo-d {
@@ -147,8 +119,9 @@ a:focus {
 }
 
 .section {
-	margin-bottom: 24px;
-	padding: 0 24px;
+	margin-bottom: $v-whitespace;
+	padding: 0 $h-whitespace;
+	border: 0px solid $gray2;
 }
 
 .section.section-header {
@@ -203,7 +176,7 @@ button {
 	color: $gray8;
 	background: $gray2;
 	margin: 0 8px 8px 0;
-	border-radius: 4px;
+	border-radius: $border-radius;
 }
 
 /* Hide number spinners */
@@ -334,6 +307,30 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 
 .search-with-menu input[type="text"]:focus + .tooltip {
 	display: block;
+}
+
+.toggle {
+	margin: 0 8px 8px 0;
+}
+
+.toggle button {
+	margin: 0;
+	border-radius: 0;
+}
+
+.toggle button:first-child {
+	border-top-left-radius: 4px;
+	border-bottom-left-radius: 4px;
+}
+
+.toggle button:last-child {
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+}
+
+.toggle button.selected {
+	background: $green4;
+	border-color: $green4;
 }
 
 /*

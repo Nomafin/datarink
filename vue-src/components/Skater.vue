@@ -25,10 +25,10 @@
 				<div><span style="background: #8ed4b1;"></span><span>121-180</span></div>
 				<div><span style="background: #b5e4cd;"></span><span>181+</span></div>
 			</div>
-			<div class="section section-control" style="border-top: 1px solid #e0e2e2; border-bottom: 1px solid #e0e2e2; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
+			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
 					<button v-bind:class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button
-					><button v-bind:class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Stats</button
+					><button v-bind:class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Player</button
 					><button v-bind:class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button>
 				</div
 				><select v-model="strengthSit">
@@ -485,33 +485,14 @@ table.left-aligned td {
 .legend > div > span {
 	display: inline-block;
 	vertical-align: top;
-	font-size: 14px;
-	line-height: 16px;
+	font-size: $base-font-size;
+	line-height: $base-line-height;
 }
 .legend > div > span:first-child {
 	height: 12px;
 	width: 12px;
 	margin-top: 2px;
-	border-radius: 4px;
+	border-radius: $border-radius;
 	margin-right: 6px;
-}
-.toggle {
-	margin: 0 8px 8px 0;
-}
-.toggle button {
-	margin: 0;
-	border-radius: 0;
-}
-.toggle button:first-child {
-	border-top-left-radius: 4px;
-	border-bottom-left-radius: 4px;
-}
-.toggle button:last-child {
-	border-top-right-radius: 4px;
-	border-bottom-right-radius: 4px;
-}
-.toggle button.selected {
-	background: #39cc90;
-	border-color: #39cc90;
 }
 </style>

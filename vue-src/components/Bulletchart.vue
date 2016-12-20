@@ -15,6 +15,7 @@
 
 <script>
 var _ = require("lodash");
+var constants = require("./../app-constants.js");
 module.exports = {
 	props: ["label", "data", "isInverted"],
 	computed: {
@@ -27,7 +28,7 @@ module.exports = {
 				ranges.push({ width: 100 * delta / self.data.breakpoints[0] });
 			});
 			// Get colour
-			var colours = ["#2db27b", "#65c396", "#8ed4b1", "#b5e4cd", "#dbf5ea"]; // Listed from dark to light
+			var colours = [constants.colours.green5, constants.colours.green4, constants.colours.green3, constants.colours.green2, constants.colours.green1];
 			colours = colours.slice(0, ranges.length);
 			if (self.isInverted) {
 				colours.reverse();
@@ -58,17 +59,20 @@ module.exports = {
 };
 </script>
 
-<style>
+<style lang="scss">
+
+@import "../variables";
+
 .bullet-chart-container {
 	display: inline-block;
 	vertical-align: top;
-	margin: 0 24px 24px 24px;
+	margin: 0 $h-whitespace $v-whitespace $h-whitespace;
 	width: 272px;
 	position: relative;
 }
 .bullet-chart-container .chart {
 	position: relative;
-	height: 32px;
+	height: $control-height;
 }
 .bullet-chart-container .chart .ranges > div {
 	height: 16px;
@@ -77,18 +81,18 @@ module.exports = {
 	vertical-align: top;
 }
 .bullet-chart-container .chart .ranges > div:first-child {
-	border-top-left-radius: 4px;
-	border-bottom-left-radius: 4px;
+	border-top-left-radius: $border-radius;
+	border-bottom-left-radius: $border-radius;
 }
 .bullet-chart-container .chart .ranges > div:last-child {
-	border-top-right-radius: 4px;
-	border-bottom-right-radius: 4px;
+	border-top-right-radius: $border-radius;
+	border-bottom-right-radius: $border-radius;
 }
 .bullet-chart-container .chart .marker {
 	position: absolute;
 	height: 100%;
 	width: 2px;
-	background: #121818;
+	background: $gray9;
 	top: 0;
 }
 .bullet-chart-container .axis {
@@ -98,20 +102,19 @@ module.exports = {
 .bullet-chart-container .axis span {
 	display: inline-block;
 	vertical-align: top;
-	font-size: 12px;
-	line-height: 16px;
+	font-size: $small-font-size;
+	line-height: $small-line-height;
 	width: 50%;
 }
 .bullet-chart-container .axis span:last-child {
 	text-align: right;
 }
 .bullet-chart-container .title {
-	font-size: 22px;
-	line-height: 24px;
+	font-size: $large-font-size;
+	line-height: $large-line-height - 8px;
 }
 .bullet-chart-container .title span:last-child {
-	font-weight: 400;
-	font-size: 14px;
+	font-size: $base-font-size;
 	margin-left: 6px;
 }
 </style>
