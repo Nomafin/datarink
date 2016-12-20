@@ -226,7 +226,7 @@
 							<td class="left-aligned">{{ r.date }}</td>
 							<td class="left-aligned">{{ r.opp.toUpperCase() }}</td>
 							<td class="left-aligned">{{ r.result }}</td>
-							<td class="left-aligned" v-if="r.position === 'na'" colspan="9">Scratched</td>
+							<td class="left-aligned" v-if="r.position === 'na'" colspan="9">Scratched or injured</td>
 							<td class="left-aligned" v-if="r.position !== 'na'">{{ r.point_string }}</td>
 							<td v-if="r.position !== 'na'">{{ Math.round(r.toi / 60) }}</td>
 							<td v-if="r.position !== 'na'">{{ r.ic }}</td>
@@ -468,7 +468,10 @@ module.exports = {
 };
 </script>
 
-<style>
+<style lang="scss">
+
+@import "../variables";
+
 table.left-aligned th,
 table.left-aligned td {
 	text-align: left;
@@ -492,6 +495,7 @@ table.left-aligned td {
 	height: 12px;
 	width: 12px;
 	margin-top: 2px;
+	margin-top: 4px;
 	border-radius: $border-radius;
 	margin-right: 6px;
 }
