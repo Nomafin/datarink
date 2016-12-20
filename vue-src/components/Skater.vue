@@ -494,7 +494,6 @@ table.left-aligned td {
 .legend > div > span:first-child {
 	height: 12px;
 	width: 12px;
-	margin-top: 2px;
 	margin-top: 4px;
 	border-radius: $border-radius;
 	margin-right: 6px;
