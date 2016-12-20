@@ -1,36 +1,36 @@
 <template>
 	<div>
-		<div class="table-header">
+		<div class="section section-header">
 			<h1>Teams: 2016-2017</h1>
-			<div class="table-controls" v-if="teams">
-				<select v-model="strengthSit">
-					<option value="all">All situations</option>
-					<option value="ev5">5 on 5</option>
-					<option value="sh">Short handed</option>
-					<option value="pp">Power play</option>
-				</select
-				><button type="button" class="toggle-button"
-					v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
-					v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
-					<span class="checkbox-container">
-						<span class="checkbox-checkmark"></span>
-					</span>On-ice goals</button
-				><button type="button" class="toggle-button"
-					v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
-					v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
-					<span class="checkbox-container">
-						<span class="checkbox-checkmark"></span>
-					</span>On-ice corsi</button
-				><button type="button" class="toggle-button"
-					v-on:click="isRatesEnabled = !isRatesEnabled; aggregateTeamData();"
-					v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
-					<span class="checkbox-container">
-						<span class="checkbox-checkmark"></span>
-					</span>Per 60 minutes</button>
-			</div>
+		</div>
+		<div class="section section-control" v-if="teams">
+			<select v-model="strengthSit">
+				<option value="all">All situations</option>
+				<option value="ev5">5 on 5</option>
+				<option value="sh">Short handed</option>
+				<option value="pp">Power play</option>
+			</select
+			><button type="button" class="toggle-button"
+				v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
+				v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
+				<span class="checkbox-container">
+					<span class="checkbox-checkmark"></span>
+				</span>On-ice goals</button
+			><button type="button" class="toggle-button"
+				v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
+				v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
+				<span class="checkbox-container">
+					<span class="checkbox-checkmark"></span>
+				</span>On-ice corsi</button
+			><button type="button" class="toggle-button"
+				v-on:click="isRatesEnabled = !isRatesEnabled; aggregateTeamData();"
+				v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
+				<span class="checkbox-container">
+					<span class="checkbox-checkmark"></span>
+				</span>Per 60 minutes</button>
 		</div>
 		<div class="loader" v-if="!teams"></div>
-		<div class="table-container" v-if="teams">
+		<div class="section section-table" v-if="teams">
 			<table v-bind:class="{
 				'cols-on-ice-goals': visibleColumns.onIceGoals,
 				'cols-on-ice-corsi': visibleColumns.onIceCorsi }"
@@ -103,7 +103,7 @@ module.exports = {
 				{ key: "cf", heading: "CF", sortable: true, hasRate: true, classes: "cols-on-ice-corsi" },
 				{ key: "ca", heading: "CA", sortable: true, hasRate: true, classes: "cols-on-ice-corsi" },
 				{ key: "cf_pct", heading: "CF%", sortable: true, classes: "cols-on-ice-corsi" },
-				{ key: "cf_pct_adj", heading: "CF%, score-adj", sortable: true, classes: "cols-on-ice-corsi" }
+				{ key: "cf_pct_adj", heading: "CF% score-adj", sortable: true, classes: "cols-on-ice-corsi" }
 			]
 		}
 	},
@@ -197,7 +197,7 @@ module.exports = {
 				teams.forEach(function(p) {
 					stats.forEach(function(st) {
 						if (st !== "toi") {
-							p[st] = (p[st] / p["toi"]) * 60 * 60;
+							p[st] = p["toi"] === 0 ? 0 : (p[st] / p["toi"]) * 60 * 60;
 						}
 					});
 				});

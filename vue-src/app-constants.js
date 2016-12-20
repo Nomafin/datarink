@@ -30,5 +30,26 @@ module.exports = {
 		"lak": "Los Angeles Kings",
 		"sjs": "San Jose Sharks",
 		"van": "Vancouver Canucks"
+	},
+	"monthNames": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+	"colours": {
+		"gray1": "#f2f3f3",
+		"gray2": "#e0e2e2",
+		"gray3": "#c1c3c3",
+		"gray4": "#a3a7a6",
+		"gray5": "#858a89",
+		"gray6": "#696e6e",
+		"gray7": "#4e5454",
+		"gray8": "#353b3b",
+		"gray9": "#121818",
+		"green1": "#dbf6eb",
+		"green2": "#b1e8cd",
+		"green3": "#8dd7b3",
+		"green4": "#6ec59c",
+		"green5": "#53b286",
+		"green6": "#3b9f72",
+		"green7": "#278d60",
+		"green8": "#157950",
+		"green9": "#066640"
 	}
 };
