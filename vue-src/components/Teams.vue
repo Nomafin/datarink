@@ -51,7 +51,7 @@
 				<tbody>
 					<tr v-for="p in sortedTeams">
 						<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
-						<td class="left-aligned">{{ p.team.toUpperCase() }}</td>
+						<td class="left-aligned"><router-link v-bind:to="{ path: p.team.toString() }" append>{{ p.team.toUpperCase() }}</td>
 						<td>{{ p.pts }}</td>
 						<td>{{ p.gp }}</td>
 						<td>{{ Math.round(p.toi / 60) }}</td>
@@ -106,7 +106,7 @@ module.exports = {
 				{ key: "cf_pct", heading: "CF%", sortable: true, classes: "cols-on-ice-corsi" },
 				{ key: "cf_pct_adj", heading: "CF% score-adj", sortable: true, classes: "cols-on-ice-corsi" }
 			]
-		}
+		};
 	},
 	filters: {
 		maxDecimalPlaces: function(value, places) {

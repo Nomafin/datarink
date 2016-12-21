@@ -176,7 +176,7 @@ module.exports = {
 				{ key: "cf_pct_rel", heading: "CF% rel", sortable: true, classes: "cols-on-ice-corsi" },
 				{ key: "cf_pct_adj", heading: "CF% score-adj", sortable: true, classes: "cols-on-ice-corsi" }
 			]
-		}
+		};
 	},
 	filters: {
 		maxDecimalPlaces: function(value, places) {
