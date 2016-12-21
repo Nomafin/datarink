@@ -123,6 +123,7 @@
 var _ = require("lodash");
 var constants = require("./../app-constants.js");
 module.exports = {
+	name: "Skaters",
 	data: function() {
 		// Once the api populates 'players' so that it's not null, the loading spinner will disappear
 		return {

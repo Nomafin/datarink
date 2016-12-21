@@ -74,6 +74,7 @@
 <script>
 var _ = require("lodash");
 module.exports = {
+	name: "Teams",
 	data: function() {
 		// Once the api populates 'teams' so that it's not null, the loading spinner will disappear
 		return {

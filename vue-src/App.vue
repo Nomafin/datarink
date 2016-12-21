@@ -8,7 +8,9 @@
 			><router-link to="/teams">Teams</router-link
 			><router-link to="/skaters">Skaters</router-link>
 		</div>
-		<router-view></router-view>
+		<keep-alive include="Skaters,Teams">
+			<router-view/>
+		</keep-alive>
 		<div class="section section-footer">
 			<a href="mailto:datarink@gmail.com">datarink@gmail.com</a
 			><a href="http://www.twitter.com/datarink">@datarink</a>

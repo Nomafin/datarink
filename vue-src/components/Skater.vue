@@ -249,6 +249,7 @@ var Bulletchart = require("./Bulletchart.vue");
 var _ = require("lodash");
 var constants = require("./../app-constants.js");
 module.exports = {
+	name: "Skater",
 	data: function() {
 		return {
 			data: {},
