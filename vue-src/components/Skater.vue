@@ -198,7 +198,7 @@
 							<td>{{ l.ca_per60 | decimalPlaces(1) }}</td>
 						</tr>
 						<tr v-if="filteredLineData.length === 0">
-							<td v-bind:colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines with at least 5 minutes together</td>
+							<td class="left-aligned" v-bind:colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines with at least 5 minutes together</td>
 						</tr>
 					</tbody>
 				</table>

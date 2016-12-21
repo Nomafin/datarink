@@ -7,6 +7,7 @@ var auth = require("http-auth");
 var throng = require("throng");
 var compression = require("compression");
 var constants = require("./analysis-constants.json");
+var combinations = require("./combinations");
 
 var PORT = process.env.PORT || 5000;
 var WORKERS = process.env.WEB_CONCURRENCY || 1;
@@ -165,17 +166,24 @@ function start() {
 		};
 		var players = []; // An array of player objects
 
+		// Start querying and processing the player's game history in parallel with breakpoint calculations
+		// These 2 analyses don't depend on each other
+		queryHistory();
+		queryBreakpoints();
+
 		//
 		// Get the specified player's data and calculate breakpoints
 		// Also prepare data (e.g., player positions) used for subsequent analyses
 		//
 
 		var statRows;
-		query(skaterStatQueryString, [season], function(err, rows) {
-			if (err) { return response.status(500).send("Error running query: " + err); }
-			statRows = rows;
-			getBreakpoints();
-		});
+		function queryBreakpoints() {
+			query(skaterStatQueryString, [season], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				statRows = rows;
+				getBreakpoints();
+			});
+		}
 
 		// Process query results
 		function getBreakpoints() {
@@ -273,6 +281,7 @@ function start() {
 				}
 			});
 
+			// Start querying and processing linemates
 			queryLinemates();
 		}
 
@@ -410,16 +419,10 @@ function start() {
 					// Generate linemate combinations (pairs for defense, triplets for forwards)
 					var uniqLinemates = _.uniqBy(tmRows, "player_id");
 					var linesInPeriod = [];
-					uniqLinemates.forEach(function(lm1) {
-						if (result.player.f_or_d === "d") {
-							createLineObject([lm1]);
-						} else {		
-							uniqLinemates.forEach(function(lm2) {
-								if (lm1.player_id !== lm2.player_id) {
-									createLineObject([lm1, lm2]);
-								}
-							});
-						}
+					var numLinemates = result.player.f_or_d === "d" ? 1 : 2;
+					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
+					combos.forEach(function(c) {
+						createLineObject(c);
 					});
 
 					// Create an object in lineResults to store a line's players and stats
@@ -522,24 +525,11 @@ function start() {
 
 				// Get combinations of linemates for which to increment stats
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
-				// If there are 2 forwards or less (e.g., in 3-on-3), combos will be empty
-				var combos = [];
-				skaters.forEach(function(s1) {
-					if (result.player.f_or_d === "d") {
-						combos.push([s1]);
-					} else if (result.player.f_or_d === "f") {
-						// For forwards, loop through 2 player combinations
-						var skaters2 = skaters.filter(function(s2) { return s2 !== s1; });
-						skaters2.forEach(function(s2) {
-							// Sort player ids in ascending order
-							var pair = [s1, s2];
-							pair = pair.sort(function(a, b) { return a - b; });
-							// Only record combination if it doesn't already exist
-							if (!combos.find(function(d) { return d.toString() === pair.toString(); })) {
-								combos.push(pair);
-							}
-						});
-					}
+				var numLinemates = result.player.f_or_d === "d" ? 1 : 2;
+				var combos = combinations.k_combinations(skaters, numLinemates);
+				// Sort playerIds in ascending order
+				combos.forEach(function(c) {
+					return c.sort(function(a, b) { return a - b; });
 				});
 
 				// Increment stats for each combo
@@ -573,7 +563,7 @@ function start() {
 			// Remove lines with less than 1min total toi before returning results
 			lineResults = lineResults.filter(function(d) { return d.all.toi >= 60; });
 			result.lines = lineResults;
-			queryHistory();
+			returnResult();
 		}
 
 		//
