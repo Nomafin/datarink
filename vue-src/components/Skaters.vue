@@ -29,7 +29,7 @@
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice corsi</button
 			><button type="button" class="toggle-button"
-				v-on:click="isRatesEnabled = !isRatesEnabled; aggregatePlayerData();"
+				v-on:click="isRatesEnabled = !isRatesEnabled"
 				v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
@@ -74,32 +74,32 @@
 				<tbody>
 					<tr v-for="p in playersOnPage">
 						<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
-						<td class="left-aligned"><router-link v-bind:to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>			
+						<td class="left-aligned"><router-link v-bind:to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>	
 						<td class="left-aligned">{{ p.positions.toUpperCase() }}</td>
 						<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
 						<td>{{ p.gp }}</td>
-						<td>{{ Math.round(p.toi / 60) }}</td>
-						<td class="cols-individual">{{ p.ig | maxDecimalPlaces(1) }}</td>
-						<td class="cols-individual">{{ p.ia | maxDecimalPlaces(1) }}</td>
-						<td class="cols-individual">{{ p.ip1 | maxDecimalPlaces(1) }}</td>
-						<td class="cols-individual">{{ p.ip | maxDecimalPlaces(1) }}</td>
-						<td class="cols-individual">{{ p.ic | maxDecimalPlaces(1) }}</td>
-						<td class="cols-individual">{{ p.i_sh_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-goals">{{ p.gf | maxDecimalPlaces(1) }}</td>
-						<td class="cols-on-ice-goals">{{ p.ga | maxDecimalPlaces(1) }}</td>
-						<td class="cols-on-ice-goals">{{ p.g_diff | maxDecimalPlaces(1) | signed }}</td>
-						<td class="cols-on-ice-goals">{{ p.sh_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-goals">{{ p.sv_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>					
-						<td class="cols-on-ice-corsi">{{ p.cf | maxDecimalPlaces(1) }}</td>
-						<td class="cols-on-ice-corsi">{{ p.ca | maxDecimalPlaces(1) }}</td>
-						<td class="cols-on-ice-corsi">{{ p.cf_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-corsi">{{ p.cf_pct_rel | maxDecimalPlaces(1) | signed }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | maxDecimalPlaces(1) }}<span class="pct">%</span></td>			
+						<td>{{ Math.round(p.stats[strengthSit].toi) }}</td>
+						<td class="cols-individual">{{ p.stats[strengthSit].ig | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-individual">{{ p.stats[strengthSit].ia | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-individual">{{ p.stats[strengthSit].ip1 | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-individual">{{ p.stats[strengthSit].ip | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-individual">{{ p.stats[strengthSit].ic | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-individual">{{ p.stats[strengthSit].i_sh_pct | percentage(false) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].gf | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].ga | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].g_diff | rate(isRatesEnabled, p.stats[strengthSit].toi, true) }}</td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].sh_pct | percentage(false) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].sv_pct | percentage(false) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].ca | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct | percentage(false) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_rel | percentage(false) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_adj | percentage(true) }}<span class="pct">%</span></td>			
 					</tr>
 				</tbody>
 			</table>
 			<div class="pagination" v-if="pagination.total > 0">
-				<button type="button" @click="pagination.current--; flagPlayersOnPage();" class="previous">
+				<button type="button" @click="pagination.current--;" class="previous">
 					<svg viewBox="0 0 16 16">
 						<path d="M10,3,5,8l5,5L11,12,7,8,11,4Z"/>
 					</svg>
@@ -109,7 +109,7 @@
 					><span> of </span
 					><span>{{ pagination.total }}</span>
 				</div
-				><button type="button" @click="pagination.current++; flagPlayersOnPage();" class="next">
+				><button type="button" @click="pagination.current++;" class="next">
 					<svg viewBox="0 0 16 16">
 						<path d="M10,3,5,8l5,5L11,12,7,8,11,4Z" transform="rotate(180 8 8)"/>
 					</svg>
@@ -178,15 +178,6 @@ module.exports = {
 			]
 		};
 	},
-	filters: {
-		maxDecimalPlaces: function(value, places) {
-			var factor = Math.pow(10, places);
-			return Math.round(value * factor) / factor;
-		},
-		signed: function(value) {
-			return value > 0 ? "+" + value : value;
-		}
-	},
 	created: function() {
 		this.fetchData();
 		// Google Analytics
@@ -196,9 +187,6 @@ module.exports = {
 		}
 	},
 	watch: {
-		strengthSit: function() {
-			this.aggregatePlayerData();
-		},
 		search: {
 			handler: "filterPlayers",
 			deep: true
@@ -206,11 +194,38 @@ module.exports = {
 		filter: {
 			handler: "filterPlayers",
 			deep: true
+		},
+		strengthSit: function() {
+			this.filterPlayers();
+		},
+		isRatesEnabled: function() {
+			this.sortPlayers();
 		}
 	},
 	computed: {
 		playersOnPage: function() {
-			return this.players.filter(function(p) { return p.isOnPage; });
+			var playersNotFilteredOut = this.players.filter(function(p) { return !p.isFilteredOut; });
+			this.pagination.total = Math.ceil(playersNotFilteredOut.length / this.pagination.rowsPerPage);
+			this.pagination.current = Math.min(this.pagination.total - 1, Math.max(0, this.pagination.current));
+			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
+			var endIdx = startIdx + this.pagination.rowsPerPage;
+			return playersNotFilteredOut.slice(startIdx, endIdx);
+		}
+	},
+	filters: {
+		percentage: function(value, isSigned) {
+			var output = value.toFixed(1);
+			if (isSigned && value > 0) {
+				output = "+" + output;
+			}
+			return output;
+		},
+		rate: function(value, isRatesEnabled, toi, isSigned) {
+			var output = isRatesEnabled ? (60 * value / toi).toFixed(1) : value;
+			if (isSigned && value > 0) {
+				output = "+" + output;
+			}
+			return output;
 		}
 	},
 	methods: {
@@ -222,104 +237,41 @@ module.exports = {
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", "./api/players/");
 			xhr.onload = function() {
-				// Parse json, then append additional properties that don't change based on the strength situation
-				self.players = JSON.parse(xhr.responseText)["players"];
+				self.players = JSON.parse(xhr.responseText).players;
 				self.players.forEach(function(p) {
-					p["first"] = p["first"].replace(/\./g, "");
-					p["last"] = p["last"].replace(/\./g, "");
-					p["name"] = (p["first"] + " " + p["last"]).toLowerCase();
-					p["positions"] = p["positions"].toString().toLowerCase();
-					p["teamNames"] = p["teams"].map(function(t) {
+					// Process player properties
+					p.rank = ["", false];
+					p.first = p.first.replace(/\./g, "");
+					p.last = p.last.replace(/\./g, "");
+					p.name = (p.first + " " + p.last).toLowerCase();
+					p.positions = p.positions.toString().toLowerCase();
+					p.team_names = p.teams.map(function(t) {
 						return constants.teamNames[t];
+					}).toString().toLowerCase();
+					p.teams= p.teams.toString().toLowerCase();
+					// Use a flag for filtering so that we can debounce the filter method
+					p.isFilteredOut = false;
+					// Process or append stats for each score situation
+					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
+						var s = p.stats[strSit];
+						s.toi = s.toi / 60;
+						s.ia = s.ia1 + s.ia2;
+						s.ip1 = s.ig + s.ia1;
+						s.ip = s.ig + s.ia1 + s.ia2;
+						s.i_sh_pct = s.is === 0 ? 0 : 100 * s.ig / s.is;
+						s.g_diff = s.gf - s.ga;
+						s.sh_pct = s.sf === 0 ? 0 : 100 * s.gf / s.sf;
+						s.sv_pct = s.sv_pct * 100;
+						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
+						s.cf_pct_rel = (s.cf + s.ca === 0 || s.cf_off + s.ca_off === 0) ? 0
+							: 100 * (s.cf / (s.cf + s.ca) - s.cf_off / (s.cf_off + s.ca_off));
+						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
 					});
-					p["teamNames"] = p["teamNames"].toString().toLowerCase();
-					p["teams"] = p["teams"].toString().toLowerCase();
-					// Flag for filtering and paging
-					// Default isOnPage to false - otherwise the first render will include all players
-					p["isFilteredOut"] = false;
-					p["isOnPage"] = false;
 				});
-				self.aggregatePlayerData();
+				self.filterPlayers();
+				self.sortPlayers();
 			}
 			xhr.send();
-		},
-		aggregatePlayerData: function() {
-			// To aggregate data, use a method that we can explicitly call instead of a computed property
-			// Using a computed property caused laggy input fields - it seemed like each time an input changed, 
-			// the computed property would check each player and stat to see if any values changed
-			var sits = this.strengthSit === "all" ? ["ev5", "pp", "sh", "penShot", "noOppG", "noOwnG", "other"] : [this.strengthSit];
-			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj", "cf_off", "ca_off"];
-			this.players.forEach(function(p) {
-				stats.forEach(function(st) {
-					p[st] = _.sumBy(
-						p.data.filter(function(row) { return sits.indexOf(row["strength_sit"]) >= 0; }),
-						function(row) { return row[st]; }
-					);
-				});
-			});
-
-			// Convert to rates (per 60 minutes) if enabled
-			if (this.isRatesEnabled) {
-				this.players.forEach(function(p) {
-					stats.forEach(function(st) {
-						if (st !== "toi") {
-							p[st] = p["toi"] === 0 ? 0 : (p[st] / p["toi"]) * 60 * 60;
-						}
-					});
-				});
-			}
-
-			// Compute additional stats
-			var self = this;
-			this.players.forEach(function(p) {
-
-				p["ia"] = p["ia1"] + p["ia2"];
-				p["ip1"] = p["ig"] + p["ia1"];
-				p["ip"] = p["ig"] + p["ia1"] + p["ia2"];
-				p["i_sh_pct"] = p["is"] === 0 ? 0 : 100 * p["ig"] / p["is"];
-				p["g_diff"] = p["gf"] - p["ga"];
-				p["sh_pct"] = p["sf"] === 0 ? 0 : 100 * p["gf"] / p["sf"];
-				p["cf_pct"] = p["cf"] + p["ca"] === 0 ? 0 : 100 * p["cf"] / (p["cf"] + p["ca"]);
-				p["cf_pct_rel"] = (p["cf"] + p["ca"] === 0 || p["cf_off"] + p["ca_off"] === 0) ? 0
-					: 100 * (p["cf"] / (p["cf"] + p["ca"]) - p["cf_off"] / (p["cf_off"] + p["ca_off"]));
-				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : 100 * p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
-
-				// For the "all" strengthSit, exclude ga and sa while a player's own net is empty when calculating svPct
-				var noOwnG_ga = 0;
-				var noOwnG_sa = 0;
-				if (self.strengthSit === "all") {
-					var noOwnG_row = p.data.find(function(row) { return row["strength_sit"] === "noOwnG"; });
-					if (noOwnG_row) {
-						noOwnG_ga = noOwnG_row["ga"];
-						noOwnG_sa = noOwnG_row["sa"];						
-					}
-				}
-				var svPctGa = p["ga"] - noOwnG_ga;
-				var svPctSa = p["sa"] - noOwnG_sa;
-				p["sv_pct"] = svPctSa === 0 ? 0 : 100 * (1 - svPctGa / svPctSa);
-			});
-
-			// Refilter and resort players based on updated stats
-			this.filterPlayers();
-			this.sortPlayers();
-		},
-		sortBy: function(isSortable, newSortCol) {
-			if (isSortable) {
-				if (newSortCol === this.sort.col) {
-					this.sort.order *= -1;
-				} else {
-					this.sort.col = newSortCol;
-					this.sort.order = -1;
-				}
-				this.sortPlayers();
-			}
-		},
-		sortPlayers: function() {
-			var order = this.sort.order < 0 ? "desc" : "asc";
-			this.players = _.orderBy(this.players, this.sort.col, order);
-			this.pagination.current = 0;
-			this.flagPlayersOnPage();
-			this.rankPlayers();
 		},
 		filterPlayers: 
 			_.debounce(
@@ -332,7 +284,7 @@ module.exports = {
 						if (col === "name") {
 							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0; });
 						} else if (col === "teams") {
-							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0 || p["teamNames"].indexOf(query) >= 0; });
+							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0 || p.team_names.indexOf(query) >= 0; });
 						} else if (col === "positions" && query === "f") {
 							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p[col].indexOf("l") >= 0; });
 						} else if (col === "positions") {
@@ -342,79 +294,83 @@ module.exports = {
 					// Find players satisying minimum toi or gp
 					if (this.filter.query) {
 						var min = this.filter.query;
-						var col = this.filter.col;
-						var factor = col === "toi" ? 60 : 1;
-						matchedPlayers = matchedPlayers.filter(function(p) { return Math.round(p[col] / factor) >= min; });
+						if (this.filter.col === "toi") {
+							var sit = this.strengthSit;
+							matchedPlayers = matchedPlayers.filter(function(p) { return Math.round(p.stats[sit].toi) >= min; });
+						} else if (this.filter.col === "gp") {
+							matchedPlayers = matchedPlayers.filter(function(p) { return p.gp >= min; });
+						}
 					}
-					// Update filter players' flag
-					this.players.map(function(p) { 
-						p.isFilteredOut = true;
+					// Update filter players' filter flag
+					matchedPlayers = matchedPlayers.map(function(p) { return p.player_id; });
+					this.players.map(function(p) {
+						p.isFilteredOut = matchedPlayers.indexOf(p.player_id) >= 0 ? false : true;
 						return p;
 					});
-					matchedPlayers.map(function(p) { 
-						p.isFilteredOut = false;
-						return p;
-					});
-					// Reset current page to 0
 					this.pagination.current = 0;
 					this.rankPlayers();
-					this.flagPlayersOnPage();
 				}, 350
 			),
-		rankPlayers: function() {
-			// Don't show ranks if sorting by columns like name, position, team
+		sortBy: function(isSortable, newSortCol) {
+			if (isSortable) {
+				this.sort.order = newSortCol === this.sort.col ? -this.sort.order : -1;
+				this.sort.col = newSortCol;
+				this.sortPlayers();
+			}
+		},
+		sortPlayers: function() {
+
 			var col = this.sort.col;
-			if (["name", "positions", "teams"].indexOf(col) >= 0) {
+			var order = this.sort.order < 0 ? "desc" : "asc";
+
+			// Create a player property for their sort value - this will be used for ranking
+			if (["name", "positions", "teams", "gp"].indexOf(col) >= 0) {
 				this.players.map(function(p) {
-					p["rank"] = ["", false];
+					p.sort_val = p[col];
+					return p;
+				});				
+			} else {
+				var sit = this.strengthSit;
+				if (!this.isRatesEnabled) {
+					this.players.map(function(p) {
+						p.sort_val = p.stats[sit][col];
+						return p;
+					});		
+				} else {
+					this.players.map(function(p) {
+						p.sort_val = p.stats[sit][col] / p.stats[sit].toi;
+						return p;
+					});							
+				}
+			}
+			this.players = _.orderBy(this.players, "sort_val", order);
+			this.rankPlayers();
+		},
+		rankPlayers: function() {
+			// Don't show ranks if sorting by name, position, or team
+			if (["name", "positions", "teams"].indexOf(this.sort.col) >= 0) {
+				this.players = this.players.map(function(p) {
+					p.rank = ["", false];
 					return p;
 				});
 			} else {
-				// Only rank players that aren't filtered out
-				var rankedPlayers = this.players.filter(function(p) { return !p.isFilteredOut; });
-				// Get array of sorted values - we'll use this to get a player's rank
-				var values = rankedPlayers.map(function(p) { return p[col]; });
-				// Group players by their stat value - we'll use this to check for tied ranks
-				var valueCounts = _.groupBy(rankedPlayers, col);
-				// Update player ranks - don't display ranks if there's only 1 player in the table
-				this.players.forEach(function(p) {
-					p["rank"] = ["", false];
-					if (rankedPlayers.length > 1) {
+				var rankedPlayers = this.players.filter(function(p) { return !p.isFilteredOut; });	// Rank players that aren't filtered out
+				var values = rankedPlayers.map(function(p) { return p.sort_val; });					// Get array of sorted *unique* values
+				var valueCounts = _.groupBy(rankedPlayers, "sort_val");								// Group players by their stat value to find ties
+				// Use this.player = this.players.map() to force computed properties to update
+				this.players = this.players.map(function(p) {
+					p.rank = ["", false];
+					if (rankedPlayers.length > 1) {	// Don't display ranks if there's only 1 player in the table
 						if (!p.isFilteredOut) {
-							// Use idx0 to store rank, idx1 to indicate if tied
-							p["rank"][0] = values.indexOf(+p[col]) + 1;
-							if (valueCounts[p[col]].length > 1) {
-								p["rank"][1] = true;
+							p.rank[0] = values.indexOf(p.sort_val) + 1;		// Get player's rank - store it in idx0
+							if (valueCounts[p.sort_val].length > 1) {		// Check if multiple player have the same stat value (tied) - store in idx1
+								p.rank[1] = true;
 							}
 						}
 					}
+					return p;
 				});
 			}
-		},
-		flagPlayersOnPage: function() {
-			// Using a function to flag on-page players and a computed property to filter the on-page players results in better performance
-			// This way, we only start flagging players after the filterPlayers debounce
-			// Sanitize page input and get the start and end indices
-			var playersNotFilteredOut = this.players.filter(function(p) { return !p.isFilteredOut; });
-			this.pagination.total = Math.ceil(playersNotFilteredOut.length / this.pagination.rowsPerPage);
-			this.pagination.current = Math.min(this.pagination.total - 1, Math.max(0, this.pagination.current));
-			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
-			var endIdx = startIdx + this.pagination.rowsPerPage;
-			var playersOnPage = playersNotFilteredOut.slice(startIdx, endIdx);
-			// Flag players on page
-			this.players.map(function(p) { 
-				p.isOnPage = false;
-				return p;
-			});
-			playersOnPage.map(function(p) { 
-				p.isOnPage = true;
-				return p;
-			});
-			// Force the playersOnPage computed property to be recomputed
-			// Using a deep watcher is slower than setting this.players = [] - the deep watcher seems to check each property in players
-			var tmp = this.players;
-			this.players = [];
-			this.players = tmp;
 		}
 	}
 };

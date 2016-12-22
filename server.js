@@ -118,11 +118,7 @@ function start() {
 			// Structure results as an array of objects:
 			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
 			var result = { players: [] };
-			for (var pId in statRows) {
-				if (!statRows.hasOwnProperty(pId)) {
-					continue;
-				}
-
+			Object.keys(statRows).forEach(function(pId) {
 				// Get all teams and positions the player has been on, as well as games played
 				var positions = statRows[pId][0].positions.split(",");	
 				result.players.push({
@@ -134,7 +130,7 @@ function start() {
 					last: statRows[pId][0].last,
 					data: statRows[pId]
 				});
-			}
+			});
 
 			// Set redundant properties in each player's data rows to be undefined - this removes them from the response
 			// Setting the properties to undefined is faster than deleting the properties completely
@@ -146,6 +142,43 @@ function start() {
 					r.last = undefined;
 					r.positions = undefined;
 				});
+			});
+
+			// For each strength situation, sum stats for all score situations
+			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
+			result.players.forEach(function(p) {
+				p.stats = {};									// Store the output totals in p.stats
+				p.data = _.groupBy(p.data, "strength_sit");		// Group the original rows by strength_sit
+				Object.keys(p.data).forEach(function(strSit) {	// Loop through each strength_sit and sum all rows
+					p.stats[strSit] = {};
+					stats.forEach(function(stat) {
+						p.stats[strSit][stat] = _.sumBy(p.data[strSit], stat);
+					});
+					// Calculate on-ice save percentage
+					p.stats[strSit].sv_pct = p.stats[strSit].ga / p.stats[strSit].sa;
+				});
+				p.data = undefined;								// Remove the original data from the response
+			});
+
+			// Create an object for "all" strength situations
+			result.players.forEach(function(p) {
+				p.stats.all = {};
+				stats.forEach(function(stat) {
+					p.stats.all[stat] = 0;
+					Object.keys(p.stats).forEach(function(strSit) {
+						if (strSit !== "all") {
+							p.stats.all[stat] += p.stats[strSit][stat];
+						}
+					});
+				});
+				// Calculate on-ice save percentage - exclude ga and sa while the player's own goalie is pulled
+				var noOwnG_ga = p.stats.noOwnG ? p.stats.noOwnG.ga : 0;
+				var noOwnG_sa = p.stats.noOwnG ? p.stats.noOwnG.sa : 0;
+				p.stats.all.sv_pct = (p.stats.all.ga - noOwnG_ga) / (p.stats.all.sa - noOwnG_sa);
+				// Remove unnecessary strength_sits from response
+				["noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
+					p.stats[strSit] = undefined;
+				})
 			});
 
 			return response.status(200).send(result);
