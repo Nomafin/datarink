@@ -11,49 +11,49 @@
 				<option value="pp">Power play</option>
 			</select
 			><button type="button" class="toggle-button"
-				v-on:click="visibleColumns.individual = !visibleColumns.individual"
-				v-bind:class="{ 'toggle-button-checked': visibleColumns.individual }">
+				@click="visibleColumns.individual = !visibleColumns.individual"
+				:class="{ 'toggle-button-checked': visibleColumns.individual }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>Own production</button
 			><button type="button" class="toggle-button"
-				v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
-				v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
+				@click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
+				:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice goals</button
 			><button type="button" class="toggle-button"
-				v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
-				v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
+				@click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
+				:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice corsi</button
 			><button type="button" class="toggle-button"
-				v-on:click="isRatesEnabled = !isRatesEnabled"
-				v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
+				@click="isRatesEnabled = !isRatesEnabled"
+				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>Per 60 minutes</button
 			><div class="search-with-menu">
-				<select v-model="search.col" v-on:change="search.query = '';">
+				<select v-model="search.col" @change="search.query = '';">
 					<option value="name">Name:</option>
 					<option value="teams">Team:</option>
 					<option value="positions">Position:</option>
 				</select
-				><input v-model="search.query" type="text" v-on:keyup.enter="blurInput($event);">
+				><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
 				<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
 			</div
 			><div class="search-with-menu">
-				<select v-model="filter.col" v-on:change="filter.query = 0;">
+				<select v-model="filter.col" @change="filter.query = 0;">
 					<option value="toi">Minimum minutes:</option>
 					<option value="gp">Minimum games:</option>
 				</select
-				><input v-model.number="filter.query" v-on:keyup.enter="blurInput($event);" type="number" style="width: 62px;">
+				><input v-model.number="filter.query" @keyup.enter="blurInput($event);" type="number" style="width: 62px;">
 			</div>
 		</div>
 		<div class="loader" v-if="!players"></div>
 		<div class="section section-table" v-if="players">
-			<table v-bind:class="{
+			<table :class="{
 				'cols-individual': visibleColumns.individual,
 				'cols-on-ice-goals': visibleColumns.onIceGoals,
 				'cols-on-ice-corsi': visibleColumns.onIceCorsi }"
@@ -63,8 +63,8 @@
 						<th v-for="c in columns"
 							@click="sortBy(c.sortable, c.key)"
 							@keyup.enter="sortBy(c.sortable, c.key)"
-							v-bind:tabindex="c.sortable ? 0 : null"
-							v-bind:class="[
+							:tabindex="c.sortable ? 0 : null"
+							:class="[
 								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
 								c.classes
 							]"
@@ -73,8 +73,8 @@
 				</thead>
 				<tbody>
 					<tr v-for="p in playersOnPage">
-						<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
-						<td class="left-aligned"><router-link v-bind:to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>	
+						<td class="left-aligned"><span class="rank" :class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
+						<td class="left-aligned"><router-link :to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>	
 						<td class="left-aligned">{{ p.positions.toUpperCase() }}</td>
 						<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
 						<td>{{ p.gp }}</td>
@@ -93,8 +93,8 @@
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].ca | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct | percentage(false) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_rel | percentage(false) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_adj | percentage(true) }}<span class="pct">%</span></td>			
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_rel | percentage(true) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>			
 					</tr>
 				</tbody>
 			</table>
@@ -125,9 +125,8 @@ var constants = require("./../app-constants.js");
 module.exports = {
 	name: "Skaters",
 	data: function() {
-		// Once the api populates 'players' so that it's not null, the loading spinner will disappear
 		return {
-			players: null,
+			players: null, // The loading spinner is displayed when 'players' is null
 			isRatesEnabled: false,
 			strengthSit: "all",
 			visibleColumns: {
@@ -135,18 +134,9 @@ module.exports = {
 				onIceGoals: false,
 				onIceCorsi: false
 			},
-			sort: {
-				col: "ip",
-				order: -1
-			},
-			search: {
-				col: "name",
-				query: ""
-			},
-			filter: {
-				col: "toi",
-				query: 0
-			},
+			sort: { col: "ip", order: -1 },
+			search: { col: "name", query: "" },
+			filter: { col: "toi", query: 0 },
 			pagination: {
 				rowsPerPage: 20,
 				current: 0,
@@ -240,18 +230,18 @@ module.exports = {
 				self.players = JSON.parse(xhr.responseText).players;
 				self.players.forEach(function(p) {
 					// Process player properties
-					p.rank = ["", false];
 					p.first = p.first.replace(/\./g, "");
 					p.last = p.last.replace(/\./g, "");
 					p.name = (p.first + " " + p.last).toLowerCase();
 					p.positions = p.positions.toString().toLowerCase();
+					// Store full team names for more flexible searching
 					p.team_names = p.teams.map(function(t) {
 						return constants.teamNames[t];
 					}).toString().toLowerCase();
 					p.teams= p.teams.toString().toLowerCase();
 					// Use a flag for filtering so that we can debounce the filter method
 					p.isFilteredOut = false;
-					// Process or append stats for each score situation
+					// Process/append stats for each score situation
 					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
 						var s = p.stats[strSit];
 						s.toi = s.toi / 60;
@@ -261,7 +251,7 @@ module.exports = {
 						s.i_sh_pct = s.is === 0 ? 0 : 100 * s.ig / s.is;
 						s.g_diff = s.gf - s.ga;
 						s.sh_pct = s.sf === 0 ? 0 : 100 * s.gf / s.sf;
-						s.sv_pct = s.sv_pct * 100;
+						s.sv_pct *= 100;
 						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
 						s.cf_pct_rel = (s.cf + s.ca === 0 || s.cf_off + s.ca_off === 0) ? 0
 							: 100 * (s.cf / (s.cf + s.ca) - s.cf_off / (s.cf_off + s.ca_off));
@@ -319,11 +309,9 @@ module.exports = {
 			}
 		},
 		sortPlayers: function() {
-
+			// Create a player property for their sort value - used to sort rate stats and used for ranking
 			var col = this.sort.col;
 			var order = this.sort.order < 0 ? "desc" : "asc";
-
-			// Create a player property for their sort value - this will be used for ranking
 			if (["name", "positions", "teams", "gp"].indexOf(col) >= 0) {
 				this.players.map(function(p) {
 					p.sort_val = p[col];
@@ -347,26 +335,20 @@ module.exports = {
 			this.rankPlayers();
 		},
 		rankPlayers: function() {
-			// Don't show ranks if sorting by name, position, or team
 			if (["name", "positions", "teams"].indexOf(this.sort.col) >= 0) {
-				this.players = this.players.map(function(p) {
-					p.rank = ["", false];
+				this.players = this.players.map(function(p) {	// Use this.player = this.players.map() to trigger an update
+					p.rank = ["", false];						// Don't show ranks if sorting by name, position, or team
 					return p;
 				});
 			} else {
 				var rankedPlayers = this.players.filter(function(p) { return !p.isFilteredOut; });	// Rank players that aren't filtered out
 				var values = rankedPlayers.map(function(p) { return p.sort_val; });					// Get array of sorted *unique* values
 				var valueCounts = _.groupBy(rankedPlayers, "sort_val");								// Group players by their stat value to find ties
-				// Use this.player = this.players.map() to force computed properties to update
 				this.players = this.players.map(function(p) {
 					p.rank = ["", false];
-					if (rankedPlayers.length > 1) {	// Don't display ranks if there's only 1 player in the table
-						if (!p.isFilteredOut) {
-							p.rank[0] = values.indexOf(p.sort_val) + 1;		// Get player's rank - store it in idx0
-							if (valueCounts[p.sort_val].length > 1) {		// Check if multiple player have the same stat value (tied) - store in idx1
-								p.rank[1] = true;
-							}
-						}
+					if (rankedPlayers.length > 1 && !p.isFilteredOut) {					// Don't get ranks if only 1 player is in table, or if player is filtered out
+						p.rank[0] = values.indexOf(p.sort_val) + 1;						// In idx0, store player's rank
+						p.rank[1] = valueCounts[p.sort_val].length > 1 ? true : false;	// In idx1, store if multiple players are tied with this value
 					}
 					return p;
 				});

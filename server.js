@@ -144,42 +144,9 @@ function start() {
 				});
 			});
 
-			// For each strength situation, sum stats for all score situations
+			// Aggregate score situations
 			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
-			result.players.forEach(function(p) {
-				p.stats = {};									// Store the output totals in p.stats
-				p.data = _.groupBy(p.data, "strength_sit");		// Group the original rows by strength_sit
-				Object.keys(p.data).forEach(function(strSit) {	// Loop through each strength_sit and sum all rows
-					p.stats[strSit] = {};
-					stats.forEach(function(stat) {
-						p.stats[strSit][stat] = _.sumBy(p.data[strSit], stat);
-					});
-					// Calculate on-ice save percentage
-					p.stats[strSit].sv_pct = p.stats[strSit].ga / p.stats[strSit].sa;
-				});
-				p.data = undefined;								// Remove the original data from the response
-			});
-
-			// Create an object for "all" strength situations
-			result.players.forEach(function(p) {
-				p.stats.all = {};
-				stats.forEach(function(stat) {
-					p.stats.all[stat] = 0;
-					Object.keys(p.stats).forEach(function(strSit) {
-						if (strSit !== "all") {
-							p.stats.all[stat] += p.stats[strSit][stat];
-						}
-					});
-				});
-				// Calculate on-ice save percentage - exclude ga and sa while the player's own goalie is pulled
-				var noOwnG_ga = p.stats.noOwnG ? p.stats.noOwnG.ga : 0;
-				var noOwnG_sa = p.stats.noOwnG ? p.stats.noOwnG.sa : 0;
-				p.stats.all.sv_pct = (p.stats.all.ga - noOwnG_ga) / (p.stats.all.sa - noOwnG_sa);
-				// Remove unnecessary strength_sits from response
-				["noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
-					p.stats[strSit] = undefined;
-				})
-			});
+			aggregateScoreSituations(result.players, stats);
 
 			return response.status(200).send(result);
 		}
@@ -789,11 +756,9 @@ function start() {
 			//
 
 			// Initialize points counter
-			for (var tricode in statRows) {
-				if (statRows.hasOwnProperty(tricode)) {
-					statRows[tricode].pts = 0;
-				}
-			}
+			Object.keys(statRows).forEach(function(tricode) {
+				statRows[tricode].pts = 0;
+			});
 
 			// Loop through game_result rows and increment points
 			resultRows.forEach(function(r) {
@@ -808,17 +773,14 @@ function start() {
 			// Structure results as an array of objects:
 			// [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
 			var result = { teams: [] };
-			for (var tricode in statRows) {
-				if (!statRows.hasOwnProperty(tricode)) {
-					continue;
-				}
+			Object.keys(statRows).forEach(function(tricode) {
 				result.teams.push({
 					team: tricode,
 					pts: statRows[tricode].pts,
 					gp: statRows[tricode][0].gp,
 					data: statRows[tricode]
 				});
-			}
+			});
 
 			// Set redundant properties in 'data' to be undefined - this removes them from the response
 			result.teams.forEach(function(t) {
@@ -827,6 +789,10 @@ function start() {
 					r.gp = undefined;
 				});
 			});
+
+			// Aggregate score situations
+			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+			aggregateScoreSituations(result.teams, stats);
 			
 			return response.status(200).send(result);
 		}
@@ -852,4 +818,47 @@ function start() {
 			});
 		});
 	}
+}
+
+// Each team or player's object originally has a data property that contains an array of results, aggregated by strength and score situations:
+//		data: [ {score_sit: 0, strength_sit: 'pp', cf: 10, ... }, {score_sit: 0, strength_sit: 'sh', cf: 5, ... } ]
+// aggregateScoreSituations() will create a new property 'stats' that aggregates the original data by score situation, and uses the strength situation as keys
+//		stats: { pp: { cf: 20, ... }, sh: { cf: 10, ... } }
+// 'list' is an array of objects (teams or players)
+// 'stats' is an array of property names to be summed
+function aggregateScoreSituations(list, stats) {
+	// For each strength situation, sum stats for all score situations
+	list.forEach(function(p) {
+		p.stats = {};									// Store the output totals in p.stats
+		p.data = _.groupBy(p.data, "strength_sit");		// Group the original rows by strength_sit
+		Object.keys(p.data).forEach(function(strSit) {	// Loop through each strength_sit and sum all rows
+			p.stats[strSit] = {};
+			stats.forEach(function(stat) {
+				p.stats[strSit][stat] = _.sumBy(p.data[strSit], stat);
+			});
+			// Calculate on-ice save percentage
+			p.stats[strSit].sv_pct = 1 - (p.stats[strSit].ga / p.stats[strSit].sa);
+		});
+		p.data = undefined;								// Remove the original data from the response
+	});
+	// Create an object for "all" strength situations
+	list.forEach(function(p) {
+		p.stats.all = {};
+		stats.forEach(function(stat) {
+			p.stats.all[stat] = 0;
+			Object.keys(p.stats).forEach(function(strSit) {
+				if (strSit !== "all") {
+					p.stats.all[stat] += p.stats[strSit][stat];
+				}
+			});
+		});
+		// Calculate on-ice save percentage - exclude ga and sa while the player/team's own goalie is pulled
+		var noOwnG_ga = p.stats.noOwnG ? p.stats.noOwnG.ga : 0;
+		var noOwnG_sa = p.stats.noOwnG ? p.stats.noOwnG.sa : 0;
+		p.stats.all.sv_pct = 1 - ((p.stats.all.ga - noOwnG_ga) / (p.stats.all.sa - noOwnG_sa));
+		// Remove unnecessary strength_sits from response
+		["noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
+			p.stats[strSit] = undefined;
+		})
+	});
 }
