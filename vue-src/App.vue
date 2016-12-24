@@ -385,6 +385,11 @@ table td {
 	border-bottom: 1px solid $gray2;
 }
 
+table.left-aligned th,
+table.left-aligned td {
+	text-align: left;
+}
+
 table th.left-aligned,
 table td.left-aligned {
 	text-align: left;

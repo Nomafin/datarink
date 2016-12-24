@@ -3,9 +3,9 @@
 		<div class="title"><span>{{ titleVal }}</span><span>{{ label }}</span></div>
 		<div class="chart">
 			<div class="ranges">
-				<div v-if="r.width > 0" v-for="(r, i) in ranges" v-bind:style="{ width: r.width + '%', background: r.colour }"></div>
+				<div v-if="r.width > 0" v-for="(r, i) in ranges" :style="{ width: r.width + '%', background: r.colour }"></div>
 			</div>
-			<div v-if="markerPos >= 0 && markerPos <= 100 && data.isPlayerInDistribution" v-bind:style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
+			<div v-if="markerPos >= 0 && markerPos <= 100 && data.isPlayerInDistribution" :style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
 		</div>
 		<div class="axis">
 			<span>{{ axisTicks[0] }}</span><span>{{ axisTicks[1] }}</span>

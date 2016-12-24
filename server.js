@@ -83,7 +83,7 @@ function start() {
 		+ " ON result1.player_id = result2.player_id";
 
 	//
-	// Handle GET request for players api
+	// Handle GET request for players list
 	//
 
 	server.get("/api/players/", function(request, response) {
@@ -147,7 +147,6 @@ function start() {
 			// Aggregate score situations
 			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
 			aggregateScoreSituations(result.players, stats);
-
 			return response.status(200).send(result);
 		}
 	});
@@ -233,6 +232,10 @@ function start() {
 				}
 			}
 
+			// Aggregate score situations
+			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
+			aggregateScoreSituations(players, stats);
+
 			// Get breakpoints
 			var player = players.find(function(d) { return d.player_id === pId; });
 			["all_toi", "ev5_cf_adj_per60", "ev5_ca_adj_per60", "ev5_p1_per60", "pp_p1_per60"].forEach(function(s) {
@@ -241,10 +244,7 @@ function start() {
 				// For powerplay breakpoints, only consider players with at least 20 minutes of pp time
 				var breakpointPlayers = players.filter(function(d) { return (d.f_or_d === result.player.f_or_d && d.gp >= 10); });
 				if (s === "pp_p1_per60") {
-					breakpointPlayers = breakpointPlayers.filter(function(p) {
-						var rows = p.data.filter(function(d) { return d.strength_sit === "pp"; });
-						return _.sumBy(rows, "toi") >= 20 * 60;
-					});
+					breakpointPlayers = breakpointPlayers.filter(function(p) { return p.stats.pp.toi >= 20 * 60; });
 				}
 	
 				// Initialize result
@@ -290,21 +290,19 @@ function start() {
 		function getDatapoint(p, s) {
 			var datapoint;
 			if (s === "all_toi") {
-				datapoint = _.sumBy(p.data, "toi") / p.gp;
+				datapoint = p.stats.all.toi / p.gp;
 			} else if (s === "ev5_cf_adj_per60" || s === "ev5_ca_adj_per60" || s === "ev5_p1_per60") {
-				var rows = p.data.filter(function(d) { return d.strength_sit === "ev5"; });
 				if (s === "ev5_cf_adj_per60") {
-					datapoint = _.sumBy(rows, "cf_adj");
+					datapoint = p.stats.ev5.cf_adj;
 				} else if (s === "ev5_ca_adj_per60") {
-					datapoint = _.sumBy(rows, "ca_adj");
+					datapoint = p.stats.ev5.ca_adj;
 				} else if (s === "ev5_p1_per60") {
-					datapoint = _.sumBy(rows, "ig") + _.sumBy(rows, "ia1");
+					datapoint = p.stats.ev5.ig + p.stats.ev5.ia1;
 				}
-				datapoint = _.sumBy(rows, "toi") === 0 ? 0 : 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
+				datapoint = p.stats.ev5.toi === 0 ? 0 : 60 * 60 * (datapoint / p.stats.ev5.toi);
 			} else if (s === "pp_p1_per60") {
-				var rows = p.data.filter(function(d) { return d.strength_sit === "pp"; });
-				datapoint = _.sumBy(rows, "ig") + _.sumBy(rows, "ia1");
-				datapoint = _.sumBy(rows, "toi") === 0 ? 0 : 60 * 60 * (datapoint / _.sumBy(rows, "toi"));
+				datapoint = p.stats.pp.ig + p.stats.pp.ia1;
+				datapoint = p.stats.pp.toi === 0 ? 0 : 60 * 60 * (datapoint / p.stats.pp.toi);
 			}
 			return datapoint;
 		}
@@ -574,7 +572,7 @@ function start() {
 
 		function queryHistory() {
 			var queryStr = "SELECT r.game_id, r.team, g.h_team, g.a_team, g.h_final, g.a_final, g.periods, g.datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
-				+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
+				+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
 				+ " FROM game_rosters AS r"
 				+ " LEFT JOIN game_stats AS s"
 					+ " ON r.season = s.season AND r.game_id = s.game_id AND r.player_id = s.player_id"
@@ -642,11 +640,14 @@ function start() {
 					r.team = undefined,
 					r.a_team = undefined,
 					r.h_team = undefined,
-					r.a_score = undefined,
-					r.h_score = undefined
+					r.a_final = undefined,
+					r.h_final = undefined
 				});
 			});
 
+			// Aggregate score situations for each game
+			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+			aggregateScoreSituations(historyResults, stats);
 			result.history = historyResults;
 			returnResult();
 		}
@@ -793,7 +794,6 @@ function start() {
 			// Aggregate score situations
 			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
 			aggregateScoreSituations(result.teams, stats);
-			
 			return response.status(200).send(result);
 		}
 	});
@@ -820,7 +820,7 @@ function start() {
 	}
 }
 
-// Each team or player's object originally has a data property that contains an array of results, aggregated by strength and score situations:
+// Each team, player, or game object originally has a data property that contains an array of results, aggregated by strength and score situations:
 //		data: [ {score_sit: 0, strength_sit: 'pp', cf: 10, ... }, {score_sit: 0, strength_sit: 'sh', cf: 5, ... } ]
 // aggregateScoreSituations() will create a new property 'stats' that aggregates the original data by score situation, and uses the strength situation as keys
 //		stats: { pp: { cf: 20, ... }, sh: { cf: 10, ... } }
@@ -829,33 +829,32 @@ function start() {
 function aggregateScoreSituations(list, stats) {
 	// For each strength situation, sum stats for all score situations
 	list.forEach(function(p) {
-		p.stats = {};									// Store the output totals in p.stats
-		p.data = _.groupBy(p.data, "strength_sit");		// Group the original rows by strength_sit
-		Object.keys(p.data).forEach(function(strSit) {	// Loop through each strength_sit and sum all rows
+		p.stats = {};											// Store the output totals in p.stats
+		p.data = _.groupBy(p.data, "strength_sit");				// Group the original rows by strength_sit
+		// Loop through each strength_sit and sum all rows
+		["ev5", "pp", "sh", "noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
 			p.stats[strSit] = {};
 			stats.forEach(function(stat) {
 				p.stats[strSit][stat] = _.sumBy(p.data[strSit], stat);
 			});
 			// Calculate on-ice save percentage
-			p.stats[strSit].sv_pct = 1 - (p.stats[strSit].ga / p.stats[strSit].sa);
+			p.stats[strSit].sv_pct = p.stats[strSit].sa === 0 ? 0 : 1 - (p.stats[strSit].ga / p.stats[strSit].sa);
 		});
-		p.data = undefined;								// Remove the original data from the response
+		p.data = undefined; // Remove the original data from the response
 	});
 	// Create an object for "all" strength situations
 	list.forEach(function(p) {
 		p.stats.all = {};
 		stats.forEach(function(stat) {
 			p.stats.all[stat] = 0;
-			Object.keys(p.stats).forEach(function(strSit) {
-				if (strSit !== "all") {
-					p.stats.all[stat] += p.stats[strSit][stat];
-				}
+			["ev5", "pp", "sh", "noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
+				p.stats.all[stat] += p.stats[strSit][stat];
 			});
 		});
 		// Calculate on-ice save percentage - exclude ga and sa while the player/team's own goalie is pulled
 		var noOwnG_ga = p.stats.noOwnG ? p.stats.noOwnG.ga : 0;
 		var noOwnG_sa = p.stats.noOwnG ? p.stats.noOwnG.sa : 0;
-		p.stats.all.sv_pct = 1 - ((p.stats.all.ga - noOwnG_ga) / (p.stats.all.sa - noOwnG_sa));
+		p.stats.all.sv_pct = p.stats.all.sa - noOwnG_sa === 0 ? 0 : 1 - ((p.stats.all.ga - noOwnG_ga) / (p.stats.all.sa - noOwnG_sa));
 		// Remove unnecessary strength_sits from response
 		["noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
 			p.stats[strSit] = undefined;

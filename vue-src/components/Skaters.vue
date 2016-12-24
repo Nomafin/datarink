@@ -10,26 +10,22 @@
 				<option value="sh">Short handed</option>
 				<option value="pp">Power play</option>
 			</select
-			><button type="button" class="toggle-button"
-				@click="visibleColumns.individual = !visibleColumns.individual"
+			><button type="button" class="toggle-button" @click="visibleColumns.individual = !visibleColumns.individual"
 				:class="{ 'toggle-button-checked': visibleColumns.individual }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>Own production</button
-			><button type="button" class="toggle-button"
-				@click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
+			><button type="button" class="toggle-button" @click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
 				:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice goals</button
-			><button type="button" class="toggle-button"
-				@click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
+			><button type="button" class="toggle-button" @click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
 				:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice corsi</button
-			><button type="button" class="toggle-button"
-				@click="isRatesEnabled = !isRatesEnabled"
+			><button type="button" class="toggle-button" @click="isRatesEnabled = !isRatesEnabled"
 				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
@@ -60,10 +56,8 @@
 			>
 				<thead>
 					<tr>
-						<th v-for="c in columns"
-							@click="sortBy(c.sortable, c.key)"
-							@keyup.enter="sortBy(c.sortable, c.key)"
-							:tabindex="c.sortable ? 0 : null"
+						<th v-for="c in columns" :tabindex="c.sortable ? 0 : null"
+							@click="sortBy(c.sortable, c.key)" @keyup.enter="sortBy(c.sortable, c.key)"
 							:class="[
 								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
 								c.classes
@@ -187,8 +181,10 @@ module.exports = {
 		},
 		strengthSit: function() {
 			this.filterPlayers();
+			this.sortPlayers();
 		},
 		isRatesEnabled: function() {
+			this.filterPlayers();
 			this.sortPlayers();
 		}
 	},
@@ -211,7 +207,11 @@ module.exports = {
 			return output;
 		},
 		rate: function(value, isRatesEnabled, toi, isSigned) {
-			var output = isRatesEnabled ? (60 * value / toi).toFixed(1) : value;
+			var output = value;
+			if (isRatesEnabled) {
+				output = toi === 0 ? 0 : 60 * value / toi;
+				output = output.toFixed(1);
+			}
 			if (isSigned && value > 0) {
 				output = "+" + output;
 			}
@@ -244,7 +244,7 @@ module.exports = {
 					// Process/append stats for each score situation
 					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
 						var s = p.stats[strSit];
-						s.toi = s.toi / 60;
+						s.toi /= 60;
 						s.ia = s.ia1 + s.ia2;
 						s.ip1 = s.ig + s.ia1;
 						s.ip = s.ig + s.ia1 + s.ia2;
@@ -326,7 +326,7 @@ module.exports = {
 					});		
 				} else {
 					this.players.map(function(p) {
-						p.sort_val = p.stats[sit][col] / p.stats[sit].toi;
+						p.sort_val = p.stats[sit].toi === 0 ? 0 : p.stats[sit][col] / p.stats[sit].toi;
 						return p;
 					});							
 				}

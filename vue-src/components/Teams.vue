@@ -10,20 +10,17 @@
 				<option value="sh">Short handed</option>
 				<option value="pp">Power play</option>
 			</select
-			><button type="button" class="toggle-button"
-				@click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
+			><button type="button" class="toggle-button" @click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
 				:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice goals</button
-			><button type="button" class="toggle-button"
-				@click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
+			><button type="button" class="toggle-button" @click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
 				:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice corsi</button
-			><button type="button" class="toggle-button"
-				@click="isRatesEnabled = !isRatesEnabled;"
+			><button type="button" class="toggle-button" @click="isRatesEnabled = !isRatesEnabled;"
 				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
@@ -37,10 +34,8 @@
 			>
 				<thead>
 					<tr>
-						<th v-for="c in columns"
-							@click="sortBy(c.sortable, c.key)"
-							@keyup.enter="sortBy(c.sortable, c.key)"
-							:tabindex="c.sortable ? 0 : null"
+						<th v-for="c in columns" :tabindex="c.sortable ? 0 : null"
+							@click="sortBy(c.sortable, c.key)" @keyup.enter="sortBy(c.sortable, c.key)"
 							:class="[
 								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
 								c.classes
@@ -131,7 +126,7 @@ module.exports = {
 					});		
 				} else {
 					this.teams.map(function(p) {
-						p.sort_val = p.stats[sit][col] / p.stats[sit].toi;
+						p.sort_val = p.stats[sit].toi === 0 ? 0 : p.stats[sit][col] / p.stats[sit].toi;
 						return p;
 					});							
 				}
@@ -166,7 +161,11 @@ module.exports = {
 			return output;
 		},
 		rate: function(value, isRatesEnabled, toi, isSigned) {
-			var output = isRatesEnabled ? (60 * value / toi).toFixed(1) : value;
+			var output = value;
+			if (isRatesEnabled) {
+				output = toi === 0 ? 0 : 60 * value / toi;
+				output = output.toFixed(1);
+			}
 			if (isSigned && value > 0) {
 				output = "+" + output;
 			}
@@ -184,7 +183,7 @@ module.exports = {
 					// Process/append stats for each score situation
 					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
 						var s = p.stats[strSit];
-						s.toi = s.toi / 60;
+						s.toi /= 60;
 						s.g_diff = s.gf - s.ga;
 						s.sh_pct = s.sf === 0 ? 0 : 100 * s.gf / s.sf;
 						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
