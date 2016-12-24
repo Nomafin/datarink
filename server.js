@@ -285,8 +285,7 @@ function start() {
 			queryLinemates();
 		}
 
-		// 'p' is a player object
-		// 's' is the stat to be calculated
+		// 'p' is a player object; 's' is the stat to be calculated
 		function getDatapoint(p, s) {
 			var datapoint;
 			if (s === "all_toi") {

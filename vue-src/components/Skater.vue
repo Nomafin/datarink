@@ -12,18 +12,12 @@
 				<bulletchart :label="'P1/60, 5 on 5'" :data="data.breakpoints.ev5_p1_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'P1/60, power play'" :data="data.breakpoints.pp_p1_per60" :isInverted="false"></bulletchart>
 			</div>
-			<div class="section legend" v-if="data.player.f_or_d === 'f'">
-				<div><span :style="{ background: colours.green5 }"></span><span>Top 90 forwards</span></div>
-				<div><span :style="{ background: colours.green4 }"></span><span>91-180</span></div>
-				<div><span :style="{ background: colours.green3 }"></span><span>181-270</span></div>
-				<div><span :style="{ background: colours.green2 }"></span><span>261-360</span></div>
-				<div><span :style="{ background: colours.green1 }"></span><span>361+</span></div>
-			</div>
-			<div class="section legend" v-if="data.player.f_or_d === 'd'">
-				<div><span :style="{ background: colours.green5 }"></span><span>Top 60 defenders</span></div>
-				<div><span :style="{ background: colours.green4 }"></span><span>61-120</span></div>
-				<div><span :style="{ background: colours.green3 }"></span><span>121-180</span></div>
-				<div><span :style="{ background: colours.green2 }"></span><span>181+</span></div>
+			<div class="section legend">
+				<div><span :style="{ background: colours.green5 }"></span><span v-if="data.player.f_or_d === 'f'">Top 90 forwards</span><span v-if="data.player.f_or_d === 'd'">Top 60 defenders</span></div>
+				<div><span :style="{ background: colours.green4 }"></span><span v-if="data.player.f_or_d === 'f'">91-180</span><span v-if="data.player.f_or_d === 'd'">61-120</span></div>
+				<div><span :style="{ background: colours.green3 }"></span><span v-if="data.player.f_or_d === 'f'">181-270</span><span v-if="data.player.f_or_d === 'd'">121-180</span></div>
+				<div><span :style="{ background: colours.green2 }"></span><span v-if="data.player.f_or_d === 'f'">261-360</span><span v-if="data.player.f_or_d === 'd'">181+</span></div>
+				<div v-if="data.player.f_or_d === 'f'"><span :style="{ background: colours.green1 }"></span><span>361+</span></div>
 			</div>
 			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
@@ -63,11 +57,11 @@
 							<th @click="sortBy('cf_pct')" @keyup.enter="sortBy(cf_pct)" tabindex="0"
 								:class="[ sort.col === 'cf_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 							>CF%</th>
-							<th @click="sortBy('cf_per60')" @keyup.enter="sortBy(cf_per60)" tabindex="0"
-								:class="[ sort.col === 'cf_per60' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('cf')" @keyup.enter="sortBy(cf)" tabindex="0"
+								:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 							>CF/60</th>
-							<th @click="sortBy('ca_per60')" @keyup.enter="sortBy(ca_per60)" tabindex="0"
-								:class="[ sort.col === 'ca_per60' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							<th @click="sortBy('ca')" @keyup.enter="sortBy(ca)" tabindex="0"
+								:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 							>CA/60</th>
 						</tr>
 					</thead>
@@ -243,22 +237,9 @@ module.exports = {
 				green1: constants.colours.green1
 			},
 			strengthSit: "ev5",
-			tabs: {
-				active: "lines"
-			},
-			sort: {
-				col: "toi",
-				order: -1
-			},
-			search: {
-				col: "names",
-				condition: "includes",
-				query: ""
-			},
-			filter: {
-				col: "toi",
-				query: 0
-			}
+			tabs: { active: "lines" },
+			sort: { col: "toi", order: -1 },
+			search: { col: "names", condition: "includes", query: "" }
 		};
 	},
 	components: {
@@ -266,10 +247,21 @@ module.exports = {
 	},
 	computed: {
 		sortedLines: function() {
-			var order = this.sort.order < 0 ? "desc" : "asc";
 			var col = this.sort.col;
+			var order = this.sort.order < 0 ? "desc" : "asc";
 			var sit = this.strengthSit;
-			return _.orderBy(this.data.lines, function(d) { return d[sit][col]; }, order);
+			if (col === "cf" || col === "ca") {
+				this.data.lines.map(function(p) {
+					p.sort_val = p[sit].toi === 0 ? 0 : p[sit][col] / p[sit].toi;
+					return p;
+				});	
+			} else {
+				this.data.lines.map(function(p) {
+					p.sort_val = p[sit][col];
+					return p;
+				});						
+			}
+			return _.orderBy(this.data.lines, "sort_val", order);
 		},
 		filteredLines: function() {
 			var query = this.search.query;
@@ -287,11 +279,8 @@ module.exports = {
 	},
 	filters: {
 		pluralize: function(value, unit) {
-			if (value === 1) {
-				return value + " " + unit;
-			} else {
-				return value + " " + unit + "s";
-			}
+			var unitStr = value === 1 ? unit : unit + "s";
+			return value + " " + unitStr;
 		},
 		rate: function(value, isRatesEnabled, toi, isSigned) {
 			var output = value;
@@ -393,12 +382,8 @@ module.exports = {
 			xhr.send();
 		},
 		sortBy: function(newSortCol) {
-			if (newSortCol === this.sort.col) {
-				this.sort.order *= -1;
-			} else {
-				this.sort.col = newSortCol;
-				this.sort.order = -1;
-			}
+			this.sort.order = newSortCol === this.sort.col ? -this.sort.order : -1;
+			this.sort.col = newSortCol;
 		},
 		blurInput: function(event) {
 			event.target.blur();
