@@ -380,19 +380,6 @@ function start() {
 			strSitRows.forEach(function(s) {
 				s.timeranges = getTimepointArray(s.timeranges);
 			});
-			// 'timeranges' is a string: "start-end;start-end;..."
-			// First split the string into an array of intervals: ["start-end", "start-end", ...]
-			// Then convert each interval into an array of seconds played: [[start, start+1, start+2,..., end], [start, start+1, start+2,..., end]]
-			// Then flatten the nested arrays: [1,2,3,4,10,11,12,13,...]
-			function getTimepointArray(timeranges) {
-				timeranges = timeranges
-					.split(";")					
-					.map(function(interval) {
-						var times = interval.split("-");
-						return _.range(+times[0], +times[1]);
-					});
-				return [].concat.apply([], timeranges);
-			}
 
 			//
 			// Loop through each of the players' period rows and calculate toi with linemates
@@ -403,9 +390,7 @@ function start() {
 				.forEach(function(pr) {
 
 					// Select the strSitRow rows that have the same game and period
-					var ssRows = strSitRows.filter(function(sr) { 
-						return sr.game_id === pr.game_id && sr.period === pr.period;
-					});
+					var ssRows = strSitRows.filter(function(sr) { return sr.game_id === pr.game_id && sr.period === pr.period; });
 
 					// Select teammates' period rows that have the same game and period, and play the same position (f or d)
 					var tmRows = shiftRows.filter(function(tr) {
@@ -460,18 +445,19 @@ function start() {
 						var linemateRows = tmRows.filter(function(d) { return l.indexOf(d.player_id) >= 0; });
 						// Get intersection of all linemate shifts and strSits
 						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
-						ssRows.forEach(function(sr) {
-							if (linemateRows.length === 2) {
-								lineObj[sr.strength_sit].toi += _.intersection(pr.shifts, linemateRows[0].shifts, linemateRows[1].shifts, sr.timeranges).length;			
-							} else {
-								lineObj[sr.strength_sit].toi += _.intersection(pr.shifts, linemateRows[0].shifts, sr.timeranges).length;
-							}
-						});
-						// Get toi for all situations
-						if (linemateRows.length === 2) {
-							lineObj.all.toi += _.intersection(pr.shifts, linemateRows[0].shifts, linemateRows[1].shifts).length;
-						} else {
-							lineObj.all.toi += _.intersection(pr.shifts, linemateRows[0].shifts).length;
+						// Get intersecting timepoints for all players
+						var playerIntersection;
+						if (result.player.f_or_d === "f" && linemateRows.length === 2) {
+							playerIntersection = _.intersection(pr.shifts, linemateRows[0].shifts, linemateRows[1].shifts);
+						} else if (result.player.f_or_d === "d" && linemateRows.length === 1) {
+							playerIntersection = _.intersection(pr.shifts, linemateRows[0].shifts);
+						}
+						// Increment toi for all situations and ev5/sh/pp
+						if (playerIntersection) {
+							lineObj.all.toi += playerIntersection.length;
+							ssRows.forEach(function(sr) {
+								lineObj[sr.strength_sit].toi += _.intersection(playerIntersection, sr.timeranges).length;
+							});
 						}
 					});
 				});
@@ -571,7 +557,7 @@ function start() {
 
 		function queryHistory() {
 			var queryStr = "SELECT r.game_id, r.team, g.h_team, g.a_team, g.h_final, g.a_final, g.periods, g.datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
-				+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
+					+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
 				+ " FROM game_rosters AS r"
 				+ " LEFT JOIN game_stats AS s"
 					+ " ON r.season = s.season AND r.game_id = s.game_id AND r.player_id = s.player_id"
@@ -660,33 +646,10 @@ function start() {
 				return response.status(200).send(result);
 			}
 		}
-
-		// Get the most-played position from an array of positions [l,l,c,c,c]
-		function isForD(positions) {
-			var position;
-			var counts = { fwd: 0, def: 0, last: "" };
-			positions.forEach(function(d) {
-				if (d === "c" || d === "l" || d === "r") {
-					counts.fwd++;
-					counts.last = "f";
-				} else if (d === "d") {
-					counts.def++;
-					counts.last = "d";
-				}
-			});
-			if (counts.fwd > counts.def) {
-				position = "f";
-			} else if (counts.def > counts.fwd) {
-				position = "d";
-			} else if (counts.def === counts.fwd) {
-				position = counts.last;
-			}
-			return position;	
-		}
 	});
 
 	//
-	// Handle GET request for teams api
+	// Handle GET request for teams list
 	//
 
 	server.get("/api/teams/", function(request, response) {
@@ -698,7 +661,7 @@ function start() {
 			+ " FROM "
 			+ " ( "
 				+ " SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
-				+ "		SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
+					+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
 				+ " FROM game_stats"
 				+ " WHERE player_id < 2 AND season = $1"
 				+ " GROUP BY team, score_sit, strength_sit"
@@ -797,6 +760,196 @@ function start() {
 		}
 	});
 
+	//
+	// Handle GET request for a particular team
+	//
+
+	server.get("/api/teams/:tricode", function(request, response) {
+
+		var tricode = request.params.tricode;
+		var season = 2016;
+
+		var shiftRows;
+		var strSitRows;
+		var eventRows;
+
+		var result = {
+			lines: {}
+		};
+
+		queryLines();
+
+		function queryLines() {
+
+			// Query for shifts belonging to the team's players
+			var queryStr = "SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"positions\""
+				+ " FROM game_shifts AS s"
+				+ " INNER JOIN ("
+					+ " SELECT player_id, \"first\", \"last\", string_agg(position, ',') as positions"
+					+ " FROM game_rosters"
+					+ " WHERE position != 'na' AND position != 'g' AND season = $1 AND team = $2" 
+					+ " GROUP BY player_id, \"first\", \"last\""
+				+ " ) AS r"
+				+ " ON s.player_id = r.player_id"
+				+ " WHERE s.season = $1 AND s.team = $2";
+			query(queryStr, [season, tricode], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				shiftRows = rows;
+				getLineResults();
+			});
+
+			// Query for the strength situations the team was in
+			var queryStr = "SELECT *"
+				+ " FROM game_strength_situations"
+				+ " WHERE season = $1 AND team = $2";
+			query(queryStr, [season, tricode], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				strSitRows = rows;
+				getLineResults();
+			});			
+
+			// Query for the team's events
+			var queryStr = "SELECT e.season, e.game_id, e.period, e.time, e.a_score, e.h_score, e.a_skaters, e.h_skaters, e.type, e.team, e.venue, e.a_g, e.h_g"
+				+ " FROM game_events AS e"
+				+ " LEFT JOIN game_results AS r"
+				+ " ON e.season = r.season AND e.game_id = r.game_id"
+				+ " WHERE e.season = $1 AND (r.a_team = $2 OR r.h_team = $2)";
+			query(queryStr, [season, tricode], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				eventRows = rows;
+				getLineResults();
+			});			
+		}
+
+		function getLineResults() {
+
+			if (!shiftRows || !strSitRows || !eventRows) {
+				return;
+			}
+
+			// Convert the raw timerange data in shiftRows and strSitRows into an array of timepoints
+			shiftRows.forEach(function(s) {
+				s.shifts = getTimepointArray(s.shifts);
+			});
+			strSitRows.forEach(function(s) {
+				s.timeranges = getTimepointArray(s.timeranges);
+			});
+
+			// Get each player's f_or_d value
+			shiftRows.forEach(function(s) {
+				s.f_or_d = isForD(s.positions.split(","));
+			});
+
+			//
+			// Loop through each game and period and calculate line toi
+			//
+
+			var lineResults = [];
+			var gIds = _.uniqBy(shiftRows, "game_id").map(function(d) { return d.game_id; });
+			gIds.forEach(function(gId) {
+				var gShiftRows = shiftRows.filter(function(d) { return d.game_id === gId; });
+
+				// Generate forward combinations
+				var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === "f"; });
+				var uniqLinemates = _.uniqBy(posShiftRows, "player_id");
+				var linesInGame = [];
+				var combos = combinations.k_combinations(uniqLinemates, 3);
+				combos.forEach(function(c) {
+					createLineObject(c);
+				});
+
+				// Create an object in lineResults to store a line's players and stats
+				// Record all lines in the period					
+				function createLineObject(linemates) {
+					var pIds = [];
+					var firsts = [];
+					var lasts = [];
+					// Sort player ids in ascending order
+					linemates = linemates.sort(function(a, b) { return a.player_id - b.player_id; });
+					linemates.forEach(function(lm) {
+						pIds.push(lm.player_id);
+						firsts.push(lm.first);
+						lasts.push(lm.last);
+					});
+					// Record line as playing in the period
+					if (!linesInGame.find(function(d) { return d.toString() === pIds.toString(); })) {
+						linesInGame.push(pIds);
+					}
+					// Check if the combination already exists before creating the object
+					if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
+						lineResults.push({
+							player_ids: pIds,
+							firsts: firsts,
+							lasts: lasts,
+							all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+							ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+							pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+							sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
+						});
+					}
+				};
+
+				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
+				linesInGame.forEach(function(l) {
+					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
+					prds.forEach(function(prd) {
+						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
+						var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
+						var playerOverlap = [];
+						if (linemateRows.length === 3) {
+							playerOverlap = _.intersection(linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts);
+						}
+						prdSsRows.forEach(function(sr) {
+							if (linemateRows.length === 3) {
+								lineObj[sr.strength_sit].toi += _.intersection(playerOverlap, sr.timeranges).length;			
+							}
+						});
+						// Get toi for all situations
+						if (linemateRows.length === 3) {
+							lineObj.all.toi += playerOverlap.length;
+						}
+					});
+				});
+
+				
+				/*
+				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
+				prds.forEach(function(prd) {
+					var prdShiftRows = gShiftRows.filter(function(d) { return d.period === prd; });
+					var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
+
+					// Loop through each line that played in the period and increment toi
+					// 'linesInPeriod' is an array of [playerId, playerId] (or [playerId] for defense)
+					linesInGame.forEach(function(l) {
+						// Get shift rows for each linemate
+						var linemateRows = prdShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0; });
+						// Get intersection of all linemate shifts and strSits
+						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
+						prdSsRows.forEach(function(sr) {
+							if (linemateRows.length === 3) {
+								lineObj[sr.strength_sit].toi += _.intersection(linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts, sr.timeranges).length;			
+							}
+						});
+						// Get toi for all situations
+						if (linemateRows.length === 3) {
+							lineObj.all.toi += _.intersection(linemateRows[0].shifts, linemateRows[1].shifts,linemateRows[2].shifts).length;
+						}					
+					});
+				});
+				*/
+			});
+
+			result.lines = lineResults;
+
+			returnResult();
+		}
+
+		function returnResult() {
+			return response.status(200).send(result);
+		}
+
+	});
+
 	// Start listening for requests
 	server.listen(PORT, function(error) {
 		if (error) { throw error; }
@@ -817,6 +970,43 @@ function start() {
 			});
 		});
 	}
+}
+
+// Get the most-played position (f or d) from an array of positions [l,l,c,c,c]
+function isForD(positions) {
+	var position;
+	var counts = { fwd: 0, def: 0, last: "" };
+	positions.forEach(function(d) {
+		if (d === "c" || d === "l" || d === "r") {
+			counts.fwd++;
+			counts.last = "f";
+		} else if (d === "d") {
+			counts.def++;
+			counts.last = "d";
+		}
+	});
+	if (counts.fwd > counts.def) {
+		position = "f";
+	} else if (counts.def > counts.fwd) {
+		position = "d";
+	} else if (counts.def === counts.fwd) {
+		position = counts.last;
+	}
+	return position;	
+}
+
+// 'timeranges' is a string: "start-end;start-end;..."
+// First split the string into an array of intervals: ["start-end", "start-end", ...]
+// Then convert each interval into an array of seconds played: [[start, start+1, start+2,..., end], [start, start+1, start+2,..., end]]
+// Then flatten the nested arrays: [1,2,3,4,10,11,12,13,...]
+function getTimepointArray(timeranges) {
+	timeranges = timeranges
+		.split(";")					
+		.map(function(interval) {
+			var times = interval.split("-");
+			return _.range(+times[0], +times[1]);
+		});
+	return [].concat.apply([], timeranges);
 }
 
 // Each team, player, or game object originally has a data property that contains an array of results, aggregated by strength and score situations:
