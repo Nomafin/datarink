@@ -398,54 +398,21 @@ function start() {
 							&& result.player.f_or_d === isForD([tr.position]);
 					});
 
-					// Generate linemate combinations (pairs for defense, triplets for forwards)
+					// Generate linemate combinations (pairs for defense, triplets for forwards) and create object to store line results
 					var uniqLinemates = _.uniqBy(tmRows, "player_id");
-					var linesInPeriod = [];
 					var numLinemates = result.player.f_or_d === "d" ? 1 : 2;
 					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
-					combos.forEach(function(c) {
-						createLineObject(c);
+					var lines = [];
+					combos.forEach(function(combo) {
+						initLine(result.player.f_or_d, combo, lines, lineResults);
 					});
-
-					// Create an object in lineResults to store a line's players and stats
-					// Record all lines in the period
-					function createLineObject(linemates) {
-						var pIds = [];
-						var firsts = [];
-						var lasts = [];
-						// Sort player ids in ascending order
-						linemates = linemates.sort(function(a, b) { return a.player_id - b.player_id; });
-						linemates.forEach(function(lm) {
-							pIds.push(lm.player_id);
-							firsts.push(lm.first);
-							lasts.push(lm.last);
-						});
-						// Record line as playing in the period
-						if (!linesInPeriod.find(function(d) { return d.toString() === pIds.toString(); })) {
-							linesInPeriod.push(pIds);
-						}
-						// Check if the combination already exists before creating the object
-						if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
-							lineResults.push({
-								player_ids: pIds,
-								firsts: firsts,
-								lasts: lasts,
-								all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-								ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-								pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-								sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
-							});
-						}
-					};
 
 					// Loop through each line that played in the period and increment toi
 					// 'linesInPeriod' is an array of [playerId, playerId] (or [playerId] for defense)
-					linesInPeriod.forEach(function(l) {
+					lines.forEach(function(l) {
 						// Get shift rows for each linemate
 						var linemateRows = tmRows.filter(function(d) { return l.indexOf(d.player_id) >= 0; });
-						// Get intersection of all linemate shifts and strSits
-						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
-						// Get intersecting timepoints for all players
+						// Get intersection of all linemate shifts
 						var playerIntersection;
 						if (result.player.f_or_d === "f" && linemateRows.length === 2) {
 							playerIntersection = _.intersection(pr.shifts, linemateRows[0].shifts, linemateRows[1].shifts);
@@ -453,6 +420,7 @@ function start() {
 							playerIntersection = _.intersection(pr.shifts, linemateRows[0].shifts);
 						}
 						// Increment toi for all situations and ev5/sh/pp
+						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
 						if (playerIntersection) {
 							lineObj.all.toi += playerIntersection.length;
 							ssRows.forEach(function(sr) {
@@ -849,55 +817,30 @@ function start() {
 			gIds.forEach(function(gId) {
 				var gShiftRows = shiftRows.filter(function(d) { return d.game_id === gId; });
 
-				["f", "d"].forEach(function(pos) {
+				["f", "d"].forEach(function(f_or_d) {
 
-					// Generate combinations
-					var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === pos; });
+					// Generate combinations and create objects to store each line's results
+					var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === f_or_d; });
 					var uniqLinemates = _.uniqBy(posShiftRows, "player_id");
-					var linesInGame = [];
-					var numLinemates = pos === "f" ? 3 : 2;
+					var numLinemates = f_or_d === "f" ? 3 : 2;
 					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
-					combos.forEach(function(linemates) {
-						var pIds = [];
-						var firsts = [];
-						var lasts = [];
-						// Sort player ids in ascending order
-						linemates = linemates.sort(function(a, b) { return a.player_id - b.player_id; });
-						linemates.forEach(function(lm) {
-							pIds.push(lm.player_id);
-							firsts.push(lm.first);
-							lasts.push(lm.last);
-						});
-						// Record line as playing in the period
-						if (!linesInGame.find(function(d) { return d.toString() === pIds.toString(); })) {
-							linesInGame.push(pIds);
-						}
-						// Check if the combination already exists before creating the object
-						if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
-							lineResults.push({
-								player_ids: pIds,
-								firsts: firsts,
-								lasts: lasts,
-								f_or_d: pos,
-								all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-								ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-								pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-								sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
-							});
-						}
+					var lines = [];
+					combos.forEach(function(combo) {
+						initLine(f_or_d, combo, lines, lineResults);
 					});
 
+					// Loop through the game's periods to increment toi
 					var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
-					linesInGame.forEach(function(l) {
+					lines.forEach(function(l) {
 						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
 						prds.forEach(function(prd) {
 							var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
 							var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
 							// Get intersecting timepoints for all players
 							var playerIntersection;
-							if (pos === "f" && linemateRows.length === 3) {
+							if (f_or_d === "f" && linemateRows.length === 3) {
 								playerIntersection = _.intersection(linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts);
-							} else if (pos === "d" && linemateRows.length === 2) {
+							} else if (f_or_d === "d" && linemateRows.length === 2) {
 								playerIntersection = _.intersection(linemateRows[0].shifts, linemateRows[1].shifts);
 							}
 							// Increment toi for all situations and ev5/sh/pp
@@ -981,6 +924,40 @@ function getTimepointArray(timeranges) {
 			return _.range(+times[0], +times[1]);
 		});
 	return [].concat.apply([], timeranges);
+}
+
+// 'f_or_d' is 'f' or 'd'
+// 'players' is an array of player objects: [ { player_id: ... }, { player_id: ... }] - contains player properties used to generate lines
+// 'lines' is an array of player id arrays: [ [111, 222, 333], [222, 333, 444] ] - we'll loop through these lines and increment the stats
+// 'lineResults' is an array of line objects that will be send in the api response
+function initLine(f_or_d, players, lines, lineResults) {
+	var pIds = [];
+	var firsts = [];
+	var lasts = [];
+	// Sort player ids in ascending order
+	players = players.sort(function(a, b) { return a.player_id - b.player_id; });
+	players.forEach(function(lm) {
+		pIds.push(lm.player_id);
+		firsts.push(lm.first);
+		lasts.push(lm.last);
+	});
+	// Record line as playing in the period
+	if (!lines.find(function(d) { return d.toString() === pIds.toString(); })) {
+		lines.push(pIds);
+	}
+	// Check if the combination already exists before creating the object
+	if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
+		lineResults.push({
+			player_ids: pIds,
+			firsts: firsts,
+			lasts: lasts,
+			f_or_d: f_or_d,
+			all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+			ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+			pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+			sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
+		});
+	}
 }
 
 // Each team, player, or game object originally has a data property that contains an array of results, aggregated by strength and score situations:
