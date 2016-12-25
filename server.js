@@ -849,96 +849,70 @@ function start() {
 			gIds.forEach(function(gId) {
 				var gShiftRows = shiftRows.filter(function(d) { return d.game_id === gId; });
 
-				// Generate forward combinations
-				var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === "f"; });
-				var uniqLinemates = _.uniqBy(posShiftRows, "player_id");
-				var linesInGame = [];
-				var combos = combinations.k_combinations(uniqLinemates, 3);
-				combos.forEach(function(c) {
-					createLineObject(c);
-				});
+				["f", "d"].forEach(function(pos) {
 
-				// Create an object in lineResults to store a line's players and stats
-				// Record all lines in the period					
-				function createLineObject(linemates) {
-					var pIds = [];
-					var firsts = [];
-					var lasts = [];
-					// Sort player ids in ascending order
-					linemates = linemates.sort(function(a, b) { return a.player_id - b.player_id; });
-					linemates.forEach(function(lm) {
-						pIds.push(lm.player_id);
-						firsts.push(lm.first);
-						lasts.push(lm.last);
-					});
-					// Record line as playing in the period
-					if (!linesInGame.find(function(d) { return d.toString() === pIds.toString(); })) {
-						linesInGame.push(pIds);
-					}
-					// Check if the combination already exists before creating the object
-					if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
-						lineResults.push({
-							player_ids: pIds,
-							firsts: firsts,
-							lasts: lasts,
-							all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-							ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-							pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-							sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
+					// Generate combinations
+					var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === pos; });
+					var uniqLinemates = _.uniqBy(posShiftRows, "player_id");
+					var linesInGame = [];
+					var numLinemates = pos === "f" ? 3 : 2;
+					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
+					combos.forEach(function(linemates) {
+						var pIds = [];
+						var firsts = [];
+						var lasts = [];
+						// Sort player ids in ascending order
+						linemates = linemates.sort(function(a, b) { return a.player_id - b.player_id; });
+						linemates.forEach(function(lm) {
+							pIds.push(lm.player_id);
+							firsts.push(lm.first);
+							lasts.push(lm.last);
 						});
-					}
-				};
-
-				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
-				linesInGame.forEach(function(l) {
-					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
-					prds.forEach(function(prd) {
-						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
-						var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
-						var playerOverlap = [];
-						if (linemateRows.length === 3) {
-							playerOverlap = _.intersection(linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts);
+						// Record line as playing in the period
+						if (!linesInGame.find(function(d) { return d.toString() === pIds.toString(); })) {
+							linesInGame.push(pIds);
 						}
-						prdSsRows.forEach(function(sr) {
-							if (linemateRows.length === 3) {
-								lineObj[sr.strength_sit].toi += _.intersection(playerOverlap, sr.timeranges).length;			
-							}
-						});
-						// Get toi for all situations
-						if (linemateRows.length === 3) {
-							lineObj.all.toi += playerOverlap.length;
+						// Check if the combination already exists before creating the object
+						if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
+							lineResults.push({
+								player_ids: pIds,
+								firsts: firsts,
+								lasts: lasts,
+								f_or_d: pos,
+								all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+								ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+								pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+								sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
+							});
 						}
 					});
-				});
 
-				
-				/*
-				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
-				prds.forEach(function(prd) {
-					var prdShiftRows = gShiftRows.filter(function(d) { return d.period === prd; });
-					var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
-
-					// Loop through each line that played in the period and increment toi
-					// 'linesInPeriod' is an array of [playerId, playerId] (or [playerId] for defense)
+					var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
 					linesInGame.forEach(function(l) {
-						// Get shift rows for each linemate
-						var linemateRows = prdShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0; });
-						// Get intersection of all linemate shifts and strSits
 						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
-						prdSsRows.forEach(function(sr) {
-							if (linemateRows.length === 3) {
-								lineObj[sr.strength_sit].toi += _.intersection(linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts, sr.timeranges).length;			
+						prds.forEach(function(prd) {
+							var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
+							var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
+							// Get intersecting timepoints for all players
+							var playerIntersection;
+							if (pos === "f" && linemateRows.length === 3) {
+								playerIntersection = _.intersection(linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts);
+							} else if (pos === "d" && linemateRows.length === 2) {
+								playerIntersection = _.intersection(linemateRows[0].shifts, linemateRows[1].shifts);
+							}
+							// Increment toi for all situations and ev5/sh/pp
+							if (playerIntersection) {
+								lineObj.all.toi += playerIntersection.length;
+								prdSsRows.forEach(function(sr) {
+									lineObj[sr.strength_sit].toi += _.intersection(playerIntersection, sr.timeranges).length;
+								});
 							}
 						});
-						// Get toi for all situations
-						if (linemateRows.length === 3) {
-							lineObj.all.toi += _.intersection(linemateRows[0].shifts, linemateRows[1].shifts,linemateRows[2].shifts).length;
-						}					
 					});
 				});
-				*/
 			});
 
+			lineResults = lineResults.filter(function(d) { return d.all.toi >= 60; });
 			result.lines = lineResults;
 
 			returnResult();
