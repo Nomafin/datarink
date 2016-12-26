@@ -129,12 +129,10 @@ function start() {
 				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 			});
 
-			// Group rows by playerId:
-			//	{ 123: [rows for player 123], 234: [rows for player 234] }
+			// Group rows by playerId: { 123: [rows for player 123], 234: [rows for player 234] }
 			statRows = _.groupBy(statRows, "player_id");
 
-			// Structure results as an array of objects:
-			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
+			// Structure results as an array of objects: [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
 			var result = { players: [] };
 			Object.keys(statRows).forEach(function(pId) {
 				// Get all teams and positions the player has been on, as well as games played
@@ -212,12 +210,10 @@ function start() {
 				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 			});
 
-			// Group rows by playerId:
-			//	{ 123: [rows for player 123], 234: [rows for player 234] }
+			// Group rows by playerId: { 123: [rows for player 123], 234: [rows for player 234] }
 			statRows = _.groupBy(statRows, "player_id");
 
-			// Structure results as an array of objects:
-			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
+			// Structure results as an array of objects: [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
 			Object.keys(statRows).forEach(function(sId) {
 
 				// Store player data, including their position and games played
@@ -485,13 +481,10 @@ function start() {
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
 				var numLinemates = result.player.f_or_d === "d" ? 1 : 2;
 				var combos = combinations.k_combinations(skaters, numLinemates);
-				// Sort playerIds in ascending order
-				combos.forEach(function(c) {
-					return c.sort(function(a, b) { return a - b; });
-				});
 
 				// Increment stats for each combo
 				combos.forEach(function(c) {
+					c.sort(function(a, b) { return a - b; });
 					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
 					// Increment for "all" situations
 					lineObj["all"]["c" + suffix]++;
@@ -602,8 +595,7 @@ function start() {
 				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 			});
 
-			// Group rows by team:
-			// { "edm": [rows for edm], "tor": [rows for tor] }
+			// Group rows by team: { "edm": [rows for edm], "tor": [rows for tor] }
 			statRows = _.groupBy(statRows, "team");
 
 			//
@@ -625,8 +617,7 @@ function start() {
 				}
 			});
 
-			// Structure results as an array of objects:
-			// [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
+			// Structure results as an array of objects: [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
 			var result = { teams: [] };
 			Object.keys(statRows).forEach(function(tricode) {
 				result.teams.push({
@@ -698,12 +689,10 @@ function start() {
 				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 			});
 
-			// Group rows by team:
-			// { "edm": [rows for edm], "tor": [rows for tor] }
+			// Group rows by team: { "edm": [rows for edm], "tor": [rows for tor] }
 			statRows = _.groupBy(statRows, "team");
 
-			// Structure results as an array of objects:
-			// [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
+			// Structure results as an array of objects: [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
 			Object.keys(statRows).forEach(function(tcode) {
 				teams.push({
 					team: tcode,
@@ -798,12 +787,13 @@ function start() {
 				getLineResults();
 			});			
 
-			// Query for the team's events
-			var queryStr = "SELECT e.season, e.game_id, e.period, e.time, e.a_score, e.h_score, e.a_skaters, e.h_skaters, e.type, e.team, e.venue, e.a_g, e.h_g"
+			// Query for events in the team's games
+			var queryStr = "SELECT e.*"
 				+ " FROM game_events AS e"
 				+ " LEFT JOIN game_results AS r"
 				+ " ON e.season = r.season AND e.game_id = r.game_id"
-				+ " WHERE e.season = $1 AND (r.a_team = $2 OR r.h_team = $2)";
+				+ " WHERE (e.type = 'goal' OR e.type = 'shot' OR e.type = 'missed_shot' OR e.type = 'blocked_shot')"
+					+ " AND e.season = $1 AND (r.a_team = $2 OR r.h_team = $2)";
 			query(queryStr, [season, tricode], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				eventRows = rows;
@@ -826,8 +816,11 @@ function start() {
 			});
 
 			// Get each player's f_or_d value
+			var fdVals = {}; // Use player id as keys, f/d as values - will be used when increment event stats
 			shiftRows.forEach(function(s) {
-				s.f_or_d = isForD(s.positions.split(","));
+				var val = isForD(s.positions.split(","));
+				s.f_or_d = val;
+				fdVals[s.player_id] = val;
 			});
 
 			//
@@ -877,6 +870,87 @@ function start() {
 				});
 			});
 
+			//
+			// Append event stats to lineResults
+			//
+
+			eventRows.forEach(function(ev) {
+
+				// Get whether the event was for or against the team
+				var suffix = ev.team === tricode ? "f" : "a";
+
+				// Get whether the team is home or away
+				var isHome;
+				if (ev.venue === "home") {
+					isHome = ev.team === tricode ? true : false;
+				} else if (ev.venue === "away") {
+					isHome = ev.team === tricode ? false : true;
+				}
+
+				// Get strength situation for the team
+				var strSit;
+				if (ev["a_g"] && ev["h_g"]) {
+					if (ev["a_skaters"] === 5 && ev["h_skaters"] === 5) {
+						strSit = "ev5";
+					} else if (ev["a_skaters"] > ev["h_skaters"] && ev["h_skaters"] >= 3) {
+						strSit = isHome ? "sh" : "pp";
+					} else if (ev["h_skaters"] > ev["a_skaters"] && ev["a_skaters"] >= 3) {
+						strSit = isHome ? "pp" : "sh";
+					}
+				}
+
+				// Get the score situation and score adjustment factor for the player
+				var scoreSit = Math.max(-3, Math.min(3, ev["a_score"] - ev["h_score"])).toString();
+				if (isHome) {
+					scoreSit = Math.max(-3, Math.min(3, ev["h_score"] - ev["a_score"])).toString();
+				}
+
+				// Get the forwards and defense for which to increment stats
+				// Combine the database home/away skater columns into an array, removing null values
+				var skaters = isHome ? [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; })
+					: [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
+				var fwds = skaters.filter(function(sid) { return fdVals[sid] === "f"; });
+				var defs = skaters.filter(function(sid) { return fdVals[sid] === "d"; });
+
+				// Get combinations of linemates for which to increment stats
+				// This handles events with more than 2 defense or more than 3 forwards on the ice
+				["f", "d"].forEach(function(f_or_d) {
+
+					// Generate player id combinations
+					var combos = f_or_d === "f" ? combinations.k_combinations(fwds, 3)
+						: combinations.k_combinations(defs, 2);
+
+					// Increment stats for each combo
+					combos.forEach(function(c) {
+						c.sort(function(a, b) { return a - b; });
+						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
+						// Increment for "all" situations
+						lineObj["all"]["c" + suffix]++;
+						if (suffix === "f") {
+							lineObj["all"]["c" + suffix + "_adj"] += constants.cfWeights[scoreSit];
+						} else if (suffix === "a") {
+							lineObj["all"]["c" + suffix + "_adj"] += constants.cfWeights[-1 * scoreSit];
+						}
+						if (ev.type === "goal") {
+							lineObj["all"]["g" + suffix]++;
+						}
+						// Increment for ev5, sh, pp
+						if (strSit) {
+							lineObj[strSit]["c" + suffix]++;
+							if (suffix === "f") {
+								lineObj[strSit]["c" + suffix + "_adj"] += constants.cfWeights[scoreSit];
+							} else if (suffix === "a") {
+								lineObj[strSit]["c" + suffix + "_adj"] += constants.cfWeights[-1 * scoreSit];
+							}
+							if (ev.type === "goal") {
+								lineObj[strSit]["g" + suffix]++;
+							}
+						}
+					});					
+				});
+			});
+
+			// Append line stats to response
 			lineResults = lineResults.filter(function(d) { return d.all.toi >= 60; });
 			result.lines = lineResults;
 			returnResult();
@@ -954,6 +1028,8 @@ function isForD(positions) {
 	return position;	
 }
 
+// 'historyRows' is an array of game_stats rows for particular player or team (joined with game_results)
+// The output 'historyResults' is ready to be returned in the api response
 function getHistoryResults(historyRows) {
 
 	// Calculate score-adjusted corsi
@@ -962,12 +1038,10 @@ function getHistoryResults(historyRows) {
 		r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 	});
 
-	// Group rows by game_id (each game_id has rows for different strength and score situations)
-	//	{ 123: [rows for game 123], 234: [rows for game 234] }
+	// Group rows by game_id (each game_id has rows for different strength and score situations): { 123: [rows for game 123], 234: [rows for game 234] }
 	historyRows = _.groupBy(historyRows, "game_id");
 
-	// Structure results as an array of objects:
-	// [ { game }, { game } ]
+	// Structure results as an array of objects: [ { game }, { game } ]
 	var historyResults = [];
 	for (var gId in historyRows) {
 		if (!historyRows.hasOwnProperty(gId)) {
