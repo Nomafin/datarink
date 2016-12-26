@@ -82,6 +82,24 @@ function start() {
 		+ " ) AS result2"
 		+ " ON result1.player_id = result2.player_id";
 
+	var teamStatQueryString = "SELECT result1.*, result2.gp"
+		+ " FROM "
+		+ " ( "
+			+ " SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
+				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
+			+ " FROM game_stats"
+			+ " WHERE player_id < 2 AND season = $1"
+			+ " GROUP BY team, score_sit, strength_sit"
+		+ " ) AS result1"
+		+ " LEFT JOIN"
+		+ " ( "
+			+ " SELECT team, COUNT(DISTINCT game_id) AS gp"
+			+ " FROM game_rosters" 
+			+ " WHERE season = $1"
+			+ " GROUP BY team"
+		+ " ) AS result2"
+		+ " ON result1.team = result2.team";
+
 	//
 	// Handle GET request for players list
 	//
@@ -159,10 +177,7 @@ function start() {
 
 		var pId = +request.params.id;
 		var season = 2016;
-		var result = {
-			player: {},
-			breakpoints: {}
-		};
+		var result = {};
 		var players = []; // An array of player objects
 
 		// Start querying and processing the player's game history in parallel with breakpoint calculations
@@ -203,10 +218,7 @@ function start() {
 
 			// Structure results as an array of objects:
 			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
-			for (var sId in statRows) {
-				if (!statRows.hasOwnProperty(sId)) {
-					continue;
-				}
+			Object.keys(statRows).forEach(function(sId) {
 
 				// Store player data, including their position and games played
 				var positions = statRows[sId][0].positions.split(",");
@@ -230,32 +242,28 @@ function start() {
 						d.positions = undefined;
 					});
 				}
-			}
+			});
 
 			// Aggregate score situations
 			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
 			aggregateScoreSituations(players, stats);
 
 			// Get breakpoints
+			result.breakpoints = {};
 			var player = players.find(function(d) { return d.player_id === pId; });
 			["all_toi", "ev5_cf_adj_per60", "ev5_ca_adj_per60", "ev5_p1_per60", "pp_p1_per60"].forEach(function(s) {
-
+				result.breakpoints[s] = { breakpoints: [], player: null, isPlayerInDistribution: null };
 				// To calculate breakpoints, only consider players with the same position as the specified player, and with at least 10gp
 				// For powerplay breakpoints, only consider players with at least 20 minutes of pp time
 				var breakpointPlayers = players.filter(function(d) { return (d.f_or_d === result.player.f_or_d && d.gp >= 10); });
 				if (s === "pp_p1_per60") {
 					breakpointPlayers = breakpointPlayers.filter(function(p) { return p.stats.pp.toi >= 20 * 60; });
 				}
-	
-				// Initialize result
-				result.breakpoints[s] = { breakpoints: [], player: null, isPlayerInDistribution: null };
-
 				// Get the datapoints for which we want a distribution
 				var datapoints = [];
 				breakpointPlayers.forEach(function(p) {
 					datapoints.push(getDatapoint(p, s));
 				});
-
 				// Sort datapoints in descending order and find breakpoints
 				datapoints.sort(function(a, b) { return b - a; });
 				var ranks = result.player.f_or_d === "f" ? [0, 89, 179, 269, 359] : [0, 59, 119, 179];
@@ -271,7 +279,6 @@ function start() {
 					}				
 					i++;	
 				}
-
 				// Store the player's datapoint
 				result.breakpoints[s].player = getDatapoint(player, s);
 				if (breakpointPlayers.find(function(d) { return d.player_id === pId; })) {
@@ -290,7 +297,7 @@ function start() {
 			var datapoint;
 			if (s === "all_toi") {
 				datapoint = p.stats.all.toi / p.gp;
-			} else if (s === "ev5_cf_adj_per60" || s === "ev5_ca_adj_per60" || s === "ev5_p1_per60") {
+			} else if (s.indexOf("ev5_") >= 0) {
 				if (s === "ev5_cf_adj_per60") {
 					datapoint = p.stats.ev5.cf_adj;
 				} else if (s === "ev5_ca_adj_per60") {
@@ -522,7 +529,6 @@ function start() {
 		//
 
 		var historyRows;
-
 		function queryHistory() {
 			var queryStr = "SELECT r.game_id, r.team, g.h_team, g.a_team, g.h_final, g.a_final, g.periods, g.datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
 					+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
@@ -535,74 +541,9 @@ function start() {
 			query(queryStr, [season, pId], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				historyRows = rows;
-				getHistoryResults();
+				result.history = getHistoryResults(historyRows);
+				returnResult();
 			});
-		}
-
-		function getHistoryResults() {
-
-			// Calculate score-adjusted corsi
-			historyRows.forEach(function(r) {
-				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
-				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
-			});
-
-			// Group rows by game_id (each game_id has rows for different strength and score situations)
-			//	{ 123: [rows for game 123], 234: [rows for game 234] }
-			historyRows = _.groupBy(historyRows, "game_id");
-
-			// Structure results as an array of objects:
-			// [ { game }, { game } ]
-			var historyResults = [];
-			for (var gId in historyRows) {
-				if (!historyRows.hasOwnProperty(gId)) {
-					continue;
-				}
-
-				// Store game results
-				var team = historyRows[gId][0].team;
-				var isHome = team === historyRows[gId][0].h_team ? true : false;
-				var opp = isHome ? historyRows[gId][0].a_team : historyRows[gId][0].h_team;
-				var teamFinal = historyRows[gId][0].h_final;
-				var oppFinal = historyRows[gId][0].a_final;
-				if (!isHome) {
-					var tmp = teamFinal;
-					teamFinal = oppFinal;
-					oppFinal = tmp;
-				}
-				historyResults.push({
-					game_id: +gId,
-					team: team,
-					is_home: isHome,
-					opp: opp,
-					team_final: teamFinal,
-					opp_final: oppFinal,
-					periods: historyRows[gId][0].periods,
-					datetime: historyRows[gId][0].datetime,
-					position: historyRows[gId][0].position,
-					data: historyRows[gId]
-				});
-			}
-
-			// Remove redundant properties from each game's data rows
-			historyResults.forEach(function(g) {
-				g.data.forEach(function(r) {
-					r.game_id = undefined,
-					r.datetime = undefined,
-					r.position = undefined,
-					r.team = undefined,
-					r.a_team = undefined,
-					r.h_team = undefined,
-					r.a_final = undefined,
-					r.h_final = undefined
-				});
-			});
-
-			// Aggregate score situations for each game
-			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
-			aggregateScoreSituations(historyResults, stats);
-			result.history = historyResults;
-			returnResult();
 		}
 
 		//
@@ -625,25 +566,8 @@ function start() {
 		var season = 2016;
 
 		// Query for stats by game
-		var statQueryString = "SELECT result1.*, result2.gp"
-			+ " FROM "
-			+ " ( "
-				+ " SELECT team, score_sit, strength_sit, SUM(toi) AS toi,"
-					+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
-				+ " FROM game_stats"
-				+ " WHERE player_id < 2 AND season = $1"
-				+ " GROUP BY team, score_sit, strength_sit"
-			+ " ) AS result1"
-			+ " LEFT JOIN"
-			+ " ( "
-				+ " SELECT team, COUNT(DISTINCT game_id) AS gp"
-				+ " FROM game_rosters" 
-				+ " WHERE season = $1"
-				+ " GROUP BY team"
-			+ " ) AS result2"
-			+ " ON result1.team = result2.team";
 		var statRows;
-		query(statQueryString, [season], function(err, rows) {
+		query(teamStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			statRows = rows;
 			processResults();
@@ -741,11 +665,109 @@ function start() {
 		var strSitRows;
 		var eventRows;
 
-		var result = {
-			lines: {}
-		};
+		var teams = [];
+		var result = {};
 
+		queryBreakpoints();
 		queryLines();
+		queryHistory();
+
+		//
+		// Get the specified team's data and calculate breakpoints
+		//
+
+		var statRows;
+		function queryBreakpoints() {
+			query(teamStatQueryString, [season], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				statRows = rows;
+				getBreakpoints();
+			});
+		}
+
+		// Process query results
+		function getBreakpoints() {
+
+			// Postgres aggregate functions like SUM return strings, so cast them as ints
+			// Calculate score-adjusted corsi
+			statRows.forEach(function(r) {
+				["toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
+					r[col] = +r[col];
+				});
+				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+			});
+
+			// Group rows by team:
+			// { "edm": [rows for edm], "tor": [rows for tor] }
+			statRows = _.groupBy(statRows, "team");
+
+			// Structure results as an array of objects:
+			// [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
+			Object.keys(statRows).forEach(function(tcode) {
+				teams.push({
+					team: tcode,
+					gp: statRows[tcode][0].gp,
+					data: statRows[tcode]
+				});
+
+				// Store a reference to the specified team's data. Remove redundant properties to reduce response size
+				if (tricode === tcode) {
+					result.team = teams[teams.length - 1];
+					result.team.data.forEach(function(d) {
+						d.team = undefined;
+						d.gp = undefined;
+					});
+				}
+			});
+
+			// Aggregate score situations
+			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+			aggregateScoreSituations(teams, stats);
+
+			// Get breakpoints
+			result.breakpoints = {};
+			var team = teams.find(function(d) { return d.team === tricode; });
+			["ev5_cf_adj_per60", "ev5_ca_adj_per60", "ev5_gf_per60", "ev5_ga_per60", "pp_gf_per60", "sh_ga_per60"].forEach(function(s) {
+				result.breakpoints[s] = { breakpoints: [], team: null };
+				// Get the datapoints for which we want a distribution
+				var datapoints = [];
+				teams.forEach(function(t) {
+					datapoints.push(getDatapoint(t, s));
+				});
+				// Sort datapoints in descending order and find breakpoints
+				datapoints.sort(function(a, b) { return b - a; });
+				[0, 5, 11, 17, 23, 29].forEach(function(rank) {
+					result.breakpoints[s].breakpoints.push(datapoints[rank]);
+				});
+				// Store the team's datapoint
+				result.breakpoints[s].team = getDatapoint(team, s);
+			});
+
+			returnResult();
+		}
+
+		// 't' is a team object; 's' is the stat to be calculated
+		function getDatapoint(t, s) {
+			var datapoint;
+			if (s.indexOf("ev5_") >= 0) {
+				if (s === "ev5_cf_adj_per60") {
+					datapoint = t.stats.ev5.cf_adj;
+				} else if (s === "ev5_ca_adj_per60") {
+					datapoint = t.stats.ev5.ca_adj;
+				} else if (s === "ev5_gf_per60") {
+					datapoint = t.stats.ev5.gf;
+				} else if (s === "ev5_ga_per60") {
+					datapoint = t.stats.ev5.ga;
+				}
+				datapoint = t.stats.ev5.toi === 0 ? 0 : 60 * 60 * (datapoint / t.stats.ev5.toi);
+			} else if (s === "pp_gf_per60") {
+				datapoint = t.stats.pp.toi === 0 ? 0 : 60 * 60 * (t.stats.pp.gf / t.stats.pp.toi);
+			} else if (s === "sh_ga_per60") {
+				datapoint = t.stats.sh.toi === 0 ? 0 : 60 * 60 * (t.stats.sh.ga / t.stats.sh.toi);
+			}
+			return datapoint;
+		}
 
 		function queryLines() {
 
@@ -857,14 +879,34 @@ function start() {
 
 			lineResults = lineResults.filter(function(d) { return d.all.toi >= 60; });
 			result.lines = lineResults;
-
 			returnResult();
 		}
 
-		function returnResult() {
-			return response.status(200).send(result);
+		//
+		// Query and process game-by-game history
+		//
+
+		var historyRows;
+		function queryHistory() {
+			var queryStr = "SELECT s.game_id, s.team, r.h_team, r.a_team, r.h_final, r.a_final, r.periods, r.datetime, s.strength_sit, s.score_sit, s.toi,"
+					+ " s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
+				+ " FROM game_stats AS s"
+				+ " LEFT JOIN game_results AS r"
+					+ " ON s.season = r.season AND s.game_id = r.game_id"
+				+ " WHERE s.season = $1 AND s.team = $2 AND s.player_id < 2";
+			query(queryStr, [season, tricode], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				historyRows = rows;
+				result.history = getHistoryResults(historyRows);
+				returnResult();
+			});
 		}
 
+		function returnResult() {
+			if (result.team && result.lines && result.history && result.breakpoints) {
+				return response.status(200).send(result);
+			}
+		}
 	});
 
 	// Start listening for requests
@@ -910,6 +952,71 @@ function isForD(positions) {
 		position = counts.last;
 	}
 	return position;	
+}
+
+function getHistoryResults(historyRows) {
+
+	// Calculate score-adjusted corsi
+	historyRows.forEach(function(r) {
+		r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+		r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+	});
+
+	// Group rows by game_id (each game_id has rows for different strength and score situations)
+	//	{ 123: [rows for game 123], 234: [rows for game 234] }
+	historyRows = _.groupBy(historyRows, "game_id");
+
+	// Structure results as an array of objects:
+	// [ { game }, { game } ]
+	var historyResults = [];
+	for (var gId in historyRows) {
+		if (!historyRows.hasOwnProperty(gId)) {
+			continue;
+		}
+
+		// Store game results
+		var team = historyRows[gId][0].team;
+		var isHome = team === historyRows[gId][0].h_team ? true : false;
+		var opp = isHome ? historyRows[gId][0].a_team : historyRows[gId][0].h_team;
+		var teamFinal = historyRows[gId][0].h_final;
+		var oppFinal = historyRows[gId][0].a_final;
+		if (!isHome) {
+			var tmp = teamFinal;
+			teamFinal = oppFinal;
+			oppFinal = tmp;
+		}
+		historyResults.push({
+			game_id: +gId,
+			team: team,
+			is_home: isHome,
+			opp: opp,
+			team_final: teamFinal,
+			opp_final: oppFinal,
+			periods: historyRows[gId][0].periods,
+			datetime: historyRows[gId][0].datetime,
+			position: historyRows[gId][0].position,
+			data: historyRows[gId]
+		});
+	}
+
+	// Remove redundant properties from each game's data rows
+	historyResults.forEach(function(g) {
+		g.data.forEach(function(r) {
+			r.game_id = undefined,
+			r.datetime = undefined,
+			r.position = undefined,
+			r.team = undefined,
+			r.a_team = undefined,
+			r.h_team = undefined,
+			r.a_final = undefined,
+			r.h_final = undefined
+		});
+	});
+
+	// Aggregate score situations for each game
+	var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+	aggregateScoreSituations(historyResults, stats);
+	return historyResults;
 }
 
 // 'timeranges' is a string: "start-end;start-end;..."
