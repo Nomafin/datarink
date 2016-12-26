@@ -450,24 +450,6 @@ function start() {
 					suffix = "a";
 				}
 
-				// Get strength situation for the player
-				var strSit;
-				if (ev["a_g"] && ev["h_g"]) {
-					if (ev["a_skaters"] === 5 && ev["h_skaters"] === 5) {
-						strSit = "ev5";
-					} else if (ev["a_skaters"] > ev["h_skaters"] && ev["h_skaters"] >= 3) {
-						strSit = isHome ? "sh" : "pp";
-					} else if (ev["h_skaters"] > ev["a_skaters"] && ev["a_skaters"] >= 3) {
-						strSit = isHome ? "pp" : "sh";
-					}
-				}
-
-				// Get the score situation and score adjustment factor for the player
-				var scoreSit = Math.max(-3, Math.min(3, ev["a_score"] - ev["h_score"])).toString();
-				if (isHome) {
-					scoreSit = Math.max(-3, Math.min(3, ev["h_score"] - ev["a_score"])).toString();
-				}
-
 				// Get the skaters for which to increment stats - remove the specified player
 				// Only include skaters with the same f/d classification as the specified player
 				var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
@@ -481,34 +463,7 @@ function start() {
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
 				var numLinemates = result.player.f_or_d === "d" ? 1 : 2;
 				var combos = combinations.k_combinations(skaters, numLinemates);
-
-				// Increment stats for each combo
-				combos.forEach(function(c) {
-					c.sort(function(a, b) { return a - b; });
-					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
-					// Increment for "all" situations
-					lineObj["all"]["c" + suffix]++;
-					if (suffix === "f") {
-						lineObj["all"]["c" + suffix + "_adj"] += constants.cfWeights[scoreSit];
-					} else if (suffix === "a") {
-						lineObj["all"]["c" + suffix + "_adj"] += constants.cfWeights[-1 * scoreSit];
-					}
-					if (ev.type === "goal") {
-						lineObj["all"]["g" + suffix]++;
-					}
-					// Increment for ev5, sh, pp
-					if (strSit) {
-						lineObj[strSit]["c" + suffix]++;
-						if (suffix === "f") {
-							lineObj[strSit]["c" + suffix + "_adj"] += constants.cfWeights[scoreSit];
-						} else if (suffix === "a") {
-							lineObj[strSit]["c" + suffix + "_adj"] += constants.cfWeights[-1 * scoreSit];
-						}
-						if (ev.type === "goal") {
-							lineObj[strSit]["g" + suffix]++;
-						}
-					}
-				});
+				incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
 			});
 
 			// Remove lines with less than 1min total toi before returning results
@@ -875,10 +830,8 @@ function start() {
 			//
 
 			eventRows.forEach(function(ev) {
-
 				// Get whether the event was for or against the team
 				var suffix = ev.team === tricode ? "f" : "a";
-
 				// Get whether the team is home or away
 				var isHome;
 				if (ev.venue === "home") {
@@ -886,67 +839,18 @@ function start() {
 				} else if (ev.venue === "away") {
 					isHome = ev.team === tricode ? false : true;
 				}
-
-				// Get strength situation for the team
-				var strSit;
-				if (ev["a_g"] && ev["h_g"]) {
-					if (ev["a_skaters"] === 5 && ev["h_skaters"] === 5) {
-						strSit = "ev5";
-					} else if (ev["a_skaters"] > ev["h_skaters"] && ev["h_skaters"] >= 3) {
-						strSit = isHome ? "sh" : "pp";
-					} else if (ev["h_skaters"] > ev["a_skaters"] && ev["a_skaters"] >= 3) {
-						strSit = isHome ? "pp" : "sh";
-					}
-				}
-
-				// Get the score situation and score adjustment factor for the player
-				var scoreSit = Math.max(-3, Math.min(3, ev["a_score"] - ev["h_score"])).toString();
-				if (isHome) {
-					scoreSit = Math.max(-3, Math.min(3, ev["h_score"] - ev["a_score"])).toString();
-				}
-
 				// Get the forwards and defense for which to increment stats
 				// Combine the database home/away skater columns into an array, removing null values
 				var skaters = isHome ? [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; })
 					: [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
 				var fwds = skaters.filter(function(sid) { return fdVals[sid] === "f"; });
 				var defs = skaters.filter(function(sid) { return fdVals[sid] === "d"; });
-
 				// Get combinations of linemates for which to increment stats
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
 				["f", "d"].forEach(function(f_or_d) {
-
-					// Generate player id combinations
 					var combos = f_or_d === "f" ? combinations.k_combinations(fwds, 3)
 						: combinations.k_combinations(defs, 2);
-
-					// Increment stats for each combo
-					combos.forEach(function(c) {
-						c.sort(function(a, b) { return a - b; });
-						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
-						// Increment for "all" situations
-						lineObj["all"]["c" + suffix]++;
-						if (suffix === "f") {
-							lineObj["all"]["c" + suffix + "_adj"] += constants.cfWeights[scoreSit];
-						} else if (suffix === "a") {
-							lineObj["all"]["c" + suffix + "_adj"] += constants.cfWeights[-1 * scoreSit];
-						}
-						if (ev.type === "goal") {
-							lineObj["all"]["g" + suffix]++;
-						}
-						// Increment for ev5, sh, pp
-						if (strSit) {
-							lineObj[strSit]["c" + suffix]++;
-							if (suffix === "f") {
-								lineObj[strSit]["c" + suffix + "_adj"] += constants.cfWeights[scoreSit];
-							} else if (suffix === "a") {
-								lineObj[strSit]["c" + suffix + "_adj"] += constants.cfWeights[-1 * scoreSit];
-							}
-							if (ev.type === "goal") {
-								lineObj[strSit]["g" + suffix]++;
-							}
-						}
-					});					
+					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);				
 				});
 			});
 
@@ -1091,6 +995,45 @@ function getHistoryResults(historyRows) {
 	var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
 	aggregateScoreSituations(historyResults, stats);
 	return historyResults;
+}
+
+// 'lineResults' is an array of line objects used to store results
+// 'combos' is an array of player id arrays to loop through: [ [111, 222, 333], [111, 222, 444] ]
+// 'ev' is the event object
+// 'isHome' is whether the team or player is the home team: true/false
+// 'suffix' is whether the event was 'f' (for) or 'a' (against) the team or player
+function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
+	// Get strength situation for the team
+	var strSit;
+	if (ev.a_g && ev.h_g) {
+		if (ev.a_skaters === 5 && ev.h_skaters === 5) {
+			strSit = "ev5";
+		} else if (ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) {
+			strSit = isHome ? "sh" : "pp";
+		} else if (ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3) {
+			strSit = isHome ? "pp" : "sh";
+		}
+	}
+	// Get the score situation and score adjustment factor for the player
+	var scoreSit = isHome ? Math.max(-3, Math.min(3, ev.h_score - ev.a_score)) : 
+		Math.max(-3, Math.min(3, ev.a_score - ev.h_score));
+	// Increment stats for each combo for all situations, and ev/sh/pp
+	combos.forEach(function(c) {
+		c.sort(function(a, b) { return a - b; });
+		var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
+		var sits = strSit ? ["all", strSit] : ["all"];
+		sits.forEach(function(sit) {
+			lineObj[sit]["c" + suffix]++;
+			if (suffix === "f") {
+				lineObj[sit]["cf_adj"] += constants.cfWeights[scoreSit];
+			} else if (suffix === "a") {
+				lineObj[sit]["ca_adj"] += constants.cfWeights[-1 * scoreSit];
+			}
+			if (ev.type === "goal") {
+				lineObj[sit]["g" + suffix]++;
+			}
+		})
+	});	
 }
 
 // 'timeranges' is a string: "start-end;start-end;..."
