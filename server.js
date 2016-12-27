@@ -876,12 +876,30 @@ function start() {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				historyRows = rows;
 				result.history = getHistoryResults(historyRows);
-				returnResult();
+				getPoints();
 			});
 		}
 
+		// Get the number of points won by the team
+		// We store the points outside of result.teams for now because result.teams might not have been created yet
+		function getPoints() {
+			result.points = 0;
+			result.history.filter(function(r) { return r.game_id < 30000; })
+				.forEach(function(r) {
+					if (r.team_final > r.opp_final) {
+						result.points += 2;
+					} else if (r.team_final < r.opp_final && r.periods > 3) {
+						result.points += 1;
+					}
+				});
+			returnResult();
+		}
+
 		function returnResult() {
-			if (result.team && result.lines && result.history && result.breakpoints) {
+			if (result.team && result.lines && result.history && result.breakpoints && result.points) {
+				// Reorganize the json before responding
+				result.team.points = result.points;
+				result.points = undefined;
 				return response.status(200).send(result);
 			}
 		}
