@@ -248,7 +248,7 @@ function start() {
 			result.breakpoints = {};
 			var player = players.find(function(d) { return d.player_id === pId; });
 			["all_toi", "ev5_cf_adj_per60", "ev5_ca_adj_per60", "ev5_p1_per60", "pp_p1_per60"].forEach(function(s) {
-				result.breakpoints[s] = { breakpoints: [], player: null, isPlayerInDistribution: null };
+				result.breakpoints[s] = { breakpoints: [], self: null, isSelfInDistribution: null };
 				// To calculate breakpoints, only consider players with the same position as the specified player, and with at least 10gp
 				// For powerplay breakpoints, only consider players with at least 20 minutes of pp time
 				var breakpointPlayers = players.filter(function(d) { return (d.f_or_d === result.player.f_or_d && d.gp >= 10); });
@@ -260,8 +260,12 @@ function start() {
 				breakpointPlayers.forEach(function(p) {
 					datapoints.push(getDatapoint(p, s));
 				});
-				// Sort datapoints in descending order and find breakpoints
-				datapoints.sort(function(a, b) { return b - a; });
+				// Sort datapoints
+				if (s === "ev5_ca_adj_per60") {
+					datapoints.sort(function(a, b) { return a - b; }); // Ascending order
+				} else {
+					datapoints.sort(function(a, b) { return b - a; }); // Descending order
+				}
 				var ranks = result.player.f_or_d === "f" ? [0, 89, 179, 269, 359] : [0, 59, 119, 179];
 				var i = 0;
 				var done = false;
@@ -276,11 +280,11 @@ function start() {
 					i++;	
 				}
 				// Store the player's datapoint
-				result.breakpoints[s].player = getDatapoint(player, s);
+				result.breakpoints[s].self = getDatapoint(player, s);
 				if (breakpointPlayers.find(function(d) { return d.player_id === pId; })) {
-					result.breakpoints[s].isPlayerInDistribution = true;
+					result.breakpoints[s].isSelfInDistribution = true;
 				} else {
-					result.breakpoints[s].isPlayerInDistribution = false;
+					result.breakpoints[s].isSelfInDistribution = false;
 				}
 			});
 
@@ -673,7 +677,7 @@ function start() {
 			result.breakpoints = {};
 			var team = teams.find(function(d) { return d.team === tricode; });
 			["ev5_cf_adj_per60", "ev5_ca_adj_per60", "ev5_gf_per60", "ev5_ga_per60", "pp_gf_per60", "sh_ga_per60"].forEach(function(s) {
-				result.breakpoints[s] = { breakpoints: [], team: null };
+				result.breakpoints[s] = { breakpoints: [], self: null, isSelfInDistribution: true };
 				// Get the datapoints for which we want a distribution
 				var datapoints = [];
 				teams.forEach(function(t) {
@@ -685,7 +689,7 @@ function start() {
 					result.breakpoints[s].breakpoints.push(datapoints[rank]);
 				});
 				// Store the team's datapoint
-				result.breakpoints[s].team = getDatapoint(team, s);
+				result.breakpoints[s].self = getDatapoint(team, s);
 			});
 
 			returnResult();

@@ -16,8 +16,7 @@
 				<div><span :style="{ background: colours.green5 }"></span><span v-if="data.player.f_or_d === 'f'">Top 90 forwards</span><span v-if="data.player.f_or_d === 'd'">Top 60 defenders</span></div>
 				<div><span :style="{ background: colours.green4 }"></span><span v-if="data.player.f_or_d === 'f'">91-180</span><span v-if="data.player.f_or_d === 'd'">61-120</span></div>
 				<div><span :style="{ background: colours.green3 }"></span><span v-if="data.player.f_or_d === 'f'">181-270</span><span v-if="data.player.f_or_d === 'd'">121-180</span></div>
-				<div><span :style="{ background: colours.green2 }"></span><span v-if="data.player.f_or_d === 'f'">261-360</span><span v-if="data.player.f_or_d === 'd'">181+</span></div>
-				<div v-if="data.player.f_or_d === 'f'"><span :style="{ background: colours.green1 }"></span><span>361+</span></div>
+				<div v-if="data.player.f_or_d === 'f'"><span :style="{ background: colours.green2 }"></span><span>261-360</span></div>
 			</div>
 			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
@@ -229,13 +228,7 @@ module.exports = {
 	data: function() {
 		return {
 			data: {},
-			colours: {
-				green5: constants.colours.green5,
-				green4: constants.colours.green4,
-				green3: constants.colours.green3,
-				green2: constants.colours.green2,
-				green1: constants.colours.green1
-			},
+			colours: constants.colours,
 			strengthSit: "ev5",
 			tabs: { active: "lines" },
 			sort: { col: "toi", order: -1 },

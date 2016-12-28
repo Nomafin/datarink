@@ -12,7 +12,7 @@ var Skater = require("./components/Skater.vue");
 var routes = [
 	{ path: "/", redirect: "/teams" },
 	{ path: "/teams", component: Teams },
-	{ path: "/teams/:team", component: Team },
+	{ path: "/teams/:tricode", component: Team },
 	{ path: "/skaters", component: Skaters },
 	{ path: '/skaters/:id', component: Skater }
 ];
