@@ -66,8 +66,8 @@
 					</thead>
 					<tbody>
 						<tr v-for="l in filteredLines">
-							<td class="left-aligned">{{ l.name1 }}</td>
-							<td class="left-aligned" v-if="data.player.f_or_d === 'f'">{{ l.name2 }}</td>
+							<td class="left-aligned">{{ l.firsts[0] + " " + l.lasts[0] }}</td>
+							<td class="left-aligned" v-if="data.player.f_or_d === 'f'">{{ l.firsts[1] + " " + l.lasts[1] }}</td>
 							<td>{{ Math.round(l[strengthSit].toi) }}</td>
 							<td>{{ l[strengthSit].g_diff | signed }}</td>
 							<td>{{ l[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>
@@ -257,7 +257,7 @@ module.exports = {
 			return _.orderBy(this.data.lines, "sort_val", order);
 		},
 		filteredLines: function() {
-			var query = this.search.query;
+			var query = this.search.query.toLowerCase();
 			var sit = this.strengthSit;
 			var data = this.sortedLines.filter(function(d) { return d[sit].toi >= 5; });
 			if (query) {
@@ -327,8 +327,12 @@ module.exports = {
 				});
 				// Process/append additional stats for the player's lines
 				self.data.lines.forEach(function(l) {
-					l.name1 = l.firsts[0] + " " + l.lasts[0];
-					l.name2 = l.firsts[1] + " " + l.lasts[1];
+					l.name1 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
+					if (self.data.player.f_or_d === "d") {
+						l.firsts[1] = "";
+						l.lasts[1] = "";
+					}
+					l.name2 = (l.firsts[1] + " " + l.lasts[1]).toLowerCase();
 					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
 						var s = l[strSit];
 						s.toi /= 60;
