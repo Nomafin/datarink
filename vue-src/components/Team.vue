@@ -10,8 +10,8 @@
 				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="data.breakpoints.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
 				<bulletchart :label="'GF/60, 5 on 5'" :data="data.breakpoints.ev5_gf_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'GA/60, 5 on 5'" :data="data.breakpoints.ev5_ga_per60" :isInverted="true"></bulletchart>
-				<bulletchart :label="'GF/60, PP'" :data="data.breakpoints.pp_gf_per60" :isInverted="false"></bulletchart>
-				<bulletchart :label="'GA/60, SH'" :data="data.breakpoints.sh_ga_per60" :isInverted="true"></bulletchart>
+				<bulletchart :label="'GF/60, power play'" :data="data.breakpoints.pp_gf_per60" :isInverted="false"></bulletchart>
+				<bulletchart :label="'GA/60, short handed'" :data="data.breakpoints.sh_ga_per60" :isInverted="true"></bulletchart>
 			</div>
 			<div class="section legend">
 				<div><span :style="{ background: colours.green5 }"></span><span>Top 6 teams</span></div
@@ -20,25 +20,32 @@
 				><div><span :style="{ background: colours.green2 }"></span><span>19-24</span></div
 				><div><span :style="{ background: colours.green1 }"></span><span>25-30</span></div>
 			</div>
-			<div class="section section-table" v-show="tabs.active === 'lines'">
-				<div class="search-with-menu" style="margin-bottom: 24px;">
-					<select v-model="search.condition">
-						<option value="includes">With:</option>
-						<option value="excludes">Without:</option>
-					</select
-					><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
+			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
+				<div class="toggle" style="display: inline-block; vertical-align: top;">
+					<button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button
+					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Team</button
+					><button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button>
 				</div
 				><select v-model="strengthSit">
 					<option value="all">All situations</option>
 					<option value="ev5">5 on 5</option>
 					<option value="sh">Short handed</option>
 					<option value="pp">Power play</option>
-				</select
-				><select v-model="search.positions">
+				</select>
+			</div>
+			<div class="section section-table" v-show="tabs.active === 'lines'">
+				<select v-model="search.positions">
 					<option value="all">All lines</option>
 					<option value="f">Forwards</option>
 					<option value="d">Defense</option>
-				</select>
+				</select
+				><div class="search-with-menu" style="margin-bottom: 24px;">
+					<select v-model="search.condition">
+						<option value="includes">With:</option>
+						<option value="excludes">Without:</option>
+					</select
+					><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
+				</div>
 				<table>
 					<thead>
 						<tr>
@@ -79,6 +86,119 @@
 						</tr>
 						<tr v-if="filteredLines.length === 0">
 							<td class="left-aligned" colspan="9">No lines with at least 5 minutes together</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="section" v-show="tabs.active === 'self'">
+				<table class="left-aligned">
+					<tr>
+						<th colspan="3">Record</th>
+					</tr>
+					<tr>
+						<td>Points</td>
+						<td colspan="2">{{ data.team.points }}</td>
+					</tr>
+					<tr>
+						<td>Record</td>
+						<td colspan="2">{{ data.team.record[0] + "-" + data.team.record[1] + "-" + data.team.record[2] }}</td>
+					</tr>
+					<tr>
+						<td>Wins by 1 goal, OT, SO</td>
+						<td colspan="2">{{ data.team.record1g[0] }}</td>
+					</tr>
+					<tr>
+						<td>Losses by 1 goal, OT, SO</td>
+						<td colspan="2">{{ data.team.record1g[1] + data.team.record1g[2] }}</td>
+					</tr>
+					<tr>
+						<th colspan="3">Goals</th>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>GF%</td>
+						<td colspan="2">{{ data.team.stats[strengthSit].gf_pct | percentage(false) }}<span class="pct">%</span></td>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>Differential</td>
+						<td>{{ data.team.stats[strengthSit].g_diff | signed }}</td>
+						<td><span v-if="data.team.stats[strengthSit].g_diff !== 0">{{ data.team.stats[strengthSit].g_diff | rate(true, data.team.stats[strengthSit].toi, true) }} per 60</span></td>
+					</tr>
+					<tr>
+						<td>GF</td>
+						<td>{{ data.team.stats[strengthSit].gf }}</td>
+						<td><span v-if="data.team.stats[strengthSit].gf !== 0">{{ data.team.stats[strengthSit].gf | rate(true, data.team.stats[strengthSit].toi, false) }} per 60</span></td>
+					</tr>
+					<tr>
+						<td>GA</td>
+						<td>{{ data.team.stats[strengthSit].ga }}</td>
+						<td><span v-if="data.team.stats[strengthSit].ga !== 0">{{ data.team.stats[strengthSit].ga | rate(true, data.team.stats[strengthSit].toi, false) }} per 60</span></td>
+					</tr>
+					<tr>
+						<td>Sh%</td>
+						<td colspan="2">{{ data.team.stats[strengthSit].sh_pct | percentage(false) }}<span class="pct">%</span></td>
+					</tr>
+					<tr>
+						<td>Sv%</td>
+						<td colspan="2">{{ data.team.stats[strengthSit].sv_pct | percentage(false) }}<span class="pct">%</span></td>
+					</tr>
+					<tr>
+						<th colspan="3">Corsi</th>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>CF%</td>
+						<td colspan="2">{{ data.team.stats[strengthSit].cf_pct | percentage(false) }}<span class="pct">%</span></td>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>CF% score-adj</td>
+						<td colspan="2">{{ data.team.stats[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>
+					</tr>
+					<tr v-if="strengthSit !== 'pp' && strengthSit !== 'sh'">
+						<td>Differential</td>
+						<td>{{ data.team.stats[strengthSit].c_diff | signed }}</td>
+						<td><span v-if="data.team.stats[strengthSit].c_diff !== 0">{{ data.team.stats[strengthSit].c_diff | rate(true, data.team.stats[strengthSit].toi, true) }} per 60</span></td>
+					</tr>
+					<tr>
+						<td>CF</td>
+						<td>{{ data.team.stats[strengthSit].cf }}</td>
+						<td><span v-if="data.team.stats[strengthSit].cf !== 0">{{ data.team.stats[strengthSit].cf | rate(true, data.team.stats[strengthSit].toi, false) }} per 60</span></td>
+					</tr>
+					<tr>
+						<td>CA</td>
+						<td>{{ data.team.stats[strengthSit].ca }}</td>
+						<td><span v-if="data.team.stats[strengthSit].ca !== 0">{{ data.team.stats[strengthSit].ca | rate(true, data.team.stats[strengthSit].toi, false) }} per 60</span></td>
+					</tr>
+				</table>
+			</div>
+			<div class="section section-table" v-show="tabs.active === 'games'">
+				<table>
+					<thead>
+						<tr>
+							<th class="left-aligned">Date</th>
+							<th class="left-aligned">Opponent</th>
+							<th class="left-aligned">Result</th>
+							<th>Mins</th>
+							<th>GF</th>
+							<th>GA</th>
+							<th>G diff</th>
+							<th>CF</th>
+							<th>CA</th>
+							<th>C diff</th>
+							<th>C diff, score-adj</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="g in data.history">
+							<td class="left-aligned">{{ g.date }}</td>
+							<td class="left-aligned">{{ g.opp.toUpperCase() }}</td>
+							<td class="left-aligned">{{ g.result }}</td>
+							<td>{{ Math.round(g.stats[strengthSit].toi) }}</td>
+							<td>{{ g.stats[strengthSit].gf }}</td>
+							<td>{{ g.stats[strengthSit].ga }}</td>
+							<td>{{ g.stats[strengthSit].g_diff | signed }}</td>
+							<td>{{ g.stats[strengthSit].cf }}</td>
+							<td>{{ g.stats[strengthSit].ca }}</td>
+							<td>{{ g.stats[strengthSit].c_diff | signed }}</td>
+							<td>{{ g.stats[strengthSit].c_diff_adj | signed }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -180,6 +300,18 @@ module.exports = {
 			xhr.onload = function() {
 				self.data = JSON.parse(xhr.responseText);
 				self.data.team.team_name = constants.teamNames[self.data.team.team];
+				// Process/append additional stats for the player
+				["all", "ev5", "pp", "sh"].forEach(function(strSit) {
+					var s = self.data.team.stats[strSit];
+					s.toi /= 60;
+					s.g_diff = s.gf - s.ga;
+					s.gf_pct = s.gf + s.ga === 0 ? 0 : 100 * s.gf / (s.gf + s.ga);
+					s.sh_pct = s.sf === 0 ? 0 : 100 * s.gf / s.sf;
+					s.sv_pct *= 100;
+					s.c_diff = s.cf - s.ca;
+					s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
+					s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
+				});
 				// Process/append additional stats for the player's lines
 				self.data.lines.forEach(function(l) {
 					l.name1 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
@@ -196,6 +328,52 @@ module.exports = {
 						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
 						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
 					});
+				});
+				// Process history data
+				self.data.history = _.orderBy(self.data.history, "datetime", "desc");
+				self.data.team.record = [0, 0, 0];		// [wins, losses, OT/SO losses]
+				self.data.team.record1g = [0, 0, 0]; 	// record in 1 goal games
+				self.data.history.forEach(function(g) {
+					g.opp = g.is_home ? g.opp : "@" + g.opp;
+					// As a temporary solution, subtract 5 hours from the UTC time to get the correct day in New_York/America
+					var datetime = new Date(g.datetime);
+					datetime.setHours(datetime.getHours() - 5);
+					g.date = constants.monthNames[datetime.getMonth()] + " " + datetime.getDate();
+					// Create string to describe the game result
+					var resultString = g.team_final > g.opp_final ? "W" : "L";
+					resultString += ", " + g.team_final + "-" + g.opp_final;
+					if (g.game_id < 30000 && g.periods > 3) {
+						if (g.periods === 4) {
+							resultString += " (OT)";
+						} else if (g.periods === 5) {
+							resultString += " (SO)";
+						}
+					}
+					g.result = resultString;
+					// Process/append additional stats for game
+					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
+						var s = g.stats[strSit];
+						s.toi /= 60;
+						s.g_diff = s.gf - s.ga;
+						s.c_diff = s.cf - s.ca;
+						s.c_diff_adj = (s.cf_adj - s.ca_adj).toFixed(1);
+					});
+					// Update record
+					if (g.team_final > g.opp_final) {
+						self.data.team.record[0]++;
+						if (g.team_final - g.opp_final === 1) {
+							self.data.team.record1g[0]++;
+						}
+					} else if (g.game_id < 30000 && g.periods <= 3) {
+						self.data.team.record[1]++;
+						if (g.opp_final - g.team_final === 1) {
+							self.data.team.record1g[1]++;
+						}
+					} else if (g.game_id < 30000 && g.periods > 3) {
+						self.data.team.record[2]++;
+						self.data.team.record1g[2]++;
+					}
+
 				});
 			}
 			xhr.send();

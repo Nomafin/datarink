@@ -56,6 +56,9 @@ module.exports = {
 				}
 			});
 			// For metrics where higher is better, sort ranges in ascending order (the order they'll be appended to the DOM)
+			if (!self.isInverted) {
+				ranges.reverse();
+			}
 			return ranges;
 		},
 		markerPos: function() {

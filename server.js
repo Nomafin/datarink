@@ -919,7 +919,6 @@ function start() {
 	// 'values' is an array of values for parameterized queries
 	function query(text, values, cb) {
 		pool.connect(function(err, client, done) {
-			if (err) { returnError("Error fetching client from pool: " + err); }
 			client.query(text, values, function(err, result) {
 				done();
 				// result.rows is is an array of Anonymous objects
@@ -1014,7 +1013,7 @@ function getHistoryResults(historyRows) {
 	});
 
 	// Aggregate score situations for each game
-	var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+	var stats = ["toi", "ig", "ia1", "ia2", "ic", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
 	aggregateScoreSituations(historyResults, stats);
 	return historyResults;
 }

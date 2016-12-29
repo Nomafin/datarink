@@ -194,6 +194,7 @@
 							<th>CF</th>
 							<th>CA</th>
 							<th>C diff</th>
+							<th>C diff, score-adj</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -211,6 +212,7 @@
 							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].cf }}</td>
 							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].ca }}</td>
 							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].c_diff | signed }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].c_diff_adj | signed }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -366,6 +368,7 @@ module.exports = {
 						s.toi /= 60;
 						s.g_diff = s.gf - s.ga;
 						s.c_diff = s.cf - s.ca;
+						s.c_diff_adj = (s.cf_adj - s.ca_adj).toFixed(1);
 						// Create string to describe the player's points: 1G, 2A2
 						var pointString = s.ig > 0 ? s.ig + "G" : "";
 						pointString += pointString.length > 0 && s.ia1 > 0 ? ", " : "";
