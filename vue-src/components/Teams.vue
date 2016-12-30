@@ -82,7 +82,7 @@ module.exports = {
 			sort: { col: "pts", order: -1 },
 			columns: [
 				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
-				{ key: "team", heading: "Name", sortable: true, classes: "left-aligned" },
+				{ key: "team", heading: "Team", sortable: true, classes: "left-aligned" },
 				{ key: "pts", heading: "Pts", sortable: true },
 				{ key: "gp", heading: "GP", sortable: true },
 				{ key: "toi", heading: "Mins", sortable: true },
@@ -119,7 +119,7 @@ module.exports = {
 				});	
 			} else {
 				var sit = this.strengthSit;
-				if (!this.isRatesEnabled) {
+				if (!this.isRatesEnabled || ["toi", "sh_pct", "sv_pct", "cf_pct", "cf_pct_adj"].indexOf(col) >= 0) {
 					this.teams.map(function(p) {
 						p.sort_val = p.stats[sit][col];
 						return p;

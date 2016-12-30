@@ -138,7 +138,7 @@ module.exports = {
 			},
 			columns: [
 				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
-				{ key: "name", heading: "Name", sortable: true, classes: "left-aligned" },
+				{ key: "name", heading: "Skater", sortable: true, classes: "left-aligned" },
 				{ key: "positions", heading: "Pos", sortable: true, classes: "left-aligned" },
 				{ key: "teams", heading: "Team", sortable: true, classes: "left-aligned" },
 				{ key: "gp", heading: "GP", sortable: true },
@@ -319,7 +319,7 @@ module.exports = {
 				});				
 			} else {
 				var sit = this.strengthSit;
-				if (!this.isRatesEnabled) {
+				if (!this.isRatesEnabled || ["toi", "i_sh_pct", "sh_pct", "sv_pct", "cf_pct", "cf_pct_rel", "cf_pct_adj"].indexOf(col) >= 0) {
 					this.players.map(function(p) {
 						p.sort_val = p.stats[sit][col];
 						return p;
@@ -332,6 +332,7 @@ module.exports = {
 				}
 			}
 			this.players = _.orderBy(this.players, "sort_val", order);
+			this.pagination.current = 0;
 			this.rankPlayers();
 		},
 		rankPlayers: function() {
