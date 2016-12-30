@@ -337,6 +337,35 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 
 /*
 *
+* Bulletchart legend
+*
+*/
+
+.section.legend {
+	padding-left: 16px;
+	padding-right: 16px;
+}
+.legend > div {
+	display: inline-block;
+	vertical-align: top;
+	margin: 0 8px 8px 8px;
+}
+.legend > div > span {
+	display: inline-block;
+	vertical-align: top;
+	font-size: $base-font-size;
+	line-height: $base-line-height;
+}
+.legend > div > span:first-child {
+	height: 12px;
+	width: 12px;
+	margin-top: 4px;
+	border-radius: $border-radius;
+	margin-right: 6px;
+}
+
+/*
+*
 * Data tables
 *
 */
@@ -354,6 +383,11 @@ table td {
 	margin: 0;
 	text-align: right;
 	border-bottom: 1px solid $gray2;
+}
+
+table.left-aligned th,
+table.left-aligned td {
+	text-align: left;
 }
 
 table th.left-aligned,

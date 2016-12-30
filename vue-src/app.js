@@ -5,12 +5,14 @@ Vue.use(VueRouter);
 
 var App = require("./App.vue");
 var Teams = require("./components/Teams.vue");
+var Team = require("./components/Team.vue");
 var Skaters = require("./components/Skaters.vue");
 var Skater = require("./components/Skater.vue");
 
 var routes = [
 	{ path: "/", redirect: "/teams" },
 	{ path: "/teams", component: Teams },
+	{ path: "/teams/:tricode", component: Team },
 	{ path: "/skaters", component: Skaters },
 	{ path: '/skaters/:id', component: Skater }
 ];

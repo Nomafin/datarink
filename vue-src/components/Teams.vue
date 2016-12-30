@@ -10,38 +10,33 @@
 				<option value="sh">Short handed</option>
 				<option value="pp">Power play</option>
 			</select
-			><button type="button" class="toggle-button"
-				v-on:click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
-				v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
+			><button type="button" class="toggle-button" @click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
+				:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice goals</button
-			><button type="button" class="toggle-button"
-				v-on:click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
-				v-bind:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
+			><button type="button" class="toggle-button" @click="visibleColumns.onIceCorsi = !visibleColumns.onIceCorsi"
+				:class="{ 'toggle-button-checked': visibleColumns.onIceCorsi }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>On-ice corsi</button
-			><button type="button" class="toggle-button"
-				v-on:click="isRatesEnabled = !isRatesEnabled; aggregateTeamData();"
-				v-bind:class="{ 'toggle-button-checked': isRatesEnabled }">
+			><button type="button" class="toggle-button" @click="isRatesEnabled = !isRatesEnabled;"
+				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
 				</span>Per 60 minutes</button>
 		</div>
 		<div class="loader" v-if="!teams"></div>
 		<div class="section section-table" v-if="teams">
-			<table v-bind:class="{
+			<table :class="{
 				'cols-on-ice-goals': visibleColumns.onIceGoals,
 				'cols-on-ice-corsi': visibleColumns.onIceCorsi }"
 			>
 				<thead>
 					<tr>
-						<th v-for="c in columns"
-							@click="sortBy(c.sortable, c.key)"
-							@keyup.enter="sortBy(c.sortable, c.key)"
-							v-bind:tabindex="c.sortable ? 0 : null"
-							v-bind:class="[
+						<th v-for="c in columns" :tabindex="c.sortable ? 0 : null"
+							@click="sortBy(c.sortable, c.key)" @keyup.enter="sortBy(c.sortable, c.key)"
+							:class="[
 								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
 								c.classes
 							]"
@@ -50,20 +45,20 @@
 				</thead>
 				<tbody>
 					<tr v-for="p in sortedTeams">
-						<td class="left-aligned"><span class="rank" v-bind:class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
-						<td class="left-aligned">{{ p.team.toUpperCase() }}</td>
+						<td class="left-aligned"><span class="rank":class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
+						<td class="left-aligned"><router-link :to="{ path: p.team.toString() }" append>{{ p.team.toUpperCase() }}</td>
 						<td>{{ p.pts }}</td>
 						<td>{{ p.gp }}</td>
-						<td>{{ Math.round(p.toi / 60) }}</td>
-						<td class="cols-on-ice-goals">{{ p.gf | maxDecimalPlaces(1) }}</td>
-						<td class="cols-on-ice-goals">{{ p.ga | maxDecimalPlaces(1) }}</td>
-						<td class="cols-on-ice-goals">{{ p.g_diff | maxDecimalPlaces(1) | signed }}</td>
-						<td class="cols-on-ice-goals">{{ p.sh_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-goals">{{ p.sv_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>					
-						<td class="cols-on-ice-corsi">{{ p.cf | maxDecimalPlaces(1) }}</td>
-						<td class="cols-on-ice-corsi">{{ p.ca | maxDecimalPlaces(1) }}</td>
-						<td class="cols-on-ice-corsi">{{ p.cf_pct | maxDecimalPlaces(1) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-corsi">{{ p.cf_pct_adj | maxDecimalPlaces(1) }}<span class="pct">%</span></td>			
+						<td>{{ Math.round(p.stats[strengthSit].toi) }}</td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].gf | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].ga | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].g_diff | rate(isRatesEnabled, p.stats[strengthSit].toi, true) }}</td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].sh_pct | percentage(false) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].sv_pct | percentage(false) }}<span class="pct">%</span></td>					
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].ca | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct | percentage(false) }}<span class="pct">%</span></td>
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>			
 					</tr>
 				</tbody>
 			</table>
@@ -76,23 +71,18 @@ var _ = require("lodash");
 module.exports = {
 	name: "Teams",
 	data: function() {
-		// Once the api populates 'teams' so that it's not null, the loading spinner will disappear
 		return {
-			teams: null,
+			teams: null,  // The loading spinner is displayed when 'players' is null
 			isRatesEnabled: false,
-			teamsWithAggregatedData: [],
 			strengthSit: "all",
 			visibleColumns: {
 				onIceGoals: true,
 				onIceCorsi: true
 			},
-			sort: {
-				col: "pts",
-				order: -1
-			},
+			sort: { col: "pts", order: -1 },
 			columns: [
 				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
-				{ key: "team", heading: "Name", sortable: true, classes: "left-aligned" },
+				{ key: "team", heading: "Team", sortable: true, classes: "left-aligned" },
 				{ key: "pts", heading: "Pts", sortable: true },
 				{ key: "gp", heading: "GP", sortable: true },
 				{ key: "toi", heading: "Mins", sortable: true },
@@ -106,16 +96,7 @@ module.exports = {
 				{ key: "cf_pct", heading: "CF%", sortable: true, classes: "cols-on-ice-corsi" },
 				{ key: "cf_pct_adj", heading: "CF% score-adj", sortable: true, classes: "cols-on-ice-corsi" }
 			]
-		}
-	},
-	filters: {
-		maxDecimalPlaces: function(value, places) {
-			var factor = Math.pow(10, places);
-			return Math.round(value * factor) / factor;
-		},
-		signed: function(value) {
-			return value > 0 ? "+" + value : value;
-		}
+		};
 	},
 	created: function() {
 		this.fetchData();
@@ -125,38 +106,70 @@ module.exports = {
 			ga("send", "pageview");
 		}
 	},
-	watch: {
-		strengthSit: function() {
-			this.aggregateTeamData();
-		}
-	},
 	computed: {
 		sortedTeams: function() {
-			var order = this.sort.order < 0 ? "desc" : "asc";
+			// Sort teams
+			// Create a player property for their sort value - used to sort rate stats and used for ranking
 			var col = this.sort.col;
-			var teams = _.orderBy(this.teamsWithAggregatedData, col, order);
-			// Add rankings
+			var order = this.sort.order < 0 ? "desc" : "asc";
+			if (["team", "gp", "pts"].indexOf(col) >= 0) {
+				this.teams.map(function(p) {
+					p.sort_val = p[col];
+					return p;
+				});	
+			} else {
+				var sit = this.strengthSit;
+				if (!this.isRatesEnabled || ["toi", "sh_pct", "sv_pct", "cf_pct", "cf_pct_adj"].indexOf(col) >= 0) {
+					this.teams.map(function(p) {
+						p.sort_val = p.stats[sit][col];
+						return p;
+					});		
+				} else {
+					this.teams.map(function(p) {
+						p.sort_val = p.stats[sit].toi === 0 ? 0 : p.stats[sit][col] / p.stats[sit].toi;
+						return p;
+					});							
+				}
+			}
+			this.teams = _.orderBy(this.teams, "sort_val", order);
+
+			// Rank teams
 			if (col === "team") {
-				teams.map(function(p) {
-					p["rank"] = ["", false];
+				this.teams.map(function(p) {
+					p.rank = ["", false]; // Don't show ranks if sorting by team name
 					return p;
 				});
 			} else {
-				// Get array of sorted values - we'll use this to get a team's rank
-				var values = teams.map(function(p) { return p[col]; });
-				// Group teams by their stat value - we'll use this to check for tied ranks
-				var valueCounts = _.groupBy(teams, col);
-				// Update team ranks
-				teams.forEach(function(p) {
-					// Use idx0 to store rank, idx1 to indicate if tied
-					p["rank"] = ["", false];
-					p["rank"][0] = values.indexOf(+p[col]) + 1;
-					if (valueCounts[p[col]].length > 1) {
-						p["rank"][1] = true;
-					}
+				var values = this.teams.map(function(p) { return p.sort_val; });// Get array of sorted *unique* values
+				var valueCounts = _.groupBy(this.teams, "sort_val");			// Group teams by their stat value to find ties
+				this.teams.map(function(p) {
+					p.rank = ["", false];
+					p.rank[0] = values.indexOf(p.sort_val) + 1;						// In idx0, store team's rank
+					p.rank[1] = valueCounts[p.sort_val].length > 1 ? true : false;	// In idx1, store if multiple teams are tied with this value
+					return p;
 				});
 			}
-			return teams;
+			return this.teams;
+		}
+	},
+	filters: {
+		percentage: function(value, isSigned) {
+			var output = value.toFixed(1);
+			if (isSigned && value > 0) {
+				output = "+" + output;
+			}
+			return output;
+		},
+		rate: function(value, isRatesEnabled, toi, isSigned) {
+			var output = value;
+			if (isRatesEnabled) {
+				output = toi === 0 ? 0 : 60 * value / toi;
+				output = output.toFixed(1);
+			}
+			if (isSigned && value > 0) {
+				output = "+" + output;
+			}
+			return output;
 		}
 	},
 	methods: {
@@ -166,72 +179,26 @@ module.exports = {
 			xhr.open("GET", "./api/teams/");
 			xhr.onload = function() {
 				self.teams = JSON.parse(xhr.responseText)["teams"];
-				self.aggregateTeamData();
+				self.teams.forEach(function(p) {
+					// Process/append stats for each score situation
+					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
+						var s = p.stats[strSit];
+						s.toi /= 60;
+						s.g_diff = s.gf - s.ga;
+						s.sh_pct = s.sf === 0 ? 0 : 100 * s.gf / s.sf;
+						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
+						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
+						s.sv_pct *= 100;
+					});
+				});
 			}
 			xhr.send();
 		},
 		sortBy: function(isSortable, newSortCol) {
 			if (isSortable) {
-				if (newSortCol === this.sort.col) {
-					this.sort.order *= -1;
-				} else {
-					this.sort.col = newSortCol;
-					this.sort.order = -1;
-				}
+				this.sort.order = newSortCol === this.sort.col ? -this.sort.order : -1;
+				this.sort.col = newSortCol;
 			}
-		},
-		aggregateTeamData: function() {
-			var teams = this.teams;
-			var sits = this.strengthSit === "all" ? ["ev5", "pp", "sh", "penShot", "noOppG", "noOwnG", "other"] : [this.strengthSit];
-			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
-			teams.forEach(function(p) {
-				stats.forEach(function(st) {
-					p[st] = _.sumBy(
-						p.data.filter(function(row) { return sits.indexOf(row["strength_sit"]) >= 0; }),
-						function(row) { return row[st]; }
-					);
-				});
-			});
-
-			// Convert to rates (per 60 minutes) if enabled
-			if (this.isRatesEnabled) {
-				teams.forEach(function(p) {
-					stats.forEach(function(st) {
-						if (st !== "toi") {
-							p[st] = p["toi"] === 0 ? 0 : (p[st] / p["toi"]) * 60 * 60;
-						}
-					});
-				});
-			}
-
-			// Compute additional stats
-			var self = this;
-			teams.forEach(function(p) {
-
-				p["g_diff"] = p["gf"] - p["ga"];
-				p["sh_pct"] = p["sf"] === 0 ? 0 : 100 * p["gf"] / p["sf"];
-				p["cf_pct"] = p["cf"] + p["ca"] === 0 ? 0 : 100 * p["cf"] / (p["cf"] + p["ca"]);
-				p["cf_pct_adj"] = p["cf_adj"] + p["ca_adj"] === 0 ? 0 : 100 * p["cf_adj"] / (p["cf_adj"] + p["ca_adj"]);
-
-				// For the "all" strengthSit, exclude ga and sa while a team's own net is empty when calculating svPct
-				var noOwnG_ga = 0;
-				var noOwnG_sa = 0;
-				if (self.strengthSit === "all") {
-					var noOwnG_row = p.data.find(function(row) { return row["strength_sit"] === "noOwnG"; });
-					if (noOwnG_row) {
-						noOwnG_ga = noOwnG_row["ga"];
-						noOwnG_sa = noOwnG_row["sa"];						
-					}
-				}
-				var svPctGa = p["ga"] - noOwnG_ga;
-				var svPctSa = p["sa"] - noOwnG_sa;
-				p["sv_pct"] = svPctSa === 0 ? 0 : 100 * (1 - svPctGa / svPctSa);
-			});
-
-			// Force the sortedPlayers computed property to be recomputed by setting this.teamsWithAggregatedData = [] before actually updating it
-			// This is faster than using a deep watcher on teamsWithAggregatedData (which seems to check every property in teamsWithAggregatedData)
-			this.teamsWithAggregatedData = [];
-			this.teamsWithAggregatedData = teams;
 		}
 	}
 }

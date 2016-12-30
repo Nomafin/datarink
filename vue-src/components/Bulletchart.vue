@@ -3,9 +3,9 @@
 		<div class="title"><span>{{ titleVal }}</span><span>{{ label }}</span></div>
 		<div class="chart">
 			<div class="ranges">
-				<div v-if="r.width > 0" v-for="(r, i) in ranges" v-bind:style="{ width: r.width + '%', background: r.colour }"></div>
+				<div v-for="(r, i) in ranges" :style="{ width: r.width + '%', background: r.colour }"></div>
 			</div>
-			<div v-if="markerPos >= 0 && markerPos <= 100 && data.isPlayerInDistribution" v-bind:style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
+			<div v-if="Math.floor(markerPos) >= 0 && Math.ceil(markerPos) <= 100 && data.isSelfInDistribution" :style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
 		</div>
 		<div class="axis">
 			<span>{{ axisTicks[0] }}</span><span>{{ axisTicks[1] }}</span>
@@ -22,38 +22,58 @@ module.exports = {
 		ranges: function() {
 			var self = this;
 			var ranges = [];
-			// Get width
-			self.data.breakpoints.forEach(function(p, i) {
-				var delta = i === self.data.breakpoints.length - 1 ? p : p - self.data.breakpoints[i + 1];
-				ranges.push({ width: 100 * delta / self.data.breakpoints[0] });
-			});
-			// Get colour
 			var colours = [constants.colours.green5, constants.colours.green4, constants.colours.green3, constants.colours.green2, constants.colours.green1];
-			colours = colours.slice(0, ranges.length);
-			if (self.isInverted) {
-				colours.reverse();
+			// Sort breakpoints in ascending order
+			self.data.breakpoints = self.data.breakpoints.sort(function(a, b) { return a - b; });
+			var max = _.max(self.data.breakpoints);
+			// Append a padding section (coloured white) if needed
+			if (self.data.breakpoints[0] > 0) {
+				ranges.push({
+					width: 100 * self.data.breakpoints[0] / max,
+					isPadding: true
+				});
 			}
+			// Append coloured ranges
+			for (var i = 1; i < self.data.breakpoints.length; i++) {
+				var delta = self.data.breakpoints[i] - self.data.breakpoints[i - 1];
+				ranges.push({
+					width: 100 * delta / max,
+					isPadding: false
+				});
+			}
+			// For metrics where higher is better, sort ranges in descending order before assigning colours
+			if (!self.isInverted) {
+				ranges.reverse();
+			}
+			// Assign colours to ranges
+			var colourIdx = 0;
 			ranges.forEach(function(r, i) {
-				r.colour = colours[i];
+				if (r.isPadding) {
+					r.colour = "#fff";
+				} else {
+					r.colour = colours[colourIdx];
+					colourIdx++;
+				}
 			});
-			return ranges.reverse();
+			// For metrics where higher is better, sort ranges in ascending order (the order they'll be appended to the DOM)
+			if (!self.isInverted) {
+				ranges.reverse();
+			}
+			return ranges;
 		},
 		markerPos: function() {
-			return 100 * this.data.player / this.data.breakpoints[0];
+			return 100 * this.data.self / _.max(this.data.breakpoints);
 		},
 		axisTicks: function() {
-			var ticks = [0, this.data.breakpoints[0].toFixed(1)];
+			var ticks = [0, _.max(this.data.breakpoints)];
 			if (this.label === "mins/game, total") {
-				ticks[1] = Math.ceil(ticks[1] / 60).toFixed(1);
+				ticks[1] = Math.ceil(ticks[1] / 60);
+				return ticks;
 			}
-			return ticks;
+			return [ticks[0], ticks[1].toFixed(1)];
 		},
 		titleVal: function() {
-			if (this.label === "mins/game, total") {
-				return (this.data.player / 60).toFixed(1);
-			} else {
-				return this.data.player.toFixed(1);
-			}
+			return this.label === "mins/game, total" ? (this.data.self / 60).toFixed(1) : this.data.self.toFixed(1);
 		}
 	}
 };
@@ -72,11 +92,18 @@ module.exports = {
 }
 .bullet-chart-container .chart {
 	position: relative;
-	height: $control-height;
+	height: 32px;
+}
+.bullet-chart-container .chart .ranges {
+	height: 16px;
+	box-sizing: border-box;
+	border: 1px solid $gray3;
+	border-radius: 4px;
+	margin-top: 8px;
+	position: relative;
 }
 .bullet-chart-container .chart .ranges > div {
-	height: 16px;
-	margin-top: 8px;
+	height: 100%;
 	display: inline-block;
 	vertical-align: top;
 }
@@ -93,7 +120,7 @@ module.exports = {
 	height: 100%;
 	width: 2px;
 	background: $gray9;
-	top: 0;
+	top: -8px;
 }
 .bullet-chart-container .axis {
 	width: 100%;
@@ -111,7 +138,7 @@ module.exports = {
 }
 .bullet-chart-container .title {
 	font-size: $large-font-size;
-	line-height: $large-line-height - 8px;
+	line-height: $large-line-height;
 }
 .bullet-chart-container .title span:last-child {
 	font-size: $base-font-size;
