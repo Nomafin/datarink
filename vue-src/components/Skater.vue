@@ -352,9 +352,7 @@ module.exports = {
 				self.data.history = _.orderBy(self.data.history, "datetime", "desc");
 				self.data.history.forEach(function(g) {
 					g.opp = g.is_home ? g.opp : "@" + g.opp;
-					// As a temporary solution, subtract 5 hours from the UTC time to get the correct day in New_York/America
 					var datetime = new Date(g.datetime);
-					datetime.setHours(datetime.getHours() - 5);
 					g.date = constants.monthNames[datetime.getMonth()] + " " + datetime.getDate();
 					// Create string to describe the game result
 					var resultString = g.team_final > g.opp_final ? "W" : "L";

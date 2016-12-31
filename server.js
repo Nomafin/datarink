@@ -18,6 +18,12 @@ throng({
 	start: start
 });
 
+// By default, node-postgres interprets incoming timestamps in the local timezone
+// Force node-postgres to interpret the incoming timestamps without any offsets (since our queries will select timestamps in the desired timezone)
+pg.types.setTypeParser(1114, function(stringValue) {
+	return new Date(Date.parse(stringValue + "+0000"));
+});
+
 function start() {
 	// Configure and initialize the Postgres connection pool
 	// Get the DATABASE_URL config var and parse it into its components
@@ -482,7 +488,7 @@ function start() {
 
 		var historyRows;
 		function queryHistory() {
-			var queryStr = "SELECT r.game_id, r.team, g.h_team, g.a_team, g.h_final, g.a_final, g.periods, g.datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
+			var queryStr = "SELECT r.game_id, r.team, g.h_team, g.a_team, g.h_final, g.a_final, g.periods, g.datetime AT TIME ZONE 'America/New_York' AS datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
 					+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
 				+ " FROM game_rosters AS r"
 				+ " LEFT JOIN game_stats AS s"
@@ -870,7 +876,7 @@ function start() {
 
 		var historyRows;
 		function queryHistory() {
-			var queryStr = "SELECT s.game_id, s.team, r.h_team, r.a_team, r.h_final, r.a_final, r.periods, r.datetime, s.strength_sit, s.score_sit, s.toi,"
+			var queryStr = "SELECT s.game_id, s.team, r.h_team, r.a_team, r.h_final, r.a_final, r.periods, r.datetime AT TIME ZONE 'America/New_York' AS datetime, s.strength_sit, s.score_sit, s.toi,"
 					+ " s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
 				+ " FROM game_stats AS s"
 				+ " LEFT JOIN game_results AS r"
