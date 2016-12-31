@@ -2,8 +2,8 @@
 	<div id="app">
 		<div class="header">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-				<path class="logo-r" d="M16,8V32h8V16h8V8Z"/>
-				<path class="logo-d" d="M16,24v8H0V8H16V0h8v8H16v8H8v8Z"/>
+				<rect class="logo-r" x="20" y="24" width="8" height="8"/>
+				<path class="logo-d" d="M4,8V32h8V16h16V0h-8v8Z"/>
 			</svg
 			><router-link to="/teams">Teams</router-link
 			><router-link to="/skaters">Skaters</router-link>
@@ -90,11 +90,11 @@ a:focus {
 }
 
 .header svg .logo-r {
-	fill: $green5;
+	fill: $green6;
 }
 
 .header svg .logo-d {
-	fill: $green8;
+	fill: $green6;
 }
 
 .header a {

@@ -290,6 +290,11 @@ module.exports = {
 	},
 	created: function() {
 		this.fetchData();
+		// Google Analytics
+		if (window.location.hostname.toLowerCase() !== "localhost") {
+			ga("set", "page", "/team");
+			ga("send", "pageview");
+		}
 	},
 	methods: {
 		fetchData: function() {
