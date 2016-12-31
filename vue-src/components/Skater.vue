@@ -1,18 +1,19 @@
 <template>
 	<div>
-		<div class="loader" v-if="!data.player"></div>
-		<div v-if="data.player">
+		<div class="loader" v-if="!data"></div>
+		<div v-if="data">
 			<div class="section section-header">
 				<h1>{{ data.player.first + " " + data.player.last }}: 2016-2017</h1>
 			</div>
-			<div class="section" style="padding-left: 0; padding-right: 0; margin-bottom: 8px;">
-				<bulletchart :label="'mins/game, total'" :data="data.breakpoints.all_toi" :isInverted="false"></bulletchart>
-				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="data.breakpoints.ev5_cf_adj_per60" :isInverted="false"></bulletchart>
-				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="data.breakpoints.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
-				<bulletchart :label="'P1/60, 5 on 5'" :data="data.breakpoints.ev5_p1_per60" :isInverted="false"></bulletchart>
-				<bulletchart :label="'P1/60, power play'" :data="data.breakpoints.pp_p1_per60" :isInverted="false"></bulletchart>
+			<div class="loader" v-if="data && !bulletchartData"></div>
+			<div v-if="bulletchartData" class="section" style="padding-left: 0; padding-right: 0; margin-bottom: 8px;">
+				<bulletchart :label="'mins/game, total'" :data="bulletchartData.all_toi" :isInverted="false"></bulletchart>
+				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="bulletchartData.ev5_cf_adj_per60" :isInverted="false"></bulletchart>
+				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="bulletchartData.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
+				<bulletchart :label="'P1/60, 5 on 5'" :data="bulletchartData.ev5_p1_per60" :isInverted="false"></bulletchart>
+				<bulletchart :label="'P1/60, power play'" :data="bulletchartData.pp_p1_per60" :isInverted="false"></bulletchart>
 			</div>
-			<div class="section legend">
+			<div v-if="bulletchartData" class="section legend">
 				<div><span :style="{ background: colours.green5 }"></span><span v-if="data.player.f_or_d === 'f'">Top 90 forwards</span><span v-if="data.player.f_or_d === 'd'">Top 60 defenders</span></div>
 				<div><span :style="{ background: colours.green4 }"></span><span v-if="data.player.f_or_d === 'f'">91-180</span><span v-if="data.player.f_or_d === 'd'">61-120</span></div>
 				<div><span :style="{ background: colours.green3 }"></span><span v-if="data.player.f_or_d === 'f'">181-270</span><span v-if="data.player.f_or_d === 'd'">121-180</span></div>
@@ -32,15 +33,15 @@
 				</select>
 			</div>
 			<div class="section section-table" v-show="tabs.active === 'lines'">
-				<div class="loader" v-if="data.player && !lineData.lines"></div>
-				<div v-if="lineData.lines" class="search-with-menu" style="margin-bottom: 24px;">
+				<div class="loader" v-if="data && !lineData"></div>
+				<div v-if="lineData" class="search-with-menu" style="margin-bottom: 24px;">
 					<select v-model="search.condition">
 						<option value="includes">With:</option>
 						<option value="excludes">Without:</option>
 					</select
 					><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
 				</div>
-				<table v-if="lineData.lines">
+				<table v-if="lineData">
 					<thead>
 						<tr>
 							<th class="left-aligned">Linemates</th>
@@ -231,8 +232,10 @@ module.exports = {
 	data: function() {
 		return {
 			pId: null,
-			data: {},
-			lineData: {},
+			data: null,
+			lineData: null,
+			breakpointData: null,
+			bulletchartData: null,
 			colours: constants.colours,
 			strengthSit: "ev5",
 			tabs: { active: "games" },
@@ -306,6 +309,7 @@ module.exports = {
 		this.pId = this.$route.params.id;
 		this.fetchData();
 		this.fetchLineData();
+		this.fetchBreakpointData();
 		// Google Analytics
 		if (window.location.hostname.toLowerCase() !== "localhost") {
 			ga("set", "page", "/player");
@@ -369,6 +373,7 @@ module.exports = {
 						s.points = pointString;
 					});
 				});
+				self.prepareBulletchartData();
 			}
 			xhr.send();
 		},
@@ -396,6 +401,61 @@ module.exports = {
 				});
 			}
 			xhr.send();
+		},
+		fetchBreakpointData: function() {
+			var self = this;
+			var xhr = new XMLHttpRequest();
+			xhr.open("GET", "./api/players/breakpoints");
+			xhr.onload = function() {
+				self.breakpointData = JSON.parse(xhr.responseText);
+				self.prepareBulletchartData();
+			}
+			xhr.send();
+		},
+		prepareBulletchartData: function() {
+			// Wait until breakpoint data and player data are available
+			if (!this.breakpointData || !this.data) {
+				return;
+			}
+			var breakpoints = this.data.player.f_or_d === "f" ? this.breakpointData.f_breakpoints : this.breakpointData.d_breakpoints;
+			this.bulletchartData = {};
+			var self = this;
+			Object.keys(breakpoints).forEach(function(stat) {
+				self.bulletchartData[stat] = {};
+				// Store breakpoints
+				if (stat === "all_toi") {
+					self.bulletchartData[stat].breakpoints = breakpoints[stat].map(function(d) { return d / 60; });
+				} else {
+					self.bulletchartData[stat].breakpoints = breakpoints[stat];
+				}
+				var statsObj = self.data.player.stats;
+				var val;
+				// Store player's own datapoint
+				if (stat === "all_toi") {
+					val = statsObj.all.toi / self.data.player.gp;
+				} else if (stat === "ev5_cf_adj_per60") {
+					val = 60 * statsObj.ev5.cf_adj / statsObj.ev5.toi;
+				} else if (stat === "ev5_ca_adj_per60") {
+					val = 60 * statsObj.ev5.ca_adj / statsObj.ev5.toi;
+				} else if (stat === "ev5_p1_per60") {
+					val = 60 * (statsObj.ev5.ig + statsObj.ev5.ia1) / statsObj.ev5.toi;
+				} else if (stat === "pp_p1_per60") {
+					val = 60 * (statsObj.pp.ig + statsObj.pp.ia1) / statsObj.pp.toi;
+				}
+				self.bulletchartData[stat].self = val;
+				// Get whether or not player was included in breakpoint calculations
+				var inDist = false;
+				if (self.data.player.gp >= 10) {
+					if (stat === "pp_p1_per60") {
+						if (statsObj.pp.toi >= 20) {
+							inDist = true;
+						}
+					} else {
+						inDist = true;
+					}
+				}
+				self.bulletchartData[stat].isSelfInDistribution = inDist;
+			});
 		},
 		sortBy: function(newSortCol) {
 			this.sort.order = newSortCol === this.sort.col ? -this.sort.order : -1;

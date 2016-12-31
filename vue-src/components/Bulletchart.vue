@@ -65,15 +65,10 @@ module.exports = {
 			return 100 * this.data.self / _.max(this.data.breakpoints);
 		},
 		axisTicks: function() {
-			var ticks = [0, _.max(this.data.breakpoints)];
-			if (this.label === "mins/game, total") {
-				ticks[1] = Math.ceil(ticks[1] / 60);
-				return ticks;
-			}
-			return [ticks[0], ticks[1].toFixed(1)];
+			return [0, _.max(this.data.breakpoints).toFixed(1)];
 		},
 		titleVal: function() {
-			return this.label === "mins/game, total" ? (this.data.self / 60).toFixed(1) : this.data.self.toFixed(1);
+			return this.data.self ? this.data.self.toFixed(1) : "0.0";
 		}
 	}
 };
