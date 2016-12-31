@@ -22,9 +22,9 @@
 			</div>
 			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
-					<button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button
+					<button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button
 					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Team</button
-					><button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button>
+					><button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button>
 				</div
 				><select v-model="strengthSit">
 					<option value="all">All situations</option>
@@ -34,19 +34,20 @@
 				</select>
 			</div>
 			<div class="section section-table" v-show="tabs.active === 'lines'">
-				<select v-model="search.positions">
+				<div class="loader" v-if="data.team && !lineData.lines"></div>
+				<select v-if="lineData.lines" v-model="search.positions">
 					<option value="all">All lines</option>
 					<option value="f">Forwards</option>
 					<option value="d">Defense</option>
 				</select
-				><div class="search-with-menu" style="margin-bottom: 24px;">
+				><div v-if="lineData.lines" class="search-with-menu" style="margin-bottom: 24px;">
 					<select v-model="search.condition">
 						<option value="includes">With:</option>
 						<option value="excludes">Without:</option>
 					</select
 					><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
 				</div>
-				<table>
+				<table v-if="lineData.lines">
 					<thead>
 						<tr>
 							<th class="left-aligned">Linemates</th>
@@ -217,10 +218,12 @@ module.exports = {
 	name: "Team",
 	data: function() {
 		return {
+			tricode: null,
 			data: {},
+			lineData: {},
 			strengthSit: "ev5",
 			colours: constants.colours,
-			tabs: { active: "lines" },
+			tabs: { active: "games" },
 			sort: { col: "toi", order: -1 },
 			search: { col: "names", condition: "includes", query: "", positions: "all" }
 		};
@@ -234,17 +237,17 @@ module.exports = {
 			var order = this.sort.order < 0 ? "desc" : "asc";
 			var sit = this.strengthSit;
 			if (col === "cf" || col === "ca") {
-				this.data.lines.map(function(p) {
+				this.lineData.lines.map(function(p) {
 					p.sort_val = p[sit].toi === 0 ? 0 : p[sit][col] / p[sit].toi;
 					return p;
 				});	
 			} else {
-				this.data.lines.map(function(p) {
+				this.lineData.lines.map(function(p) {
 					p.sort_val = p[sit][col];
 					return p;
 				});						
 			}
-			return _.orderBy(this.data.lines, "sort_val", order);
+			return _.orderBy(this.lineData.lines, "sort_val", order);
 		},
 		filteredLines: function() {
 			var query = this.search.query.toLowerCase();
@@ -291,7 +294,9 @@ module.exports = {
 		}
 	},
 	created: function() {
+		this.tricode = this.$route.params.tricode;
 		this.fetchData();
+		this.fetchLineData();
 		// Google Analytics
 		if (window.location.hostname.toLowerCase() !== "localhost") {
 			ga("set", "page", "/team");
@@ -300,10 +305,9 @@ module.exports = {
 	},
 	methods: {
 		fetchData: function() {
-			var tricode = this.$route.params.tricode;
 			var self = this;
 			var xhr = new XMLHttpRequest();
-			xhr.open("GET", "./api/teams/" + tricode);
+			xhr.open("GET", "./api/teams/" + this.tricode);
 			xhr.onload = function() {
 				self.data = JSON.parse(xhr.responseText);
 				self.data.team.team_name = constants.teamNames[self.data.team.team];
@@ -320,23 +324,6 @@ module.exports = {
 					s.c_diff = s.cf - s.ca;
 					s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
 					s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
-				});
-				// Process/append additional stats for the team's lines
-				self.data.lines.forEach(function(l) {
-					l.name1 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
-					l.name2 = (l.firsts[1] + " " + l.lasts[1]).toLowerCase();
-					if (l.f_or_d === "d") {
-						l.firsts[2] = "";
-						l.lasts[2] = "";
-					}
-					l.name3 = (l.firsts[2] + " " + l.lasts[2]).toLowerCase();
-					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
-						var s = l[strSit];
-						s.toi /= 60;
-						s.g_diff = s.gf - s.ga;
-						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
-						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
-					});
 				});
 				// Process history data
 				self.data.history = _.orderBy(self.data.history, "datetime", "desc");
@@ -380,6 +367,32 @@ module.exports = {
 						self.data.team.record[2]++;
 						self.data.team.record1g[2]++;
 					}
+				});
+			}
+			xhr.send();
+		},
+		fetchLineData: function() {
+			var self = this;
+			var xhr = new XMLHttpRequest();
+			xhr.open("GET", "./api/teams/" + this.tricode + "/lines");
+			xhr.onload = function() {
+				self.lineData = JSON.parse(xhr.responseText);
+				// Process/append additional stats for the team's lines
+				self.lineData.lines.forEach(function(l) {
+					l.name1 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
+					l.name2 = (l.firsts[1] + " " + l.lasts[1]).toLowerCase();
+					if (l.f_or_d === "d") {
+						l.firsts[2] = "";
+						l.lasts[2] = "";
+					}
+					l.name3 = (l.firsts[2] + " " + l.lasts[2]).toLowerCase();
+					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
+						var s = l[strSit];
+						s.toi /= 60;
+						s.g_diff = s.gf - s.ga;
+						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
+						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
+					});
 				});
 			}
 			xhr.send();

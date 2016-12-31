@@ -293,55 +293,78 @@ function start() {
 					result.breakpoints[s].isSelfInDistribution = false;
 				}
 			});
-
-			// Start querying and processing linemates
-			queryLinemates();
+			returnResult();
 		}
 
-		// 'p' is a player object; 's' is the stat to be calculated
-		function getDatapoint(p, s) {
-			var datapoint;
-			if (s === "all_toi") {
-				datapoint = p.stats.all.toi / p.gp;
-			} else if (s.indexOf("ev5_") >= 0) {
-				if (s === "ev5_cf_adj_per60") {
-					datapoint = p.stats.ev5.cf_adj;
-				} else if (s === "ev5_ca_adj_per60") {
-					datapoint = p.stats.ev5.ca_adj;
-				} else if (s === "ev5_p1_per60") {
-					datapoint = p.stats.ev5.ig + p.stats.ev5.ia1;
-				}
-				datapoint = p.stats.ev5.toi === 0 ? 0 : 60 * 60 * (datapoint / p.stats.ev5.toi);
-			} else if (s === "pp_p1_per60") {
-				datapoint = p.stats.pp.ig + p.stats.pp.ia1;
-				datapoint = p.stats.pp.toi === 0 ? 0 : 60 * 60 * (datapoint / p.stats.pp.toi);
+		//
+		// Query and process game-by-game history
+		//
+
+		var historyRows;
+		function queryHistory() {
+			var queryStr = "SELECT r.game_id, r.team, g.h_team, g.a_team, g.h_final, g.a_final, g.periods, g.datetime AT TIME ZONE 'America/New_York' AS datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
+					+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
+				+ " FROM game_rosters AS r"
+				+ " LEFT JOIN game_stats AS s"
+					+ " ON r.season = s.season AND r.game_id = s.game_id AND r.player_id = s.player_id"
+				+ " LEFT JOIN game_results AS g"
+					+ " ON r.season = g.season AND r.game_id = g.game_id"
+				+ " WHERE r.season = $1 AND r.player_id = $2"
+			query(queryStr, [season, pId], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				historyRows = rows;
+				result.history = getHistoryResults(historyRows);
+				returnResult();
+			});
+		}
+
+		//
+		// Only return response when all results are ready
+		//
+
+		function returnResult() {	
+			if (result.breakpoints && result.player && result.history) {
+				return response.status(200).send(result);
 			}
-			return datapoint;
 		}
+	});
 
-		//
-		// Query linemate data and get results
-		//
+	//
+	// Handle GET requests for a particular player's linemates
+	//
+
+	server.get("/api/players/:id/lines", function(request, response) {
+
+		var pId = +request.params.id;
+		var season = 2016;
+		var result = {};
 
 		var shiftRows;
 		var strSitRows;
 		var eventRows;
+		
+		queryLinemates();
 
 		function queryLinemates() {
 
 			// Query for shifts belonging to the player and his teammates
 			// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
-			// 'sh' contains all player shifts, including player names
+			// 'sh' contains all player shifts, including player names and all of a player's positions ('r' used string_agg to combine all of a player's positions)
 			// Join 'p' with 'sh' to get all shifts belonging to the specified player and his teammates
 			// Also use this to get all positions the player has played
 			var queryStr = "SELECT sh.*"
 				+ " FROM game_rosters AS p"
 				+ " LEFT JOIN ("
-					+ " SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"position\""
+					+ " SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.positions"
 					+ " FROM game_shifts AS s"
-					+ " LEFT JOIN game_rosters as r"
-					+ " ON s.season = r.season AND s.game_id = r.game_id AND s.player_id = r.player_id"
-					+ " WHERE r.\"position\" != 'g' AND r.\"position\" != 'na' AND s.season = $1"
+					+ " INNER JOIN ("
+						+ " SELECT player_id, \"first\", \"last\", string_agg(position, ',') as positions"
+						+ " FROM game_rosters"
+						+ " WHERE position != 'na' AND position != 'g' AND season = $1"
+						+ " GROUP BY player_id, \"first\", \"last\""
+					+ " ) as r"
+					+ " ON s.player_id = r.player_id"
+					+ " WHERE s.season = $1"
 				+ " ) AS sh"
 				+ " ON p.game_id = sh.game_id AND p.team = sh.team"
 				+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
@@ -394,54 +417,64 @@ function start() {
 				s.timeranges = getTimepointArray(s.timeranges);
 			});
 
+			// Get each player's f_or_d value
+			var fdVals = {}; // Use player id as keys, f/d as values - will be used when increment event stats
+			shiftRows.forEach(function(s) {
+				var val = isForD(s.positions.split(","));
+				s.f_or_d = val;
+				fdVals[s.player_id] = val;
+			});
+
 			//
-			// Loop through each of the players' period rows and calculate toi with linemates
+			// Loop through each game and period and calculate line toi
 			//
 
 			var lineResults = [];
-			shiftRows.filter(function(d) { return d.player_id === pId; })
-				.forEach(function(pr) {
+			var gIds = _.uniqBy(shiftRows, "game_id").map(function(d) { return d.game_id; });
+			gIds.forEach(function(gId) {
+				var gShiftRows = shiftRows.filter(function(d) { return d.game_id === gId; });
 
-					// Select the strSitRow rows that have the same game and period
-					var ssRows = strSitRows.filter(function(sr) { return sr.game_id === pr.game_id && sr.period === pr.period; });
+				// Only consider players with the same f/d value as the specified player
+				[fdVals[pId]].forEach(function(f_or_d) {
 
-					// Select teammates' period rows that have the same game and period, and play the same position (f or d)
-					var tmRows = shiftRows.filter(function(tr) {
-						return tr.player_id !== pId && tr.game_id === pr.game_id && tr.period === pr.period
-							&& result.player.f_or_d === isForD([tr.position]);
-					});
-
-					// Generate linemate combinations (pairs for defense, triplets for forwards) and create object to store line results
-					var uniqLinemates = _.uniqBy(tmRows, "player_id");
-					var numLinemates = result.player.f_or_d === "d" ? 1 : 2;
+					// Generate combinations and create objects to store each line's results
+					var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === f_or_d; });
+					var uniqLinemates = _.uniqBy(posShiftRows, "player_id").filter(function(d) { return d.player_id !== pId; });
+					var numLinemates = f_or_d === "f" ? 2 : 1;
 					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
 					var lines = [];
 					combos.forEach(function(combo) {
-						initLine(result.player.f_or_d, combo, lines, lineResults);
+						initLine(f_or_d, combo, lines, lineResults);
 					});
 
-					// Loop through each line that played in the period and increment toi
-					// 'linesInPeriod' is an array of [playerId, playerId] (or [playerId] for defense)
+					// Loop through the game's periods to increment toi
+					var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
 					lines.forEach(function(l) {
-						// Get shift rows for each linemate
-						var linemateRows = tmRows.filter(function(d) { return l.indexOf(d.player_id) >= 0; });
-						// Get intersection of all linemate shifts
-						var playerIntersection;
-						if (result.player.f_or_d === "f" && linemateRows.length === 2) {
-							playerIntersection = _.intersection(pr.shifts, linemateRows[0].shifts, linemateRows[1].shifts);
-						} else if (result.player.f_or_d === "d" && linemateRows.length === 1) {
-							playerIntersection = _.intersection(pr.shifts, linemateRows[0].shifts);
-						}
-						// Increment toi for all situations and ev5/sh/pp
 						var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
-						if (playerIntersection) {
-							lineObj.all.toi += playerIntersection.length;
-							ssRows.forEach(function(sr) {
-								lineObj[sr.strength_sit].toi += _.intersection(playerIntersection, sr.timeranges).length;
-							});
-						}
+						prds.forEach(function(prd) {
+							var ownRow = gShiftRows.find(function(d) { return d.player_id === pId && d.period === prd; });
+							if (ownRow) { // Ensure the player has a shift row, as they might not have played in the period
+								var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
+								var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
+								// Get intersecting timepoints for all players
+								var playerIntersection;
+								if (f_or_d === "f" && linemateRows.length === 2) {
+									playerIntersection = _.intersection(ownRow.shifts, linemateRows[0].shifts, linemateRows[1].shifts);
+								} else if (f_or_d === "d" && linemateRows.length === 1) {
+									playerIntersection = _.intersection(ownRow.shifts, linemateRows[0].shifts);
+								}
+								// Increment toi for all situations and ev5/sh/pp
+								if (playerIntersection) {
+									lineObj.all.toi += playerIntersection.length;
+									prdSsRows.forEach(function(sr) {
+										lineObj[sr.strength_sit].toi += _.intersection(playerIntersection, sr.timeranges).length;
+									});
+								}
+							}
+						});
 					});
 				});
+			});
 
 			//
 			// Append event stats to lineResults
@@ -463,55 +496,20 @@ function start() {
 				// Get the skaters for which to increment stats - remove the specified player
 				// Only include skaters with the same f/d classification as the specified player
 				var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
-				skaters = skaters.filter(function(d) { return d !== pId; });
-				skaters = skaters.filter(function(d) { 
-					var linemateObj = players.find(function(p) { return p.player_id === d; });
-					return linemateObj.f_or_d === result.player.f_or_d ? true : false;
-				});
+				skaters = skaters
+					.filter(function(sid) { return sid !== pId; })
+					.filter(function(sid) { return fdVals[sid] === fdVals[pId]; });
 
 				// Get combinations of linemates for which to increment stats
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
-				var numLinemates = result.player.f_or_d === "d" ? 1 : 2;
+				var numLinemates = fdVals[pId] === "d" ? 1 : 2;
 				var combos = combinations.k_combinations(skaters, numLinemates);
 				incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
 			});
 
-			// Remove lines with less than 1min total toi before returning results
-			lineResults = lineResults.filter(function(d) { return d.all.toi >= 60; });
-			result.lines = lineResults;
-			returnResult();
-		}
-
-		//
-		// Query and process game-by-game history
-		//
-
-		var historyRows;
-		function queryHistory() {
-			var queryStr = "SELECT r.game_id, r.team, g.h_team, g.a_team, g.h_final, g.a_final, g.periods, g.datetime AT TIME ZONE 'America/New_York' AS datetime, r.position, s.strength_sit, s.score_sit, s.toi, s.ig,"
-					+ " (s.is + s.ibs + s.ims) AS ic, s.ia1, s.ia2, s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
-				+ " FROM game_rosters AS r"
-				+ " LEFT JOIN game_stats AS s"
-					+ " ON r.season = s.season AND r.game_id = s.game_id AND r.player_id = s.player_id"
-				+ " LEFT JOIN game_results AS g"
-					+ " ON r.season = g.season AND r.game_id = g.game_id"
-				+ " WHERE r.season = $1 AND r.player_id = $2"
-			query(queryStr, [season, pId], function(err, rows) {
-				if (err) { return response.status(500).send("Error running query: " + err); }
-				historyRows = rows;
-				result.history = getHistoryResults(historyRows);
-				returnResult();
-			});
-		}
-
-		//
-		// Only return response when all results are ready
-		//
-
-		function returnResult() {	
-			if (result.breakpoints && result.player && result.lines && result.history) {
-				return response.status(200).send(result);
-			}
+			// Filter lines by toi before responding
+			result.lines = lineResults.filter(function(d) { return d.all.toi >= 300; });
+			return response.status(200).send(result);
 		}
 	});
 
@@ -617,15 +615,10 @@ function start() {
 		var tricode = request.params.tricode;
 		var season = 2016;
 
-		var shiftRows;
-		var strSitRows;
-		var eventRows;
-
 		var teams = [];
 		var result = {};
 
 		queryBreakpoints();
-		queryLines();
 		queryHistory();
 
 		//
@@ -722,6 +715,67 @@ function start() {
 			}
 			return datapoint;
 		}
+
+		//
+		// Query and process game-by-game history
+		//
+
+		var historyRows;
+		function queryHistory() {
+			var queryStr = "SELECT s.game_id, s.team, r.h_team, r.a_team, r.h_final, r.a_final, r.periods, r.datetime AT TIME ZONE 'America/New_York' AS datetime, s.strength_sit, s.score_sit, s.toi,"
+					+ " s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
+				+ " FROM game_stats AS s"
+				+ " LEFT JOIN game_results AS r"
+					+ " ON s.season = r.season AND s.game_id = r.game_id"
+				+ " WHERE s.season = $1 AND s.team = $2 AND s.player_id < 2";
+			query(queryStr, [season, tricode], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				historyRows = rows;
+				result.history = getHistoryResults(historyRows);
+				getPoints();
+			});
+		}
+
+		// Get the number of points won by the team
+		// We store the points outside of result.teams for now because result.teams might not have been created yet
+		function getPoints() {
+			result.points = 0;
+			result.history.filter(function(r) { return r.game_id < 30000; })
+				.forEach(function(r) {
+					if (r.team_final > r.opp_final) {
+						result.points += 2;
+					} else if (r.team_final < r.opp_final && r.periods > 3) {
+						result.points += 1;
+					}
+				});
+			returnResult();
+		}
+
+		function returnResult() {
+			if (result.team && result.history && result.breakpoints && result.points) {
+				// Reorganize the json before responding
+				result.team.points = result.points;
+				result.points = undefined;
+				return response.status(200).send(result);
+			}
+		}
+	});
+
+	//
+	// Handle GET request for a particular team's lines
+	//
+
+	server.get("/api/teams/:tricode/lines", function(request, response) {
+
+		var tricode = request.params.tricode;
+		var season = 2016;
+
+		var shiftRows;
+		var strSitRows;
+		var eventRows;
+		var result = {};
+
+		queryLines();
 
 		function queryLines() {
 
@@ -864,54 +918,9 @@ function start() {
 				});
 			});
 
-			// Append line stats to response
-			lineResults = lineResults.filter(function(d) { return d.all.toi >= 60; });
-			result.lines = lineResults;
-			returnResult();
-		}
-
-		//
-		// Query and process game-by-game history
-		//
-
-		var historyRows;
-		function queryHistory() {
-			var queryStr = "SELECT s.game_id, s.team, r.h_team, r.a_team, r.h_final, r.a_final, r.periods, r.datetime AT TIME ZONE 'America/New_York' AS datetime, s.strength_sit, s.score_sit, s.toi,"
-					+ " s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
-				+ " FROM game_stats AS s"
-				+ " LEFT JOIN game_results AS r"
-					+ " ON s.season = r.season AND s.game_id = r.game_id"
-				+ " WHERE s.season = $1 AND s.team = $2 AND s.player_id < 2";
-			query(queryStr, [season, tricode], function(err, rows) {
-				if (err) { return response.status(500).send("Error running query: " + err); }
-				historyRows = rows;
-				result.history = getHistoryResults(historyRows);
-				getPoints();
-			});
-		}
-
-		// Get the number of points won by the team
-		// We store the points outside of result.teams for now because result.teams might not have been created yet
-		function getPoints() {
-			result.points = 0;
-			result.history.filter(function(r) { return r.game_id < 30000; })
-				.forEach(function(r) {
-					if (r.team_final > r.opp_final) {
-						result.points += 2;
-					} else if (r.team_final < r.opp_final && r.periods > 3) {
-						result.points += 1;
-					}
-				});
-			returnResult();
-		}
-
-		function returnResult() {
-			if (result.team && result.lines && result.history && result.breakpoints && result.points) {
-				// Reorganize the json before responding
-				result.team.points = result.points;
-				result.points = undefined;
-				return response.status(200).send(result);
-			}
+			// Filter lines by toi before responding
+			result.lines = lineResults.filter(function(d) { return d.all.toi >= 300; });
+			return response.status(200).send(result);
 		}
 	});
 
@@ -1151,4 +1160,26 @@ function aggregateScoreSituations(list, stats) {
 			p.stats[strSit] = undefined;
 		})
 	});
+}
+
+// Get datapoints for calculating breakpoints
+// 'p' is a player object; 's' is the stat to be calculated
+function getDatapoint(p, s) {
+	var datapoint;
+	if (s === "all_toi") {
+		datapoint = p.stats.all.toi / p.gp;
+	} else if (s.indexOf("ev5_") >= 0) {
+		if (s === "ev5_cf_adj_per60") {
+			datapoint = p.stats.ev5.cf_adj;
+		} else if (s === "ev5_ca_adj_per60") {
+			datapoint = p.stats.ev5.ca_adj;
+		} else if (s === "ev5_p1_per60") {
+			datapoint = p.stats.ev5.ig + p.stats.ev5.ia1;
+		}
+		datapoint = p.stats.ev5.toi === 0 ? 0 : 60 * 60 * (datapoint / p.stats.ev5.toi);
+	} else if (s === "pp_p1_per60") {
+		datapoint = p.stats.pp.ig + p.stats.pp.ia1;
+		datapoint = p.stats.pp.toi === 0 ? 0 : 60 * 60 * (datapoint / p.stats.pp.toi);
+	}
+	return datapoint;
 }
