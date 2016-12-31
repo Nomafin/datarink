@@ -97,11 +97,13 @@
 					</tr>
 					<tr>
 						<td>Points</td>
-						<td colspan="2">{{ data.team.points }}</td>
+						<td>{{ data.team.points }}</td>
+						<td>{{ data.team.points_pct | percentage(false) }}<span class="pct">%</span></td>
 					</tr>
 					<tr>
 						<td>Record</td>
-						<td colspan="2">{{ data.team.record[0] + "-" + data.team.record[1] + "-" + data.team.record[2] }}</td>
+						<td>{{ data.team.record[0] + "-" + data.team.record[1] + "-" + data.team.record[2] }}</td>
+						<td>{{ data.team.gp }} games</td>
 					</tr>
 					<tr>
 						<td>Wins by 1 goal, OT, SO</td>
@@ -305,7 +307,9 @@ module.exports = {
 			xhr.onload = function() {
 				self.data = JSON.parse(xhr.responseText);
 				self.data.team.team_name = constants.teamNames[self.data.team.team];
-				// Process/append additional stats for the player
+				// Get point percentage
+				self.data.team.points_pct = 100 * self.data.team.points / (2 * self.data.team.gp);
+				// Process/append additional stats for the team
 				["all", "ev5", "pp", "sh"].forEach(function(strSit) {
 					var s = self.data.team.stats[strSit];
 					s.toi /= 60;
@@ -317,7 +321,7 @@ module.exports = {
 					s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
 					s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
 				});
-				// Process/append additional stats for the player's lines
+				// Process/append additional stats for the team's lines
 				self.data.lines.forEach(function(l) {
 					l.name1 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
 					l.name2 = (l.firsts[1] + " " + l.lasts[1]).toLowerCase();
@@ -376,7 +380,6 @@ module.exports = {
 						self.data.team.record[2]++;
 						self.data.team.record1g[2]++;
 					}
-
 				});
 			}
 			xhr.send();

@@ -48,6 +48,7 @@
 						<td class="left-aligned"><span class="rank":class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
 						<td class="left-aligned"><router-link :to="{ path: p.team.toString() }" append>{{ p.team.toUpperCase() }}</td>
 						<td>{{ p.pts }}</td>
+						<td>{{ p.pts_pct | percentage(false) }}<span class="pct">%</span></td>
 						<td>{{ p.gp }}</td>
 						<td>{{ Math.round(p.stats[strengthSit].toi) }}</td>
 						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].gf | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
@@ -83,7 +84,8 @@ module.exports = {
 			columns: [
 				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
 				{ key: "team", heading: "Team", sortable: true, classes: "left-aligned" },
-				{ key: "pts", heading: "Pts", sortable: true },
+				{ key: "pts", heading: "Pt", sortable: true },
+				{ key: "pts_pct", heading: "Pt %", sortable: true },
 				{ key: "gp", heading: "GP", sortable: true },
 				{ key: "toi", heading: "Mins", sortable: true },
 				{ key: "gf", heading: "GF", sortable: true, hasRate: true, classes: "cols-on-ice-goals" },
@@ -112,7 +114,7 @@ module.exports = {
 			// Create a player property for their sort value - used to sort rate stats and used for ranking
 			var col = this.sort.col;
 			var order = this.sort.order < 0 ? "desc" : "asc";
-			if (["team", "gp", "pts"].indexOf(col) >= 0) {
+			if (["team", "gp", "pts", "pts_pct"].indexOf(col) >= 0) {
 				this.teams.map(function(p) {
 					p.sort_val = p[col];
 					return p;
@@ -180,6 +182,8 @@ module.exports = {
 			xhr.onload = function() {
 				self.teams = JSON.parse(xhr.responseText)["teams"];
 				self.teams.forEach(function(p) {
+					// Get point percentage
+					p.pts_pct = 100 * p.pts / (2 * p.gp);
 					// Process/append stats for each score situation
 					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
 						var s = p.stats[strSit];
