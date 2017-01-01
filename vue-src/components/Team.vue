@@ -296,7 +296,6 @@ module.exports = {
 	created: function() {
 		this.tricode = this.$route.params.tricode;
 		this.fetchData();
-		this.fetchLineData();
 		// Google Analytics
 		if (window.location.hostname.toLowerCase() !== "localhost") {
 			ga("set", "page", "/team");
@@ -309,6 +308,7 @@ module.exports = {
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", "./api/teams/" + this.tricode);
 			xhr.onload = function() {
+				self.fetchLineData(); // Get line data after initial data is returned
 				self.data = JSON.parse(xhr.responseText);
 				self.data.team.team_name = constants.teamNames[self.data.team.team];
 				// Get point percentage
