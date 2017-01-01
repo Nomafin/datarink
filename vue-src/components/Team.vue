@@ -14,9 +14,9 @@
 				<bulletchart :label="'GA/60, short handed'" :data="data.breakpoints.sh_ga_per60" :isInverted="true"></bulletchart>
 			</div>
 			<div class="section legend">
-				<div><span :style="{ background: colours.green5 }"></span><span>Top 6 teams</span></div
-				><div><span :style="{ background: colours.green4 }"></span><span>7-12</span></div
-				><div><span :style="{ background: colours.green3 }"></span><span>13-18</span></div
+				<div><span :style="{ background: colours.green8 }"></span><span>Top 6 teams</span></div
+				><div><span :style="{ background: colours.green6 }"></span><span>7-12</span></div
+				><div><span :style="{ background: colours.green4 }"></span><span>13-18</span></div
 				><div><span :style="{ background: colours.green2 }"></span><span>19-24</span></div
 				><div><span :style="{ background: colours.green1 }"></span><span>25-30</span></div>
 			</div>

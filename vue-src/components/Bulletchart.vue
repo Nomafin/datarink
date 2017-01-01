@@ -5,7 +5,7 @@
 			<div class="ranges">
 				<div v-for="(r, i) in ranges" :style="{ width: r.width + '%', background: r.colour }"></div>
 			</div>
-			<div v-if="Math.floor(markerPos) >= 0 && Math.ceil(markerPos) <= 100 && data.isSelfInDistribution" :style="{ left: 'calc(' + markerPos + '% - 1px)' }" class="marker"></div>
+			<div v-if="Math.floor(markerPos) >= 0 && Math.ceil(markerPos) <= 100 && data.isSelfInDistribution" :style="{ left: markerPos + '%' }" class="marker"></div>
 		</div>
 		<div class="axis">
 			<span>{{ axisTicks[0] }}</span><span>{{ axisTicks[1] }}</span>
@@ -22,7 +22,7 @@ module.exports = {
 		ranges: function() {
 			var self = this;
 			var ranges = [];
-			var colours = [constants.colours.green5, constants.colours.green4, constants.colours.green3, constants.colours.green2, constants.colours.green1];
+			var colours = [constants.colours.green8, constants.colours.green6, constants.colours.green4, constants.colours.green2, constants.colours.green1];
 			// Sort breakpoints in ascending order
 			self.data.breakpoints = self.data.breakpoints.sort(function(a, b) { return a - b; });
 			var max = _.max(self.data.breakpoints);
@@ -114,7 +114,9 @@ module.exports = {
 	position: absolute;
 	height: 100%;
 	width: 2px;
+	margin-left: -1px;
 	background: $gray9;
+	border-radius: 2px;
 	top: -8px;
 }
 .bullet-chart-container .axis {

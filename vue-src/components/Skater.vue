@@ -14,9 +14,9 @@
 				<bulletchart :label="'P1/60, power play'" :data="bulletchartData.pp_p1_per60" :isInverted="false"></bulletchart>
 			</div>
 			<div v-if="bulletchartData" class="section legend">
-				<div><span :style="{ background: colours.green5 }"></span><span v-if="data.player.f_or_d === 'f'">Top 90 forwards</span><span v-if="data.player.f_or_d === 'd'">Top 60 defenders</span></div>
-				<div><span :style="{ background: colours.green4 }"></span><span v-if="data.player.f_or_d === 'f'">91-180</span><span v-if="data.player.f_or_d === 'd'">61-120</span></div>
-				<div><span :style="{ background: colours.green3 }"></span><span v-if="data.player.f_or_d === 'f'">181-270</span><span v-if="data.player.f_or_d === 'd'">121-180</span></div>
+				<div><span :style="{ background: colours.green8 }"></span><span v-if="data.player.f_or_d === 'f'">Top 90 forwards</span><span v-if="data.player.f_or_d === 'd'">Top 60 defenders</span></div>
+				<div><span :style="{ background: colours.green6 }"></span><span v-if="data.player.f_or_d === 'f'">91-180</span><span v-if="data.player.f_or_d === 'd'">61-120</span></div>
+				<div><span :style="{ background: colours.green4 }"></span><span v-if="data.player.f_or_d === 'f'">181-270</span><span v-if="data.player.f_or_d === 'd'">121-180</span></div>
 				<div v-if="data.player.f_or_d === 'f'"><span :style="{ background: colours.green2 }"></span><span>261-360</span></div>
 			</div>
 			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
