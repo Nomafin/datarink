@@ -107,6 +107,15 @@ function startScrape() {
 			console.log("Finished scraping yesterday's games (" + reqDateStr + "): " + gameIds.toString()
 				+ " -- State not final: " + unfinishedGameIds.toString()
 				+ " -- Data unavailable: " + noInputGameIds.toString());
+			// Clear cached api responses on server
+			var reqUrl = "http://datarink.herokuapp.com/api/cache/clear";
+			request(reqUrl, function (error, response, body) {
+				if (!error && response.statusCode === 200) {
+					console.log("apicache cleared: " + body);
+				} else {
+					console.log("Failed to clear apicache: " + error);
+				}
+			});
 			// Close connection
 			client.end();
 		}, 9000);
