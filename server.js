@@ -121,7 +121,7 @@ function start() {
 	// Handle GET request for players list
 	//
 
-	server.get("/api/players/", cache("1 hour"), function(request, response) {
+	server.get("/api/players/", cache("24 hours"), function(request, response) {
 
 		var season = 2016;
 
@@ -188,7 +188,7 @@ function start() {
 	// Handle GET request for player breakpoints
 	//
 
-	server.get("/api/players/breakpoints", cache("1 hour"), function(request, response) {
+	server.get("/api/players/breakpoints", cache("24 hours"), function(request, response) {
 
 		var season = 2016;
 		var players = [];
@@ -998,7 +998,18 @@ function start() {
 		}
 	});
 
+	//
+	// Route to manually clear cached responses
+	//
+
+	server.get("/api/cache/clear", function(request, response) {
+		response.json(apicache.clear());
+	});
+
+	//
 	// Start listening for requests
+	//
+
 	server.listen(PORT, function(error) {
 		if (error) { throw error; }
 		console.log("Listening on " + PORT);
