@@ -307,9 +307,7 @@ module.exports = {
 	},
 	created: function() {
 		this.pId = this.$route.params.id;
-		this.fetchData();
-		this.fetchLineData();
-		this.fetchBreakpointData();
+		this.fetchData(); // Fetch initial data - it's callback will fetch breakpoint data, whose callback will fetch line data
 		// Google Analytics
 		if (window.location.hostname.toLowerCase() !== "localhost") {
 			ga("set", "page", "/player");
@@ -373,7 +371,7 @@ module.exports = {
 						s.points = pointString;
 					});
 				});
-				self.prepareBulletchartData();
+				self.fetchBreakpointData(); // Fetch breakpoint data after initial data is loaded
 			}
 			xhr.send();
 		},
@@ -408,6 +406,7 @@ module.exports = {
 			xhr.open("GET", "./api/players/breakpoints");
 			xhr.setRequestHeader("x-no-compression", true);
 			xhr.onload = function() {
+				self.fetchLineData(); // Fetch line data after breakpoint data is loaded
 				self.breakpointData = JSON.parse(xhr.responseText);
 				self.prepareBulletchartData();
 			}

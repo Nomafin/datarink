@@ -308,7 +308,7 @@ module.exports = {
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", "./api/teams/" + this.tricode);
 			xhr.onload = function() {
-				self.fetchLineData(); // Get line data after initial data is returned
+				self.fetchLineData(); // Fetch initial data - it's callback will fetch line data
 				self.data = JSON.parse(xhr.responseText);
 				self.data.team.team_name = constants.teamNames[self.data.team.team];
 				// Get point percentage
