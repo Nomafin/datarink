@@ -6,6 +6,7 @@ var url = require("url");
 var auth = require("http-auth");
 var throng = require("throng");
 var compression = require("compression");
+var apicache = require("apicache");
 var constants = require("./analysis-constants.json");
 var combinations = require("./combinations");
 
@@ -44,7 +45,17 @@ function start() {
 	// Create an Express server
 	var express = require("express");
 	var server = express();
-	server.use(compression());
+	var cache = apicache.middleware;
+	server.use(compression({ filter: shouldCompress }));
+
+	// Determine whether or not responses should be compressed
+	// Due to a limitation with apicache, do not compress responses that we want cached
+	function shouldCompress (request, response) {
+		if (request.headers["x-no-compression"]) {
+			return false;
+		}
+		return compression.filter(request, response);
+	}
 
 	// Add user authentication if AUTHENTICATION isn't set to 'off'
 	if (process.env.AUTHENTICATION.toLowerCase() !== "off") {
@@ -110,7 +121,7 @@ function start() {
 	// Handle GET request for players list
 	//
 
-	server.get("/api/players/", function(request, response) {
+	server.get("/api/players/", cache("1 hour"), function(request, response) {
 
 		var season = 2016;
 
@@ -177,7 +188,7 @@ function start() {
 	// Handle GET request for player breakpoints
 	//
 
-	server.get("/api/players/breakpoints", function(request, response) {
+	server.get("/api/players/breakpoints", cache("1 hour"), function(request, response) {
 
 		var season = 2016;
 		var players = [];

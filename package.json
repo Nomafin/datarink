@@ -17,6 +17,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "apicache": "^0.7.3",
     "async": "^2.1.4",
     "browserify": "^13.1.1",
     "compression": "^1.6.2",

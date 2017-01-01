@@ -226,6 +226,7 @@ module.exports = {
 			var self = this;
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", "./api/players/");
+			xhr.setRequestHeader("x-no-compression", true);
 			xhr.onload = function() {
 				self.players = JSON.parse(xhr.responseText).players;
 				self.players.forEach(function(p) {

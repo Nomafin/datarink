@@ -406,6 +406,7 @@ module.exports = {
 			var self = this;
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", "./api/players/breakpoints");
+			xhr.setRequestHeader("x-no-compression", true);
 			xhr.onload = function() {
 				self.breakpointData = JSON.parse(xhr.responseText);
 				self.prepareBulletchartData();
