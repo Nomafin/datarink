@@ -21,7 +21,7 @@ module.exports = {
 		"dal": "Dallas Stars",
 		"min": "Minnesota Wild",
 		"nsh": "Nashville Predators",
-		"stl": "st Louis Blues",
+		"stl": "St Louis Blues",
 		"wpg": "Winnipeg Jets",
 		"ana": "Anaheim Ducks",
 		"ari": "Arizona Coyotes",
