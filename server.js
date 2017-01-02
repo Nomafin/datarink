@@ -124,47 +124,71 @@ function start() {
 	server.get("/api/dashboard/", function(request, response) {
 
 		var season = 2016;
+		var result = {};
 
-		// "t" is a list of all teams
-		// For each team, get their last 10 games, "g"
-		var queryStr = "SELECT p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit,"
-				+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
-				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off,"
-				+ " string_agg(to_char(s.game_id, '99999'), ',') AS game_ids"
-			+ " FROM ("
-				+ " SELECT *"
-				+ " FROM (SELECT DISTINCT(team) AS \"team\" FROM game_rosters WHERE season = $1) AS t"
-				+ " JOIN LATERAL ("
+		queryRecentStats();
+		querySeasonStats();
+
+		// Query for teams' and players' stats in their last 10 games
+		function queryRecentStats() {
+			// "t" is a list of all teams
+			// For each team, get their last 10 games, "g"
+			var queryStr = "SELECT p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit,"
+					+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
+					+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
+					+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off,"
+					+ " string_agg(to_char(s.game_id, '99999'), ',') AS game_ids"
+				+ " FROM ("
 					+ " SELECT *"
-					+ " FROM game_results"
-					+ " WHERE season = $1 AND (a_team = t.team OR h_team = t.team)"
-					+ " ORDER BY datetime DESC"
-					+ " LIMIT 10"
-				+ " ) AS g"
-				+ " ON true"
-			+ " ) AS r"
-			+ " LEFT JOIN game_stats AS s"
-			+ " ON r.game_id = s.game_id AND r.team = s.team"
-			+ " LEFT JOIN game_rosters AS p"
-			+ " ON s.game_id = p.game_id AND s.player_id = p.player_id"
-			+ " GROUP BY p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit";
+					+ " FROM (SELECT DISTINCT(team) AS \"team\" FROM game_rosters WHERE season = $1) AS t"
+					+ " JOIN LATERAL ("
+						+ " SELECT *"
+						+ " FROM game_results"
+						+ " WHERE season = $1 AND (a_team = t.team OR h_team = t.team)"
+						+ " ORDER BY datetime DESC"
+						+ " LIMIT 10"
+					+ " ) AS g"
+					+ " ON true"
+				+ " ) AS r"
+				+ " LEFT JOIN game_stats AS s"
+				+ " ON r.season = s.season AND r.game_id = s.game_id AND r.team = s.team"
+				+ " LEFT JOIN game_rosters AS p"
+				+ " ON s.season = p.season AND s.game_id = p.game_id AND s.player_id = p.player_id"
+				+ " GROUP BY p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit";
+			query(queryStr, [season], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				processRows(rows, "recent");
+			});
+		}
 
-		// Query for player stats
-		var resultRows;
-		query(queryStr, [season], function(err, rows) {
-			if (err) { return response.status(500).send("Error running query: " + err); }
-			resultRows = rows;
-			processResults();
-		});
+		// Query for teams' and players' season stats
+		function querySeasonStats() {
+			var queryStr = "SELECT p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit,"
+					+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
+					+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
+					+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off,"
+					+ " string_agg(to_char(s.game_id, '99999'), ',') AS game_ids"
+				+ " FROM game_stats AS s"
+				+ " LEFT JOIN game_rosters AS p"
+				+ " ON s.season = p.season AND s.game_id = p.game_id AND s.player_id = p.player_id"
+				+ " WHERE s.season = $1"
+				+ " GROUP BY p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit";
+			query(queryStr, [season], function(err, rows) {
+				if (err) { return response.status(500).send("Error running query: " + err); }
+				processRows(rows, "season");
+			});
+		}
 
-		function processResults() {
+		// Process stat rows from the recent and season queries
+		// 'rows' are the query results
+		// 'mode' values: recent, season
+		function processRows(rows, mode) {
 
 			// Cast Postgres SUMs as ints, and calculate score-adjusted corsi
 			// Separate team and skater rows
 			var teams = [];
 			var skaters = [];
-			resultRows.forEach(function(r) {
+			rows.forEach(function(r) {
 				["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
 					r[col] = +r[col];
 				});
@@ -199,7 +223,7 @@ function start() {
 					teams: _.uniqBy(skaters[pId], "team").map(function(d) { return d.team; }),
 					first: skaters[pId][0].first,
 					last: skaters[pId][0].last,
-					games: gameIds,
+					gp: gameIds.length,
 					data: skaters[pId]
 				});
 			});
@@ -217,7 +241,7 @@ function start() {
 				gameIds = _.uniq(gameIds);
 				tmpTeams.push({
 					team: tricode,
-					games: gameIds,
+					gp: gameIds.length,
 					data: teams[tricode]
 				});
 			});
@@ -229,9 +253,61 @@ function start() {
 			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
 			aggregateScoreSituations(teams, stats);
 
-			// Send response
-			var result = { skaters: skaters, teams: teams };
-			return response.status(200).send(result);
+			// Get the top X players
+			// 'objects' is an array of skater or teamobjects
+			// 'sit' is the strength situation: all, ev5, pp, sh
+			// 'stat' is the property name by which to rank players
+			// 'limit' is the number of players to return (if there are ties, more players will be returned)
+			function getLeaders(objects, sit, stat, limit) {
+				var returnedSkaters = [];
+				// Store the sort value
+				objects.forEach(function(s) {
+					if (stat === "i_sh_pct") {
+						s.sort_val = s.stats[sit].is < 10 ? 0 : s.stats[sit].ig / s.stats[sit].is; // Make sure shots > 0 (or use a higher threshold)
+					} else if (stat === "ip") {
+						s.sort_val = s.stats[sit].ig + s.stats[sit].ia1 + s.stats[sit].ia2;
+					} else if (stat === "c_diff_adj") {
+						s.sort_val = s.stats[sit].cf_adj - s.stats[sit].ca_adj;
+					} else if (stat === "g_diff") {
+						s.sort_val = s.stats[sit].gf - s.stats[sit].ga;
+					} else if (stat === "sh_pct") {
+						s.sort_val = s.stats[sit].sf <= 0 ? 0 : s.stats[sit].gf / s.stats[sit].sf;
+					}else {
+						s.sort_val = s.stats[sit][stat];
+					}
+				});
+				// Get the 5th ranked player's stat value - if there are fewer than 5 players, then get the last player's value
+				objects = objects.sort(function(a, b) { return b.sort_val - a.sort_val; });
+				var cutoff = objects[limit - 1] ? objects[limit - 1].sort_val : objects[objects.length - 1].sort_val;
+				// Add players to returnedSkaters until the cutoff value is passed
+				var i = 0;
+				var isCutoffExceeded = false;
+				while (i < objects.length && !isCutoffExceeded) {
+					if (objects[i].sort_val >= cutoff) {
+						objects[i].sort_val = undefined;
+						returnedSkaters.push(objects[i]);
+					} else {
+						isCutoffExceeded = true;
+					}
+					i++;
+				}
+				return returnedSkaters;
+			}
+			// Add results to response
+			result[mode] = {
+				ig: getLeaders(skaters, "all", "ig", 5),
+				ip: getLeaders(skaters, "all", "ip", 5),
+				ev5_ic: getLeaders(skaters, "ev5", "ic", 5),
+				i_sh_pct: getLeaders(skaters, "all", "i_sh_pct", 5),
+				tm_g_diff: getLeaders(teams, "all", "g_diff", 5),
+				tm_ev5_c_diff_adj: getLeaders(teams, "ev5", "c_diff_adj", 5),
+				tm_sh_pct: getLeaders(teams, "all", "sh_pct", 5),
+				tm_sv_pct: getLeaders(teams, "all", "sv_pct", 5)
+			};
+			// Send response when recent and season results are ready
+			if (result.recent && result.season) {
+				return response.status(200).send(result);
+			}
 		}
 	});
 
