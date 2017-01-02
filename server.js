@@ -83,7 +83,7 @@ function start() {
 			+ " SELECT s.team, s.player_id, r.first, r.last, s.score_sit, s.strength_sit, r.position,"
 				+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
 				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
+				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off" 
 			+ " FROM game_stats AS s"
 				+ " LEFT JOIN game_rosters AS r"
 				+ " ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
@@ -116,6 +116,124 @@ function start() {
 			+ " GROUP BY team"
 		+ " ) AS result2"
 		+ " ON result1.team = result2.team";
+
+	//
+	// Handle GET request for dashboard
+	//
+
+	server.get("/api/dashboard/", function(request, response) {
+
+		var season = 2016;
+
+		// "t" is a list of all teams
+		// For each team, get their last 10 games, "g"
+		var queryStr = "SELECT p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit,"
+				+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
+				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
+				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off,"
+				+ " string_agg(to_char(s.game_id, '99999'), ',') AS game_ids"
+			+ " FROM ("
+				+ " SELECT *"
+				+ " FROM (SELECT DISTINCT(team) AS \"team\" FROM game_rosters WHERE season = $1) AS t"
+				+ " JOIN LATERAL ("
+					+ " SELECT *"
+					+ " FROM game_results"
+					+ " WHERE season = $1 AND (a_team = t.team OR h_team = t.team)"
+					+ " ORDER BY datetime DESC"
+					+ " LIMIT 10"
+				+ " ) AS g"
+				+ " ON true"
+			+ " ) AS r"
+			+ " LEFT JOIN game_stats AS s"
+			+ " ON r.game_id = s.game_id AND r.team = s.team"
+			+ " LEFT JOIN game_rosters AS p"
+			+ " ON s.game_id = p.game_id AND s.player_id = p.player_id"
+			+ " GROUP BY p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit";
+
+		// Query for player stats
+		var resultRows;
+		query(queryStr, [season], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			resultRows = rows;
+			processResults();
+		});
+
+		function processResults() {
+
+			// Cast Postgres SUMs as ints, and calculate score-adjusted corsi
+			// Separate team and skater rows
+			var teams = [];
+			var skaters = [];
+			resultRows.forEach(function(r) {
+				["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
+					r[col] = +r[col];
+				});
+				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+				if (r.player_id < 2) {
+					teams.push(r);
+				} else if (r.position !== "g" && r.position !== "na") {
+					skaters.push(r);
+				}
+			});
+
+			// Group skater rows by playerId: { 123: [rows for player 123], 234: [rows for player 234] }
+			// Group team rows by tricode
+			skaters = _.groupBy(skaters, "player_id");
+			teams = _.groupBy(teams, "team");
+
+			// Structure skater data as an array of objects: [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
+			var tmpSkaters = [];
+			Object.keys(skaters).forEach(function(pId) {
+				// Combine all the string_agg(game_id) values: [ [111, 222], [111], [111, 222] ] 
+				var gameIds = skaters[pId].map(function(d) {
+					return d.game_ids.split(",").map(function(gId) { return +gId; });
+				});
+				gameIds = gameIds.toString()				// Flatten the nested array into a string: 111, 222, 111, 111, 222
+					.split(",") 							// Split the string into a flat array 
+					.map(function(gId) { return +gId; });	// Convert values to integers
+				gameIds = _.uniq(gameIds); 					// Get the unique game ids
+				tmpSkaters.push({
+					player_id: +pId,
+					positions: _.uniqBy(skaters[pId], "position").map(function(d) { return d.position; }),
+					teams: _.uniqBy(skaters[pId], "team").map(function(d) { return d.team; }),
+					first: skaters[pId][0].first,
+					last: skaters[pId][0].last,
+					games: gameIds,
+					data: skaters[pId]
+				});
+			});
+			skaters = tmpSkaters;
+
+			// Structure team data as an array of objects: [ { team: tor, data: [rows for tor] }, { team: edm, data: [rows for edm] } ]
+			var tmpTeams = [];
+			Object.keys(teams).forEach(function(tricode) {
+				var gameIds = teams[tricode].map(function(d) {
+					return d.game_ids.split(",").map(function(gId) { return +gId; });
+				});
+				gameIds = gameIds.toString()
+					.split(",")
+					.map(function(gId) { return +gId; });
+				gameIds = _.uniq(gameIds);
+				tmpTeams.push({
+					team: tricode,
+					games: gameIds,
+					data: teams[tricode]
+				});
+			});
+			teams = tmpTeams;
+
+			// Aggregate score situations for teams and skaters
+			var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
+			aggregateScoreSituations(skaters, stats);
+			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+			aggregateScoreSituations(teams, stats);
+
+			// Send response
+			var result = { skaters: skaters, teams: teams };
+			return response.status(200).send(result);
+		}
+	});
 
 	//
 	// Handle GET request for players list
