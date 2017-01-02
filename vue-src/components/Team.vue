@@ -107,12 +107,12 @@
 						<td>{{ data.team.gp }} games</td>
 					</tr>
 					<tr>
-						<td>Wins by 1 goal, OT, SO</td>
-						<td colspan="2">{{ data.team.record1g[0] }}</td>
+						<td>OT record</td>
+						<td colspan="2">{{ data.team.record_ot[0] + "-" + data.team.record_ot[2] }}</td>
 					</tr>
 					<tr>
-						<td>Losses by 1 goal, OT, SO</td>
-						<td colspan="2">{{ data.team.record1g[1] + data.team.record1g[2] }}</td>
+						<td>SO record</td>
+						<td colspan="2">{{ data.team.record_so[0] + "-" + data.team.record_so[2] }}</td>
 					</tr>
 					<tr>
 						<th colspan="3">Goals</th>
@@ -328,7 +328,8 @@ module.exports = {
 				// Process history data
 				self.data.history = _.orderBy(self.data.history, "datetime", "desc");
 				self.data.team.record = [0, 0, 0];		// [wins, losses, OT/SO losses]
-				self.data.team.record1g = [0, 0, 0]; 	// record in 1 goal games
+				self.data.team.record_ot = [0, 0, 0]; 	// OT record
+				self.data.team.record_so = [0, 0, 0]; 	// SO record
 				self.data.history.forEach(function(g) {
 					g.opp = g.is_home ? g.opp : "@" + g.opp;
 					var datetime = new Date(g.datetime);
@@ -355,17 +356,24 @@ module.exports = {
 					// Update record
 					if (g.team_final > g.opp_final) {
 						self.data.team.record[0]++;
-						if (g.team_final - g.opp_final === 1) {
-							self.data.team.record1g[0]++;
-						}
 					} else if (g.game_id < 30000 && g.periods <= 3) {
 						self.data.team.record[1]++;
-						if (g.opp_final - g.team_final === 1) {
-							self.data.team.record1g[1]++;
-						}
 					} else if (g.game_id < 30000 && g.periods > 3) {
 						self.data.team.record[2]++;
-						self.data.team.record1g[2]++;
+					}
+					// Update OT and SO records
+					if (g.game_id < 30000 && g.periods === 4) {
+						if (g.team_final > g.opp_final) {
+							self.data.team.record_ot[0]++;
+						} else {
+							self.data.team.record_ot[2]++;
+						}
+					} else if (g.game_id < 30000 && g.periods === 5) {
+						if (g.team_final > g.opp_final) {
+							self.data.team.record_so[0]++;
+						} else {
+							self.data.team.record_so[2]++;
+						}
 					}
 				});
 			}
