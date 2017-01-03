@@ -178,7 +178,7 @@ module.exports = {
 		fetchData: function() {
 			var self = this;
 			var xhr = new XMLHttpRequest();
-			xhr.open("GET", "./api/teams/");
+			xhr.open("GET", "./api/teams");
 			xhr.onload = function() {
 				self.teams = JSON.parse(xhr.responseText)["teams"];
 				self.teams.forEach(function(p) {

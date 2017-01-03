@@ -225,7 +225,7 @@ module.exports = {
 		fetchData: function() {
 			var self = this;
 			var xhr = new XMLHttpRequest();
-			xhr.open("GET", "./api/players/");
+			xhr.open("GET", "./api/players");
 			xhr.setRequestHeader("x-no-compression", true);
 			xhr.onload = function() {
 				self.players = JSON.parse(xhr.responseText).players;
@@ -254,8 +254,8 @@ module.exports = {
 						s.sh_pct = s.sf === 0 ? 0 : 100 * s.gf / s.sf;
 						s.sv_pct *= 100;
 						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
-						s.cf_pct_rel = (s.cf + s.ca === 0 || s.cf_off + s.ca_off === 0) ? 0
-							: 100 * (s.cf / (s.cf + s.ca) - s.cf_off / (s.cf_off + s.ca_off));
+						var cfPctOff = s.cf_off + s.ca_off === 0 ? 0 : 100 * s.cf_off / (s.cf_off + s.ca_off);
+						s.cf_pct_rel = s.cf_pct - cfPctOff;
 						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
 					});
 				});
