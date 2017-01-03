@@ -161,8 +161,6 @@
 </style>
 
 <script>
-var _ = require("lodash");
-var constants = require("./../app-constants.js");
 module.exports = {
 	name: "Home",
 	data: function() {
@@ -176,14 +174,13 @@ module.exports = {
 		this.fetchData();
 		// Google Analytics
 		if (window.location.hostname.toLowerCase() !== "localhost") {
-			ga("set", "page", "/highlights");
+			ga("set", "page", "/home");
 			ga("send", "pageview");
 		}
 	},
 	filters: {
 		teams: function(value) {
-			var string = value.toString();
-			return string.toUpperCase();
+			return value.toString().toUpperCase();
 		},
 		signed: function(value) {
 			return value > 0 ? "+" + value : value;
