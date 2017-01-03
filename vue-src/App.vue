@@ -5,10 +5,11 @@
 				<rect class="logo-r" x="20" y="24" width="8" height="8"/>
 				<path class="logo-d" d="M4,8V32h8V16h16V0h-8v8Z"/>
 			</svg
+			><router-link to="/highlights">Highlights</router-link
 			><router-link to="/teams">Teams</router-link
 			><router-link to="/skaters">Skaters</router-link>
 		</div>
-		<keep-alive include="Skaters,Teams">
+		<keep-alive include="Highlights,Skaters,Teams">
 			<router-view/>
 		</keep-alive>
 		<div class="section section-footer">

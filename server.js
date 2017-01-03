@@ -118,10 +118,10 @@ function start() {
 		+ " ON result1.team = result2.team";
 
 	//
-	// Handle GET request for dashboard
+	// Handle GET request for highlights
 	//
 
-	server.get("/api/dashboard/", function(request, response) {
+	server.get("/api/highlights/", cache("24 hours"), function(request, response) {
 
 		var season = 2016;
 		var result = {};
@@ -259,6 +259,10 @@ function start() {
 			// 'stat' is the property name by which to rank players
 			// 'limit' is the number of players to return (if there are ties, more players will be returned)
 			function getLeaders(objects, sit, stat, limit) {
+				// Return an empty array if 'objects' is empty after filtering
+				if (objects.length === 0) {
+					return [];
+				}
 				var returnedSkaters = [];
 				// Store the sort value
 				objects.forEach(function(s) {
@@ -272,10 +276,15 @@ function start() {
 						s.sort_val = s.stats[sit].gf - s.stats[sit].ga;
 					} else if (stat === "sh_pct") {
 						s.sort_val = s.stats[sit].sf <= 0 ? 0 : s.stats[sit].gf / s.stats[sit].sf;
-					}else {
+					} else {
 						s.sort_val = s.stats[sit][stat];
 					}
+					s["sorted_" + stat] = s.sort_val;
 				});
+				// For cf_pct_rel, apply a minimum toi
+				if (stat === "cf_pct_rel") {
+					objects = objects.filter(function(d) { return d.stats[sit].toi >= 60 * 60; });
+				}
 				// Get the 5th ranked player's stat value - if there are fewer than 5 players, then get the last player's value
 				objects = objects.sort(function(a, b) { return b.sort_val - a.sort_val; });
 				var cutoff = objects[limit - 1] ? objects[limit - 1].sort_val : objects[objects.length - 1].sort_val;
@@ -284,13 +293,15 @@ function start() {
 				var isCutoffExceeded = false;
 				while (i < objects.length && !isCutoffExceeded) {
 					if (objects[i].sort_val >= cutoff) {
-						objects[i].sort_val = undefined;
 						returnedSkaters.push(objects[i]);
 					} else {
 						isCutoffExceeded = true;
 					}
 					i++;
 				}
+				objects.forEach(function(p) {
+					p.sort_val = undefined;
+				});
 				return returnedSkaters;
 			}
 			// Add results to response
@@ -298,6 +309,7 @@ function start() {
 				ig: getLeaders(skaters, "all", "ig", 5),
 				ip: getLeaders(skaters, "all", "ip", 5),
 				ev5_ic: getLeaders(skaters, "ev5", "ic", 5),
+				i_ev5_c_diff_adj: getLeaders(skaters, "ev5", "c_diff_adj", 5),
 				i_sh_pct: getLeaders(skaters, "all", "i_sh_pct", 5),
 				tm_g_diff: getLeaders(teams, "all", "g_diff", 5),
 				tm_ev5_c_diff_adj: getLeaders(teams, "ev5", "c_diff_adj", 5),
