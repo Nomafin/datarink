@@ -1,7 +1,8 @@
 <template>
 	<div>
 		<div class="section section-header">
-			<h1>Highlights</h1>
+			<h1 style="margin-bottom: 0px;">Home</h1>
+			<h2>2016-2017 Leaders</h2>
 		</div>
 		<div class="loader" v-if="!data.recent"></div>
 		<div v-if="data.recent">
@@ -18,7 +19,7 @@
 			<div class="section dashboard-tile-container">
 				<div class="dashboard-tile" v-if="view === 'skaters'">
 					<table>
-						<thead><tr><th colspan="3" class="left-aligned">Goals, all situations</th></tr></thead>
+						<thead><tr><th colspan="3" class="left-aligned">Goals</th></tr></thead>
 						<tbody>
 							<tr v-for="r in data[mode].ig">
 								<td class="left-aligned"><router-link :to="{ path: '/skaters/' + r.player_id.toString() }">{{ r.first + " " + r.last }}</router-link></td>
@@ -30,7 +31,7 @@
 				</div>
 				<div class="dashboard-tile" v-if="view === 'skaters'">
 					<table>
-						<thead><tr><th colspan="3" class="left-aligned">Points, all situations</th></tr></thead>
+						<thead><tr><th colspan="3" class="left-aligned">Points</th></tr></thead>
 						<tbody>
 							<tr v-for="r in data[mode].ip">
 								<td class="left-aligned"><router-link :to="{ path: '/skaters/' + r.player_id.toString() }">{{ r.first + " " + r.last }}</router-link></td>
@@ -66,7 +67,7 @@
 				</div>
 				<div class="dashboard-tile" v-if="view === 'skaters'">
 					<table>
-						<thead><tr><th colspan="4" class="left-aligned">Own shooting percentage, all situations</th></tr></thead>
+						<thead><tr><th colspan="4" class="left-aligned">Shooting percentage</th></tr></thead>
 						<tbody>
 							<tr v-for="r in data[mode].i_sh_pct">
 								<td class="left-aligned"><router-link :to="{ path: '/skaters/' + r.player_id.toString() }">{{ r.first + " " + r.last }}</router-link></td>
@@ -74,12 +75,13 @@
 								<td class="left-aligned">{{ r.stats.all.ig }}/{{ r.stats.all.is }}</td>
 								<td>{{ (100 * r.sorted_i_sh_pct).toFixed(1) }}<span class="pct">%</span></td>
 							</tr>
+							<tr><td colspan="4" style="border: none; font-size: 12px;">10 shot minimum</td></tr>
 						</tbody>
 					</table>
 				</div>
 				<div class="dashboard-tile" v-if="view === 'teams'">
 					<table>
-						<thead><tr><th colspan="2" class="left-aligned">Goal differential, all situations</th></tr></thead>
+						<thead><tr><th colspan="2" class="left-aligned">Goal differential</th></tr></thead>
 						<tbody>
 							<tr v-for="r in data[mode].tm_g_diff">
 								<td class="left-aligned"><router-link :to="{ path: '/teams/' + r.team }">{{ r.team.toUpperCase() }}</router-link></td>
@@ -101,7 +103,7 @@
 				</div>
 				<div class="dashboard-tile" v-if="view === 'teams'">
 					<table>
-						<thead><tr><th colspan="2" class="left-aligned">Shooting percentage, all situations</th></tr></thead>
+						<thead><tr><th colspan="2" class="left-aligned">Shooting percentage</th></tr></thead>
 						<tbody>
 							<tr v-for="r in data[mode].tm_sh_pct">
 								<td class="left-aligned"><router-link :to="{ path: '/teams/' + r.team }">{{ r.team.toUpperCase() }}</router-link></td>
@@ -112,7 +114,7 @@
 				</div>
 				<div class="dashboard-tile" v-if="view === 'teams'">
 					<table>
-						<thead><tr><th colspan="2" class="left-aligned">Save percentage, all situations</th></tr></thead>
+						<thead><tr><th colspan="2" class="left-aligned">Save percentage</th></tr></thead>
 						<tbody>
 							<tr v-for="r in data[mode].tm_sv_pct">
 								<td class="left-aligned"><router-link :to="{ path: '/teams/' + r.team }">{{ r.team.toUpperCase() }}</router-link></td>
@@ -139,6 +141,11 @@
 	position: relative;
 }
 
+.dashboard-tile table th {
+	font-size: $base-font-size;
+	font-weight: 700;
+}
+
 /* When width is 740px or wider */
 @media (min-width: 740px) {
 	.dashboard-tile {
@@ -157,7 +164,7 @@
 var _ = require("lodash");
 var constants = require("./../app-constants.js");
 module.exports = {
-	name: "Highlights",
+	name: "Home",
 	data: function() {
 		return {
 			view: "skaters",
