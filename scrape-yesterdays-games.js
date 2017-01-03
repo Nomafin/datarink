@@ -112,6 +112,7 @@ function startScrape() {
 			request(reqUrl, function (error, response, body) {
 				if (!error && response.statusCode === 200) {
 					console.log("apicache cleared: " + body);
+					cacheApis();
 				} else {
 					console.log("Failed to clear apicache: " + error);
 				}
@@ -120,6 +121,34 @@ function startScrape() {
 			client.end();
 		}, 9000);
 	});
+}
+
+//
+// Request apis that we want cached
+//
+
+function cacheApis() {
+	setTimeout(function() {
+		console.log("Requesting apis to cache them...");
+		var apiRoot = "http://datarink.herokuapp.com/api/";
+		var endpoints = ["highlights", "players", "players/breakpoints"];
+		endpoints.forEach(function(endpoint) {
+			var route = apiRoot + endpoint;
+			request(
+				{	headers: { "x-no-compression": true },
+					uri: route,
+					method: "GET"
+				}, 
+				function (error, response, body) {
+					if (!error && response.statusCode === 200) {
+						console.log("Loaded " + route);
+					} else {
+						console.log("Failed to load " + route);
+					}
+				}
+			);
+		});
+	}, 6000);
 }
 
 //
