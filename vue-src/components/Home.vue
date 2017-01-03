@@ -6,7 +6,7 @@
 		</div>
 		<div class="loader" v-if="!data.recent"></div>
 		<div v-if="data.recent">
-			<div class="section section-control">
+			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
 					<button :class="view === 'skaters' ? 'selected' : null" @click="view = 'skaters'">Top skaters</button
 					><button :class="view === 'teams' ? 'selected' : null" @click="view = 'teams'">Top teams</button>
@@ -136,7 +136,7 @@
 	display: inline-block;
 	vertical-align: top;
 	box-sizing: border-box;
-	margin: $v-whitespace 0;
+	margin: 0 0 2*$v-whitespace 0;
 	width: 100%;
 	position: relative;
 }
