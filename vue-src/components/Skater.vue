@@ -204,7 +204,7 @@
 							<td class="left-aligned">{{ g.date }}</td>
 							<td class="left-aligned">{{ g.opp.toUpperCase() }}</td>
 							<td class="left-aligned">{{ g.result }}</td>
-							<td class="left-aligned" v-if="g.position === 'na'" colspan="9">Scratched or injured</td>
+							<td class="left-aligned" v-if="g.position === 'na'" colspan="10">Scratched or injured</td>
 							<td class="left-aligned" v-if="g.position !== 'na'">{{ g.stats[strengthSit].points }}</td>
 							<td v-if="g.position !== 'na'">{{ Math.round(g.stats[strengthSit].toi) }}</td>
 							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].ic }}</td>
