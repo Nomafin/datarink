@@ -324,11 +324,50 @@ function start() {
 	});
 
 	//
+	// Structure query results for team stats
+	//
+
+
+	function structureTeamStatRows(rows) {
+		var resultRows = [];
+		// Postgres aggregate functions like SUM return strings, so cast them as ints
+		// Calculate score-adjusted corsi
+		rows.forEach(function(r) {
+			["gp", "toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
+				r[col] = +r[col];
+			});
+			r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+			r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+		});
+		// Group rows by team: { "edm": [rows for edm], "tor": [rows for tor] }
+		rows = _.groupBy(rows, "team");
+		// Structure results as an array of objects: [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
+		Object.keys(rows).forEach(function(tricode) {
+			resultRows.push({
+				team: tricode,
+				gp: rows[tricode][0].gp,
+				data: rows[tricode]
+			});
+		});
+		// Set redundant properties in 'data' to be undefined - this removes them from the response
+		resultRows.forEach(function(t) {
+			t.data.forEach(function(r) {
+				r.team = undefined;
+				r.gp = undefined;
+			});
+		});
+		// Aggregate score situations
+		var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+		aggregateScoreSituations(resultRows, stats);
+		return resultRows;
+	}
+
+	//
 	// Structure query results for skater stats
 	//
 
 	function structureSkaterStatRows(rows) {
-
+		var resultRows = [];
 		// Postgres aggregate functions like SUM return strings, so cast them as ints
 		// Calculate score-adjusted corsi
 		rows.forEach(function(r) {
@@ -338,12 +377,9 @@ function start() {
 			r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
 			r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
 		});
-
 		// Group rows by playerId: { 123: [rows for player 123], 234: [rows for player 234] }
 		rows = _.groupBy(rows, "player_id");
-
 		// Structure results as an array of objects: [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
-		var resultRows = [];
 		Object.keys(rows).forEach(function(pId) {
 			// Get all teams and positions the player has been on, as well as games played
 			var positions = rows[pId][0].positions.split(",");	
@@ -358,7 +394,6 @@ function start() {
 				data: rows[pId]
 			});
 		});
-
 		// Set redundant properties in each player's data rows to be undefined - this removes them from the response
 		// Setting the properties to undefined is faster than deleting the properties completely
 		resultRows.forEach(function(p) {
@@ -370,7 +405,6 @@ function start() {
 				r.positions = undefined;
 			});
 		});
-
 		// Aggregate score situations
 		var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
 		aggregateScoreSituations(resultRows, stats);
@@ -784,79 +818,37 @@ function start() {
 		});
 
 		// Query for game results to calculate points - exclude playoff games
+		var resultRows;
 		var resultQueryString = "SELECT *"
 			+ " FROM game_results"
 			+ " WHERE game_id < 30000 AND season = $1";
-		var resultRows;
 		query(resultQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			resultRows = rows;
 			processResults();
 		});
 
-		// Process query results
+		// Process query results when both queries are finished
 		function processResults() {
-
-			// Only start processing once all queries are finished
 			if (!statRows || !resultRows) {
 				return;
 			}
-
-			// Postgres aggregate functions like SUM return strings, so cast them as ints
-			// Calculate score-adjusted corsi
-			statRows.forEach(function(r) {
-				["gp", "toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
-					r[col] = +r[col];
-				});
-				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
-				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
-			});
-
-			// Group rows by team: { "edm": [rows for edm], "tor": [rows for tor] }
-			statRows = _.groupBy(statRows, "team");
-
-			//
-			// Calculate the number of points won
-			//
-
+			// Structure stats
+			var teamStats = structureTeamStatRows(statRows);
 			// Initialize points counter
-			Object.keys(statRows).forEach(function(tricode) {
-				statRows[tricode].pts = 0;
+			teamStats.forEach(function(r) {
+				r.pts = 0;
 			});
-
 			// Loop through game_result rows and increment points
 			resultRows.forEach(function(r) {
-				var winner = r.a_final > r.h_final ? "a_team" : "h_team";
-				statRows[r[winner]].pts += 2;
+				var winner = r.a_final > r.h_final ? r.a_team : r.h_team;
+				teamStats.find(function(d) { return d.team === winner; }).pts += 2;
 				if (r.periods > 3) {
-					var loser = r.a_final < r.h_final ? "a_team" : "h_team";
-					statRows[r[loser]].pts += 1;
+					var loser = r.a_final < r.h_final ? r.a_team : r.h_team;
+					teamStats.find(function(d) { return d.team === loser; }).pts += 1;
 				}
 			});
-
-			// Structure results as an array of objects: [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
-			var result = { teams: [] };
-			Object.keys(statRows).forEach(function(tricode) {
-				result.teams.push({
-					team: tricode,
-					pts: statRows[tricode].pts,
-					gp: statRows[tricode][0].gp,
-					data: statRows[tricode]
-				});
-			});
-
-			// Set redundant properties in 'data' to be undefined - this removes them from the response
-			result.teams.forEach(function(t) {
-				t.data.forEach(function(r) {
-					r.team = undefined;
-					r.gp = undefined;
-				});
-			});
-
-			// Aggregate score situations
-			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
-			aggregateScoreSituations(result.teams, stats);
-			return response.status(200).send(result);
+			return response.status(200).send({ teams: teamStats });
 		}
 	});
 
@@ -868,64 +860,21 @@ function start() {
 
 		var tricode = request.params.tricode;
 		var season = 2016;
-
-		var teams = [];
 		var result = {};
 
-		queryBreakpoints();
-		queryHistory();
-
 		//
-		// Get the specified team's data and calculate breakpoints
+		// Calculate breakpoints
 		//
 
-		var statRows;
-		function queryBreakpoints() {
-			query(teamStatQueryString, [season], function(err, rows) {
-				if (err) { return response.status(500).send("Error running query: " + err); }
-				statRows = rows;
-				getBreakpoints();
-			});
-		}
+		query(teamStatQueryString, [season], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			getBreakpoints(rows);
+		});
 
-		// Process query results
-		function getBreakpoints() {
-
-			// Postgres aggregate functions like SUM return strings, so cast them as ints
-			// Calculate score-adjusted corsi
-			statRows.forEach(function(r) {
-				["toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
-					r[col] = +r[col];
-				});
-				r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
-				r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
-			});
-
-			// Group rows by team: { "edm": [rows for edm], "tor": [rows for tor] }
-			statRows = _.groupBy(statRows, "team");
-
-			// Structure results as an array of objects: [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
-			Object.keys(statRows).forEach(function(tcode) {
-				teams.push({
-					team: tcode,
-					gp: statRows[tcode][0].gp,
-					data: statRows[tcode]
-				});
-
-				// Store a reference to the specified team's data. Remove redundant properties to reduce response size
-				if (tricode === tcode) {
-					result.team = teams[teams.length - 1];
-					result.team.data.forEach(function(d) {
-						d.team = undefined;
-						d.gp = undefined;
-					});
-				}
-			});
-
-			// Aggregate score situations
-			var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
-			aggregateScoreSituations(teams, stats);
-
+		function getBreakpoints(rows) {
+			var teams = structureTeamStatRows(rows);
+			// Include the specified team's data in the response
+			result.team = teams.find(function(d) { return d.team === tricode; });
 			// Get breakpoints
 			result.breakpoints = {};
 			var team = teams.find(function(d) { return d.team === tricode; });
@@ -944,7 +893,6 @@ function start() {
 				// Store the team's datapoint
 				result.breakpoints[s].self = getDatapoint(team, s);
 			});
-
 			returnResult();
 		}
 
@@ -971,28 +919,20 @@ function start() {
 		}
 
 		//
-		// Query and process game-by-game history
+		// Get game-by-game history and calculate points
 		//
 
-		var historyRows;
-		function queryHistory() {
-			var queryStr = "SELECT s.game_id, s.team, r.h_team, r.a_team, r.h_final, r.a_final, r.periods, r.datetime AT TIME ZONE 'America/New_York' AS datetime, s.strength_sit, s.score_sit, s.toi,"
-					+ " s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
-				+ " FROM game_stats AS s"
-				+ " LEFT JOIN game_results AS r"
-					+ " ON s.season = r.season AND s.game_id = r.game_id"
-				+ " WHERE s.season = $1 AND s.team = $2 AND s.player_id < 2";
-			query(queryStr, [season, tricode], function(err, rows) {
-				if (err) { return response.status(500).send("Error running query: " + err); }
-				historyRows = rows;
-				result.history = getHistoryResults(historyRows);
-				getPoints();
-			});
-		}
+		var queryStr = "SELECT s.game_id, s.team, r.h_team, r.a_team, r.h_final, r.a_final, r.periods, r.datetime AT TIME ZONE 'America/New_York' AS datetime, s.strength_sit, s.score_sit, s.toi,"
+				+ " s.gf, s.ga, s.sf, s.sa, (s.sf + s.bsf + s.msf) AS cf, (s.sa + s.bsa + s.msa) AS ca"
+			+ " FROM game_stats AS s"
+			+ " LEFT JOIN game_results AS r"
+				+ " ON s.season = r.season AND s.game_id = r.game_id"
+			+ " WHERE s.season = $1 AND s.team = $2 AND s.player_id < 2";
 
-		// Get the number of points won by the team
-		// We store the points outside of result.teams for now because result.teams might not have been created yet
-		function getPoints() {
+		query(queryStr, [season, tricode], function(err, rows) {
+			if (err) { return response.status(500).send("Error running query: " + err); }
+			result.history = getHistoryResults(rows);
+			// result.team might not exist yet, so store points as a sibling property
 			result.points = 0;
 			result.history.filter(function(r) { return r.game_id < 30000; })
 				.forEach(function(r) {
@@ -1003,11 +943,14 @@ function start() {
 					}
 				});
 			returnResult();
-		}
+		});
 
+		//
+		// When all results are ready, reorganize the 'points' property and send response
+		//
+		
 		function returnResult() {
-			if (result.team && result.history && result.breakpoints && result.points) {
-				// Reorganize the json before responding
+			if (result.team && result.history && result.breakpoints && result.points) {	
 				result.team.points = result.points;
 				result.points = undefined;
 				return response.status(200).send(result);
