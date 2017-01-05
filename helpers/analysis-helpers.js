@@ -1,0 +1,231 @@
+"use strict"
+
+//
+// analysis-helpers.js contains common functions for formatting and analyzing datarink query results
+//
+
+var _ = require("lodash");
+var constants = require("./analysis-constants.json");
+
+var exports = {};
+
+// Each team, player, or game object originally has a data property that contains an array of results, aggregated by strength and score situations:
+//		data: [ {score_sit: 0, strength_sit: 'pp', cf: 10, ... }, {score_sit: 0, strength_sit: 'sh', cf: 5, ... } ]
+// aggregateScoreSituations() will create a new property 'stats' that aggregates the original data by score situation, and uses the strength situation as keys
+//		stats: { pp: { cf: 20, ... }, sh: { cf: 10, ... } }
+// 'list' is an array of objects (teams or players)
+// 'stats' is an array of property names to be summed
+exports.aggregateScoreSituations = function(list, stats) {
+
+	// For each strength situation, sum stats for all score situations
+	list.forEach(function(p) {
+		p.stats = {};											// Store the output totals in p.stats
+		p.data = _.groupBy(p.data, "strength_sit");				// Group the original rows by strength_sit
+		// Loop through each strength_sit and sum all rows
+		["ev5", "pp", "sh", "noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
+			p.stats[strSit] = {};
+			stats.forEach(function(stat) {
+				p.stats[strSit][stat] = _.sumBy(p.data[strSit], stat);
+			});
+			// Calculate on-ice save percentage
+			p.stats[strSit].sv_pct = p.stats[strSit].sa === 0 ? 0 : 1 - (p.stats[strSit].ga / p.stats[strSit].sa);
+		});
+		p.data = undefined; // Remove the original data from the response
+	});
+	// Create an object for "all" strength situations
+	list.forEach(function(p) {
+		p.stats.all = {};
+		stats.forEach(function(stat) {
+			p.stats.all[stat] = 0;
+			["ev5", "pp", "sh", "noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
+				p.stats.all[stat] += p.stats[strSit][stat];
+			});
+		});
+		// Calculate on-ice save percentage - exclude ga and sa while the player/team's own goalie is pulled
+		var noOwnG_ga = p.stats.noOwnG ? p.stats.noOwnG.ga : 0;
+		var noOwnG_sa = p.stats.noOwnG ? p.stats.noOwnG.sa : 0;
+		p.stats.all.sv_pct = p.stats.all.sa - noOwnG_sa === 0 ? 0 : 1 - ((p.stats.all.ga - noOwnG_ga) / (p.stats.all.sa - noOwnG_sa));
+		// Remove unnecessary strength_sits from response
+		["noOwnG", "noOppG", "penShot", "other"].forEach(function(strSit) {
+			p.stats[strSit] = undefined;
+		})
+	});
+};
+
+// 'historyRows' is an array of game_stats rows for particular player or team (joined with game_results)
+// The output 'historyResults' is ready to be returned in the api response
+exports.getHistoryResults = function(historyRows) {
+
+	// Calculate score-adjusted corsi
+	historyRows.forEach(function(r) {
+		r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+		r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+	});
+
+	// Group rows by game_id (each game_id has rows for different strength and score situations): { 123: [rows for game 123], 234: [rows for game 234] }
+	historyRows = _.groupBy(historyRows, "game_id");
+
+	// Structure results as an array of objects: [ { game }, { game } ]
+	var historyResults = [];
+	for (var gId in historyRows) {
+		if (!historyRows.hasOwnProperty(gId)) {
+			continue;
+		}
+
+		// Store game results
+		var team = historyRows[gId][0].team;
+		var isHome = team === historyRows[gId][0].h_team ? true : false;
+		var opp = isHome ? historyRows[gId][0].a_team : historyRows[gId][0].h_team;
+		var teamFinal = historyRows[gId][0].h_final;
+		var oppFinal = historyRows[gId][0].a_final;
+		if (!isHome) {
+			var tmp = teamFinal;
+			teamFinal = oppFinal;
+			oppFinal = tmp;
+		}
+		historyResults.push({
+			game_id: +gId,
+			team: team,
+			is_home: isHome,
+			opp: opp,
+			team_final: teamFinal,
+			opp_final: oppFinal,
+			periods: historyRows[gId][0].periods,
+			datetime: historyRows[gId][0].datetime,
+			position: historyRows[gId][0].position,
+			data: historyRows[gId]
+		});
+	}
+
+	// Remove redundant properties from each game's data rows
+	historyResults.forEach(function(g) {
+		g.data.forEach(function(r) {
+			r.game_id = undefined,
+			r.datetime = undefined,
+			r.position = undefined,
+			r.team = undefined,
+			r.a_team = undefined,
+			r.h_team = undefined,
+			r.a_final = undefined,
+			r.h_final = undefined
+		});
+	});
+
+	// Aggregate score situations for each game
+	var stats = ["toi", "ig", "ia1", "ia2", "ic", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+	exports.aggregateScoreSituations(historyResults, stats);
+	return historyResults;
+};
+
+// Get the most-played position (f or d) from an array of positions [l,l,c,c,c]
+exports.isForD = function(positions) {
+	var position;
+	var counts = { fwd: 0, def: 0, last: "" };
+	positions.forEach(function(d) {
+		if (d === "c" || d === "l" || d === "r") {
+			counts.fwd++;
+			counts.last = "f";
+		} else if (d === "d") {
+			counts.def++;
+			counts.last = "d";
+		}
+	});
+	if (counts.fwd > counts.def) {
+		position = "f";
+	} else if (counts.def > counts.fwd) {
+		position = "d";
+	} else if (counts.def === counts.fwd) {
+		position = counts.last;
+	}
+	return position;	
+};
+
+// 'timeranges' is a string: "start-end;start-end;..."
+// First split the string into an array of intervals: ["start-end", "start-end", ...]
+// Then convert each interval into an array of seconds played: [[start, start+1, start+2,..., end], [start, start+1, start+2,..., end]]
+// Then flatten the nested arrays: [1,2,3,4,10,11,12,13,...]
+exports.getTimepointArray = function(timeranges) {
+	timeranges = timeranges
+		.split(";")					
+		.map(function(interval) {
+			var times = interval.split("-");
+			return _.range(+times[0], +times[1]);
+		});
+	return [].concat.apply([], timeranges);
+};
+
+// 'f_or_d' is 'f' or 'd'
+// 'players' is an array of player objects: [ { player_id: ... }, { player_id: ... }] - contains player properties used to generate lines
+// 'lines' is an array of player id arrays: [ [111, 222, 333], [222, 333, 444] ] - we'll loop through these lines and increment the stats
+// 'lineResults' is an array of line objects that will be send in the api response
+exports.initLine = function(f_or_d, players, lines, lineResults) {
+	var pIds = [];
+	var firsts = [];
+	var lasts = [];
+	// Sort player ids in ascending order
+	players = players.sort(function(a, b) { return a.player_id - b.player_id; });
+	players.forEach(function(lm) {
+		pIds.push(lm.player_id);
+		firsts.push(lm.first);
+		lasts.push(lm.last);
+	});
+	// Record line as playing in the period
+	if (!lines.find(function(d) { return d.toString() === pIds.toString(); })) {
+		lines.push(pIds);
+	}
+	// Check if the combination already exists before creating the object
+	if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
+		lineResults.push({
+			player_ids: pIds,
+			firsts: firsts,
+			lasts: lasts,
+			f_or_d: f_or_d,
+			all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+			ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+			pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+			sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
+		});
+	}
+};
+
+// 'lineResults' is an array of line objects used to store results
+// 'combos' is an array of player id arrays to loop through: [ [111, 222, 333], [111, 222, 444] ]
+// 'ev' is the event object
+// 'isHome' is whether the team or player is the home team: true/false
+// 'suffix' is whether the event was 'f' (for) or 'a' (against) the team or player
+exports.incrementLineShotStats = function(lineResults, combos, ev, isHome, suffix) {
+	// Get strength situation for the team
+	var strSit;
+	if (ev.a_g && ev.h_g) {
+		if (ev.a_skaters === 5 && ev.h_skaters === 5) {
+			strSit = "ev5";
+		} else if (ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) {
+			strSit = isHome ? "sh" : "pp";
+		} else if (ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3) {
+			strSit = isHome ? "pp" : "sh";
+		}
+	}
+	// Get the score situation and score adjustment factor for the player
+	var scoreSit = isHome ? Math.max(-3, Math.min(3, ev.h_score - ev.a_score)) : 
+		Math.max(-3, Math.min(3, ev.a_score - ev.h_score));
+	// Increment stats for each combo for all situations, and ev/sh/pp
+	combos.forEach(function(c) {
+		c.sort(function(a, b) { return a - b; });
+		var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
+		var sits = strSit ? ["all", strSit] : ["all"];
+		sits.forEach(function(sit) {
+			lineObj[sit]["c" + suffix]++;
+			if (suffix === "f") {
+				lineObj[sit]["cf_adj"] += constants.cfWeights[scoreSit];
+			} else if (suffix === "a") {
+				lineObj[sit]["ca_adj"] += constants.cfWeights[-1 * scoreSit];
+			}
+			if (ev.type === "goal") {
+				lineObj[sit]["g" + suffix]++;
+			}
+		})
+	});	
+};
+
+module.exports = exports;
+
