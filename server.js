@@ -3,7 +3,6 @@
 var pg = require("pg");
 var _ = require("lodash");
 var url = require("url");
-var auth = require("http-auth");
 var throng = require("throng");
 var compression = require("compression");
 var apicache = require("apicache");
@@ -56,18 +55,7 @@ function start() {
 		}
 		return compression.filter(request, response);
 	}
-
-	// Add user authentication if AUTHENTICATION isn't set to 'off'
-	if (process.env.AUTHENTICATION.toLowerCase() !== "off") {
-		var basic = auth.basic(
-			{ },
-			(username, password, callback) => { 
-		        callback(username === process.env.AUTHENTICATION_USER && password === process.env.AUTHENTICATION_PASSWORD);
-		    }
-		);
-		server.use(auth.connect(basic));
-	}
-
+	
 	// Serve static files, including the Vue application in public/index.html
 	server.use(express.static("public"));
 	
