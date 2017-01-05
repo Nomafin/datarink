@@ -4,9 +4,9 @@ var throng = require("throng");
 var compression = require("compression");
 var apicache = require("apicache");
 var _ = require("lodash");
-var constants = require("./analysis-constants.json");
-var combinations = require("./combinations");
-var db = require("./db");
+var constants = require("./helpers/analysis-constants.json");
+var combinations = require("./helpers/combinations");
+var db = require("./helpers/db");
 
 var PORT = process.env.PORT || 5000;
 var WORKERS = process.env.WEB_CONCURRENCY || 1;
@@ -172,7 +172,8 @@ function start() {
 			skaters = _.groupBy(skaters, "player_id");
 			teams = _.groupBy(teams, "team");
 
-			// Structure skater data as an array of objects: [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
+			// Structure skater data as an array of objects:
+			// [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
 			var tmpSkaters = [];
 			Object.keys(skaters).forEach(function(pId) {
 				// Combine all the string_agg(game_id) values: [ [111, 222], [111], [111, 222] ] 
@@ -195,7 +196,8 @@ function start() {
 			});
 			skaters = tmpSkaters;
 
-			// Structure team data as an array of objects: [ { team: tor, data: [rows for tor] }, { team: edm, data: [rows for edm] } ]
+			// Structure team data as an array of objects:
+			// [ { team: tor, data: [rows for tor] }, { team: edm, data: [rows for edm] } ]
 			var tmpTeams = [];
 			Object.keys(teams).forEach(function(tricode) {
 				var gameIds = teams[tricode].map(function(d) {
