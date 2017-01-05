@@ -1,13 +1,12 @@
 "use strict"
 
-var pg = require("pg");
-var _ = require("lodash");
-var url = require("url");
 var throng = require("throng");
 var compression = require("compression");
 var apicache = require("apicache");
+var _ = require("lodash");
 var constants = require("./analysis-constants.json");
 var combinations = require("./combinations");
+var db = require("./db");
 
 var PORT = process.env.PORT || 5000;
 var WORKERS = process.env.WEB_CONCURRENCY || 1;
@@ -18,28 +17,7 @@ throng({
 	start: start
 });
 
-// By default, node-postgres interprets incoming timestamps in the local timezone
-// Force node-postgres to interpret the incoming timestamps without any offsets (since our queries will select timestamps in the desired timezone)
-pg.types.setTypeParser(1114, function(stringValue) {
-	return new Date(Date.parse(stringValue + "+0000"));
-});
-
 function start() {
-	// Configure and initialize the Postgres connection pool
-	// Get the DATABASE_URL config var and parse it into its components
-	var params = url.parse(process.env.HEROKU_POSTGRESQL_COPPER_URL);
-	var authParams = params.auth.split(":");
-	var pgConfig = {
-		user: authParams[0],
-		password: authParams[1],
-		host: params.hostname,
-		port: params.port,
-		database: params.pathname.split("/")[1],
-		ssl: true,
-		max: 16 / WORKERS,			// Maximum number of clients in the pool
-		idleTimeoutMillis: 30000	// Duration a client can remain idle before being closed
-	};
-	var pool = new pg.Pool(pgConfig);
 
 	// Create an Express server
 	var express = require("express");
@@ -55,7 +33,7 @@ function start() {
 		}
 		return compression.filter(request, response);
 	}
-	
+
 	// Serve static files, including the Vue application in public/index.html
 	server.use(express.static("public"));
 	
@@ -143,7 +121,7 @@ function start() {
 				+ " LEFT JOIN game_rosters AS p"
 				+ " ON s.season = p.season AND s.game_id = p.game_id AND s.player_id = p.player_id"
 				+ " GROUP BY p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit";
-			query(queryStr, [season], function(err, rows) {
+			db.query(queryStr, [season], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				processRows(rows, "recent");
 			});
@@ -161,7 +139,7 @@ function start() {
 				+ " ON s.season = p.season AND s.game_id = p.game_id AND s.player_id = p.player_id"
 				+ " WHERE s.season = $1"
 				+ " GROUP BY p.first, p.last, p.position, s.player_id, s.team, s.strength_sit, s.score_sit";
-			query(queryStr, [season], function(err, rows) {
+			db.query(queryStr, [season], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				processRows(rows, "season");
 			});
@@ -405,7 +383,7 @@ function start() {
 
 	server.get("/api/players/", cache("24 hours"), function(request, response) {
 		var season = 2016;
-		query(skaterStatQueryString, [season], function(err, rows) {
+		db.query(skaterStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			var result = { players: structureSkaterStatRows(rows) };
 			response.status(200).send(result);
@@ -419,7 +397,7 @@ function start() {
 	server.get("/api/players/breakpoints", cache("24 hours"), function(request, response) {
 		var season = 2016;
 		var result = { f_breakpoints: {}, d_breakpoints: {} };
-		query(skaterStatQueryString, [season], function(err, rows) {
+		db.query(skaterStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			getBreakpoints(rows);
 		});
@@ -529,7 +507,7 @@ function start() {
 
 		var statRows;
 		function queryStats() {
-			query(statQuery, [season, pId], function(err, rows) {
+			db.query(statQuery, [season, pId], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				statRows = rows;
 				getStats();
@@ -586,7 +564,7 @@ function start() {
 				+ " LEFT JOIN game_results AS g"
 					+ " ON r.season = g.season AND r.game_id = g.game_id"
 				+ " WHERE r.season = $1 AND r.player_id = $2"
-			query(queryStr, [season, pId], function(err, rows) {
+			db.query(queryStr, [season, pId], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				historyRows = rows;
 				result.history = getHistoryResults(historyRows);
@@ -644,7 +622,7 @@ function start() {
 				+ " ) AS sh"
 				+ " ON p.game_id = sh.game_id AND p.team = sh.team"
 				+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
-			query(queryStr, [season, pId], function(err, rows) {
+			db.query(queryStr, [season, pId], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				shiftRows = rows;
 				getLineResults();
@@ -656,7 +634,7 @@ function start() {
 				+ " LEFT JOIN game_strength_situations AS s"
 				+ " ON p.season = s.season AND p.game_id = s.game_id AND p.team = s.team" 
 				+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
-			query(queryStr, [season, pId], function(err, rows) {
+			db.query(queryStr, [season, pId], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				strSitRows = rows;
 				getLineResults();
@@ -671,7 +649,7 @@ function start() {
 					+ " a_s1 = $2 OR a_s2 = $2 OR a_s3 = $2 OR a_s4 = $2 OR a_s5 = $2 OR a_s6 = $2 OR a_g = $2 OR"
 					+ " h_s1 = $2 OR h_s2 = $2 OR h_s3 = $2 OR h_s4 = $2 OR h_s5 = $2 OR h_s6 = $2 OR h_g = $2"
 				+ ")"
-			query(queryStr, [season, pId], function(err, rows) {
+			db.query(queryStr, [season, pId], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				eventRows = rows;
 				getLineResults();
@@ -799,7 +777,7 @@ function start() {
 
 		// Query for stats by game
 		var statRows;
-		query(teamStatQueryString, [season], function(err, rows) {
+		db.query(teamStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			statRows = rows;
 			processResults();
@@ -810,7 +788,7 @@ function start() {
 		var resultQueryString = "SELECT *"
 			+ " FROM game_results"
 			+ " WHERE game_id < 30000 AND season = $1";
-		query(resultQueryString, [season], function(err, rows) {
+		db.query(resultQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			resultRows = rows;
 			processResults();
@@ -854,7 +832,7 @@ function start() {
 		// Calculate breakpoints
 		//
 
-		query(teamStatQueryString, [season], function(err, rows) {
+		db.query(teamStatQueryString, [season], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			getBreakpoints(rows);
 		});
@@ -917,7 +895,7 @@ function start() {
 				+ " ON s.season = r.season AND s.game_id = r.game_id"
 			+ " WHERE s.season = $1 AND s.team = $2 AND s.player_id < 2";
 
-		query(queryStr, [season, tricode], function(err, rows) {
+		db.query(queryStr, [season, tricode], function(err, rows) {
 			if (err) { return response.status(500).send("Error running query: " + err); }
 			result.history = getHistoryResults(rows);
 			// result.team might not exist yet, so store points as a sibling property
@@ -975,7 +953,7 @@ function start() {
 				+ " ) AS r"
 				+ " ON s.player_id = r.player_id"
 				+ " WHERE s.season = $1 AND s.team = $2";
-			query(queryStr, [season, tricode], function(err, rows) {
+			db.query(queryStr, [season, tricode], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				shiftRows = rows;
 				getLineResults();
@@ -985,7 +963,7 @@ function start() {
 			var queryStr = "SELECT *"
 				+ " FROM game_strength_situations"
 				+ " WHERE season = $1 AND team = $2";
-			query(queryStr, [season, tricode], function(err, rows) {
+			db.query(queryStr, [season, tricode], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				strSitRows = rows;
 				getLineResults();
@@ -998,7 +976,7 @@ function start() {
 				+ " ON e.season = r.season AND e.game_id = r.game_id"
 				+ " WHERE (e.type = 'goal' OR e.type = 'shot' OR e.type = 'missed_shot' OR e.type = 'blocked_shot')"
 					+ " AND e.season = $1 AND (r.a_team = $2 OR r.h_team = $2)";
-			query(queryStr, [season, tricode], function(err, rows) {
+			db.query(queryStr, [season, tricode], function(err, rows) {
 				if (err) { return response.status(500).send("Error running query: " + err); }
 				eventRows = rows;
 				getLineResults();
@@ -1125,20 +1103,6 @@ function start() {
 		if (error) { throw error; }
 		console.log("Listening on " + PORT);
 	});
-
-	// Query the database and return result rows in json format
-	// 'values' is an array of values for parameterized queries
-	function query(text, values, cb) {
-		pool.connect(function(err, client, done) {
-			client.query(text, values, function(err, result) {
-				done();
-				// result.rows is is an array of Anonymous objects
-				// Convert it to json using stringify and parse before returning it
-				var returnedRows = err ? [] : JSON.parse(JSON.stringify(result.rows));
-				cb(err, returnedRows);
-			});
-		});
-	}
 }
 
 // Get the most-played position (f or d) from an array of positions [l,l,c,c,c]
