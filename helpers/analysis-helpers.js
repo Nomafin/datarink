@@ -140,6 +140,93 @@ exports.isForD = function(positions) {
 	return position;	
 };
 
+//
+// Structure query results for skater stats
+//
+
+exports.structureSkaterStatRows = function(rows) {
+	var resultRows = [];
+	// Postgres aggregate functions like SUM return strings, so cast them as ints
+	// Calculate score-adjusted corsi
+	rows.forEach(function(r) {
+		["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
+			r[col] = +r[col];
+		});
+		r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+		r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+	});
+	// Group rows by playerId: { 123: [rows for player 123], 234: [rows for player 234] }
+	rows = _.groupBy(rows, "player_id");
+	// Structure results as an array of objects: [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
+	Object.keys(rows).forEach(function(pId) {
+		// Get all teams and positions the player has been on, as well as games played
+		var positions = rows[pId][0].positions.split(",");	
+		resultRows.push({
+			player_id: +pId,
+			teams: _.uniqBy(rows[pId], "team").map(function(d) { return d.team; }),
+			gp: positions.length,
+			positions: _.uniq(positions),
+			f_or_d: exports.isForD(positions),
+			first: rows[pId][0].first,
+			last: rows[pId][0].last,
+			data: rows[pId]
+		});
+	});
+	// Set redundant properties in each player's data rows to be undefined - this removes them from the response
+	// Setting the properties to undefined is faster than deleting the properties completely
+	resultRows.forEach(function(p) {
+		p.data.forEach(function(r) {
+			r.team = undefined;
+			r.player_id = undefined;
+			r.first = undefined;
+			r.last = undefined;
+			r.positions = undefined;
+		});
+	});
+	// Aggregate score situations
+	var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
+	exports.aggregateScoreSituations(resultRows, stats);
+	return resultRows;
+};
+
+//
+// Structure query results for team stats
+//
+
+exports.structureTeamStatRows = function(rows) {
+	var resultRows = [];
+	// Postgres aggregate functions like SUM return strings, so cast them as ints
+	// Calculate score-adjusted corsi
+	rows.forEach(function(r) {
+		["gp", "toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
+			r[col] = +r[col];
+		});
+		r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
+		r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
+	});
+	// Group rows by team: { "edm": [rows for edm], "tor": [rows for tor] }
+	rows = _.groupBy(rows, "team");
+	// Structure results as an array of objects: [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
+	Object.keys(rows).forEach(function(tricode) {
+		resultRows.push({
+			team: tricode,
+			gp: rows[tricode][0].gp,
+			data: rows[tricode]
+		});
+	});
+	// Set redundant properties in 'data' to be undefined - this removes them from the response
+	resultRows.forEach(function(t) {
+		t.data.forEach(function(r) {
+			r.team = undefined;
+			r.gp = undefined;
+		});
+	});
+	// Aggregate score situations
+	var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
+	exports.aggregateScoreSituations(resultRows, stats);
+	return resultRows;
+};
+
 // 'timeranges' is a string: "start-end;start-end;..."
 // First split the string into an array of intervals: ["start-end", "start-end", ...]
 // Then convert each interval into an array of seconds played: [[start, start+1, start+2,..., end], [start, start+1, start+2,..., end]]

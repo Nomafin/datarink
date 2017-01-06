@@ -34,55 +34,6 @@ var skaterStatQueryString = "SELECT result1.*, result2.positions"
 	+ " ON result1.player_id = result2.player_id";
 
 //
-// Structure query results for skater stats
-//
-
-function structureSkaterStatRows(rows) {
-	var resultRows = [];
-	// Postgres aggregate functions like SUM return strings, so cast them as ints
-	// Calculate score-adjusted corsi
-	rows.forEach(function(r) {
-		["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off"].forEach(function(col) {
-			r[col] = +r[col];
-		});
-		r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
-		r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
-	});
-	// Group rows by playerId: { 123: [rows for player 123], 234: [rows for player 234] }
-	rows = _.groupBy(rows, "player_id");
-	// Structure results as an array of objects: [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
-	Object.keys(rows).forEach(function(pId) {
-		// Get all teams and positions the player has been on, as well as games played
-		var positions = rows[pId][0].positions.split(",");	
-		resultRows.push({
-			player_id: +pId,
-			teams: _.uniqBy(rows[pId], "team").map(function(d) { return d.team; }),
-			gp: positions.length,
-			positions: _.uniq(positions),
-			f_or_d: ah.isForD(positions),
-			first: rows[pId][0].first,
-			last: rows[pId][0].last,
-			data: rows[pId]
-		});
-	});
-	// Set redundant properties in each player's data rows to be undefined - this removes them from the response
-	// Setting the properties to undefined is faster than deleting the properties completely
-	resultRows.forEach(function(p) {
-		p.data.forEach(function(r) {
-			r.team = undefined;
-			r.player_id = undefined;
-			r.first = undefined;
-			r.last = undefined;
-			r.positions = undefined;
-		});
-	});
-	// Aggregate score situations
-	var stats = ["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca", "cf_off", "ca_off", "cf_adj", "ca_adj"];
-	ah.aggregateScoreSituations(resultRows, stats);
-	return resultRows;
-}
-
-//
 // Handle GET request for players list
 //
 
@@ -90,7 +41,7 @@ router.get("/", cache("24 hours"), function(request, response) {
 	var season = 2016;
 	db.query(skaterStatQueryString, [season], function(err, rows) {
 		if (err) { return response.status(500).send("Error running query: " + err); }
-		var result = { players: structureSkaterStatRows(rows) };
+		var result = { players: ah.structureSkaterStatRows(rows) };
 		response.status(200).send(result);
 	});
 });
@@ -107,7 +58,7 @@ router.get("/breakpoints", cache("24 hours"), function(request, response) {
 		getBreakpoints(rows);
 	});
 	function getBreakpoints(rows) {
-		var players = structureSkaterStatRows(rows);
+		var players = ah.structureSkaterStatRows(rows);
 		["f", "d"].forEach(function(f_or_d) {
 			["all_toi", "ev5_cf_adj_per60", "ev5_ca_adj_per60", "ev5_p1_per60", "pp_p1_per60"].forEach(function(s) {
 				result[f_or_d + "_breakpoints"][s] = [];

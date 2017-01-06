@@ -26,44 +26,6 @@ var teamStatQueryString = "SELECT result1.*, result2.gp"
 	+ " ON result1.team = result2.team";
 
 //
-// Structure query results for team stats
-//
-
-function structureTeamStatRows(rows) {
-	var resultRows = [];
-	// Postgres aggregate functions like SUM return strings, so cast them as ints
-	// Calculate score-adjusted corsi
-	rows.forEach(function(r) {
-		["gp", "toi", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
-			r[col] = +r[col];
-		});
-		r.cf_adj = constants.cfWeights[r.score_sit] * r.cf;
-		r.ca_adj = constants.cfWeights[-1 * r.score_sit] * r.ca;
-	});
-	// Group rows by team: { "edm": [rows for edm], "tor": [rows for tor] }
-	rows = _.groupBy(rows, "team");
-	// Structure results as an array of objects: [ { team: "edm", data: [rows for edm] }, { team: "tor", data: [rows for tor] } ]
-	Object.keys(rows).forEach(function(tricode) {
-		resultRows.push({
-			team: tricode,
-			gp: rows[tricode][0].gp,
-			data: rows[tricode]
-		});
-	});
-	// Set redundant properties in 'data' to be undefined - this removes them from the response
-	resultRows.forEach(function(t) {
-		t.data.forEach(function(r) {
-			r.team = undefined;
-			r.gp = undefined;
-		});
-	});
-	// Aggregate score situations
-	var stats = ["toi", "gf", "ga", "sf", "sa", "cf", "ca", "cf_adj", "ca_adj"];
-	ah.aggregateScoreSituations(resultRows, stats);
-	return resultRows;
-}
-
-//
 // Handle GET request for teams list
 //
 
@@ -96,7 +58,7 @@ router.get("/", function(request, response) {
 			return;
 		}
 		// Structure stats
-		var teamStats = structureTeamStatRows(statRows);
+		var teamStats = ah.structureTeamStatRows(statRows);
 		// Initialize points counter
 		teamStats.forEach(function(r) {
 			r.pts = 0;
@@ -134,7 +96,7 @@ router.get("/:tricode", function(request, response) {
 	});
 
 	function getBreakpoints(rows) {
-		var teams = structureTeamStatRows(rows);
+		var teams = ah.structureTeamStatRows(rows);
 		// Include the specified team's data in the response
 		result.team = teams.find(function(d) { return d.team === tricode; });
 		// Get breakpoints
