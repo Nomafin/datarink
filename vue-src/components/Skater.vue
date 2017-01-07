@@ -186,6 +186,7 @@
 					<thead>
 						<tr>
 							<th class="left-aligned">Date</th>
+							<th class="left-aligned">Team</th>
 							<th class="left-aligned">Opponent</th>
 							<th class="left-aligned">Result</th>
 							<th class="left-aligned">Points</th>
@@ -203,6 +204,7 @@
 					<tbody>
 						<tr v-for="g in data.history">
 							<td class="left-aligned">{{ g.date }}</td>
+							<td class="left-aligned">{{ g.team.toUpperCase() }}</td>
 							<td class="left-aligned">{{ g.opp.toUpperCase() }}</td>
 							<td class="left-aligned">{{ g.result }}</td>
 							<td class="left-aligned" v-if="g.position === 'na'" colspan="10">Scratched or injured</td>
