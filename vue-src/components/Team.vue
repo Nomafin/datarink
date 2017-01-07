@@ -27,25 +27,31 @@
 					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Team</button
 					><button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button>
 				</div
-				><select v-model="strengthSit">
-					<option value="all">All situations</option>
-					<option value="ev5">5 on 5</option>
-					<option value="sh">Short handed</option>
-					<option value="pp">Power play</option>
-				</select>
+				><div class="select-container">
+					<select v-model="strengthSit">
+						<option value="all">All situations</option>
+						<option value="ev5">5 on 5</option>
+						<option value="sh">Short handed</option>
+						<option value="pp">Power play</option>
+					</select>
+				</div>
 			</div>
 			<div class="section section-table" v-show="tabs.active === 'lines'">
 				<div class="loader" v-if="data.team && !lineData.lines"></div>
-				<select v-if="lineData.lines" v-model="search.positions">
-					<option value="all">All lines</option>
-					<option value="f">Forwards</option>
-					<option value="d">Defense</option>
-				</select
+				<div class="select-container">
+					<select v-if="lineData.lines" v-model="search.positions">
+						<option value="all">All lines</option>
+						<option value="f">Forwards</option>
+						<option value="d">Defense</option>
+					</select>
+				</div
 				><div v-if="lineData.lines" class="search-with-menu" style="margin-bottom: 24px;">
-					<select v-model="search.condition">
-						<option value="includes">With:</option>
-						<option value="excludes">Without:</option>
-					</select
+					<div class="select-container">
+						<select v-model="search.condition">
+							<option value="includes">With</option>
+							<option value="excludes">Without</option>
+						</select>
+					</div
 					><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
 				</div>
 				<table v-if="lineData.lines">

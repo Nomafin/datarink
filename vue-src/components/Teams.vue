@@ -5,12 +5,14 @@
 			<h2>2016-2017</h2>
 		</div>
 		<div class="section section-control section-control-table" v-if="teams">
-			<select v-model="strengthSit">
-				<option value="all">All situations</option>
-				<option value="ev5">5 on 5</option>
-				<option value="sh">Short handed</option>
-				<option value="pp">Power play</option>
-			</select
+			<div class="select-container">
+				<select v-model="strengthSit">
+					<option value="all">All situations</option>
+					<option value="ev5">5 on 5</option>
+					<option value="sh">Short handed</option>
+					<option value="pp">Power play</option>
+				</select>
+			</div
 			><button type="button" class="toggle-button" @click="visibleColumns.onIceGoals = !visibleColumns.onIceGoals"
 				:class="{ 'toggle-button-checked': visibleColumns.onIceGoals }">
 				<span class="checkbox-container">
@@ -25,7 +27,7 @@
 				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
-				</span>Per 60 minutes</button>
+				</span>Per 60 min.</button>
 		</div>
 		<div class="loader" v-if="!teams"></div>
 		<div class="section section-table" v-if="teams">

@@ -266,6 +266,32 @@ button:focus {
 	border-color: $green6;
 }
 
+.select-container {
+	display: inline-block;
+	vertical-align: top;
+	height: $control-height;
+	position: relative;
+}
+
+.select-container::after {
+	position: absolute;
+	right: 22px;
+	top: 14px;
+	content: "";
+	border: 4px solid $gray8;
+	border-right-color: transparent;
+	border-bottom-color: transparent;
+	border-left-color: transparent;
+}
+
+.search-with-menu .select-container::after {
+	right: 14px; /* Reduce by 8px because these controls don't have 8px right-margin (they're beside a text field) */
+}
+
+select {
+	padding-right: 31px; /* Increase right-padding so there's space for caret */
+}
+
 select::-ms-expand {
 	display: none;
 }

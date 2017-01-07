@@ -5,12 +5,14 @@
 			<h2>2016-2017</h2>
 		</div>
 		<div class="section section-control section-control-table" v-if="players">
-			<select v-model="strengthSit">
-				<option value="all">All situations</option>
-				<option value="ev5">5 on 5</option>
-				<option value="sh">Short handed</option>
-				<option value="pp">Power play</option>
-			</select
+			<div class="select-container">
+				<select v-model="strengthSit">
+					<option value="all">All situations</option>
+					<option value="ev5">5 on 5</option>
+					<option value="sh">Short handed</option>
+					<option value="pp">Power play</option>
+				</select>
+			</div
 			><button type="button" class="toggle-button" @click="visibleColumns.individual = !visibleColumns.individual"
 				:class="{ 'toggle-button-checked': visibleColumns.individual }">
 				<span class="checkbox-container">
@@ -30,21 +32,25 @@
 				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
-				</span>Per 60 minutes</button
+				</span>Per 60 min.</button
 			><div class="search-with-menu">
-				<select v-model="search.col" @change="search.query = '';">
-					<option value="name">Name:</option>
-					<option value="teams">Team:</option>
-					<option value="positions">Position:</option>
-				</select
+				<div class="select-container">
+					<select v-model="search.col" @change="search.query = '';">
+						<option value="name">Name</option>
+						<option value="teams">Team</option>
+						<option value="positions">Position</option>
+					</select>
+				</div
 				><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
 				<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
 			</div
 			><div class="search-with-menu">
-				<select v-model="filter.col" @change="filter.query = 0;">
-					<option value="toi">Minimum minutes:</option>
-					<option value="gp">Minimum games:</option>
-				</select
+				<div class="select-container">
+					<select v-model="filter.col" @change="filter.query = 0;">
+						<option value="toi">Min. minutes</option>
+						<option value="gp">Min. games</option>
+					</select>
+				</div
 				><input v-model.number="filter.query" @keyup.enter="blurInput($event);" type="number" style="width: 62px;">
 			</div>
 		</div>
