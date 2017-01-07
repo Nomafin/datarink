@@ -1,9 +1,10 @@
 <template>
 	<div>
 		<div class="section section-header">
-			<h1>Skaters: 2016-2017</h1>
+			<h1>Skaters</h1>
+			<h2>2016-2017</h2>
 		</div>
-		<div class="section section-control" v-if="players">
+		<div class="section section-control section-control-table" v-if="players">
 			<select v-model="strengthSit">
 				<option value="all">All situations</option>
 				<option value="ev5">5 on 5</option>

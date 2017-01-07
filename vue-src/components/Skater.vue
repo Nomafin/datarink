@@ -3,23 +3,24 @@
 		<div class="loader" v-if="!data"></div>
 		<div v-if="data">
 			<div class="section section-header">
-				<h1>{{ data.player.first + " " + data.player.last }}: 2016-2017</h1>
+				<h1>{{ data.player.first + " " + data.player.last }}</h1>
+				<h2>2016-2017</h2>
 			</div>
 			<div class="loader" v-if="data && !bulletchartData"></div>
-			<div v-if="bulletchartData" class="section" style="padding-left: 0; padding-right: 0; margin-bottom: 8px;">
+			<div v-if="bulletchartData" class="section section-bulletcharts">
 				<bulletchart :label="'mins/game, total'" :data="bulletchartData.all_toi" :isInverted="false"></bulletchart>
 				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="bulletchartData.ev5_cf_adj_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="bulletchartData.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
 				<bulletchart :label="'P1/60, 5 on 5'" :data="bulletchartData.ev5_p1_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'P1/60, power play'" :data="bulletchartData.pp_p1_per60" :isInverted="false"></bulletchart>
 			</div>
-			<div v-if="bulletchartData" class="section legend">
+			<div v-if="bulletchartData" class="section section-legend">
 				<div><span :style="{ background: colours.green8 }"></span><span v-if="data.player.f_or_d === 'f'">Top 90 forwards</span><span v-if="data.player.f_or_d === 'd'">Top 60 defenders</span></div>
 				<div><span :style="{ background: colours.green6 }"></span><span v-if="data.player.f_or_d === 'f'">91-180</span><span v-if="data.player.f_or_d === 'd'">61-120</span></div>
 				<div><span :style="{ background: colours.green4 }"></span><span v-if="data.player.f_or_d === 'f'">181-270</span><span v-if="data.player.f_or_d === 'd'">121-180</span></div>
 				<div v-if="data.player.f_or_d === 'f'"><span :style="{ background: colours.green2 }"></span><span>261-360</span></div>
 			</div>
-			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
+			<div class="section section-control">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
 					<button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button
 					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Player</button

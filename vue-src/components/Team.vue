@@ -3,9 +3,10 @@
 		<div class="loader" v-if="!data.team"></div>
 		<div v-if="data.team">
 			<div class="section section-header">
-				<h1>{{ data.team.team_name }}: 2016-2017</h1>
+				<h1>{{ data.team.team_name }}</h1>
+				<h2>2016-2017</h2>
 			</div>
-			<div class="section" style="padding-left: 0; padding-right: 0; margin-bottom: 8px;">
+			<div class="section section-bulletcharts">
 				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="data.breakpoints.ev5_cf_adj_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="data.breakpoints.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
 				<bulletchart :label="'GF/60, 5 on 5'" :data="data.breakpoints.ev5_gf_per60" :isInverted="false"></bulletchart>
@@ -13,14 +14,14 @@
 				<bulletchart :label="'GF/60, power play'" :data="data.breakpoints.pp_gf_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'GA/60, short handed'" :data="data.breakpoints.sh_ga_per60" :isInverted="true"></bulletchart>
 			</div>
-			<div class="section legend">
+			<div class="section section-legend">
 				<div><span :style="{ background: colours.green8 }"></span><span>Top 6 teams</span></div
 				><div><span :style="{ background: colours.green6 }"></span><span>7-12</span></div
 				><div><span :style="{ background: colours.green4 }"></span><span>13-18</span></div
 				><div><span :style="{ background: colours.green2 }"></span><span>19-24</span></div
 				><div><span :style="{ background: colours.green1 }"></span><span>25-30</span></div>
 			</div>
-			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
+			<div class="section section-control">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
 					<button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button
 					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Team</button
