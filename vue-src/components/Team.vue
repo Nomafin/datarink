@@ -3,9 +3,10 @@
 		<div class="loader" v-if="!data.team"></div>
 		<div v-if="data.team">
 			<div class="section section-header">
-				<h1>{{ data.team.team_name }}: 2016-2017</h1>
+				<h1>{{ data.team.team_name }}</h1>
+				<h2>2016-2017</h2>
 			</div>
-			<div class="section" style="padding-left: 0; padding-right: 0; margin-bottom: 8px;">
+			<div class="section section-bulletcharts">
 				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="data.breakpoints.ev5_cf_adj_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="data.breakpoints.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
 				<bulletchart :label="'GF/60, 5 on 5'" :data="data.breakpoints.ev5_gf_per60" :isInverted="false"></bulletchart>
@@ -13,38 +14,44 @@
 				<bulletchart :label="'GF/60, power play'" :data="data.breakpoints.pp_gf_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'GA/60, short handed'" :data="data.breakpoints.sh_ga_per60" :isInverted="true"></bulletchart>
 			</div>
-			<div class="section legend">
+			<div class="section section-legend">
 				<div><span :style="{ background: colours.green8 }"></span><span>Top 6 teams</span></div
 				><div><span :style="{ background: colours.green6 }"></span><span>7-12</span></div
 				><div><span :style="{ background: colours.green4 }"></span><span>13-18</span></div
 				><div><span :style="{ background: colours.green2 }"></span><span>19-24</span></div
 				><div><span :style="{ background: colours.green1 }"></span><span>25-30</span></div>
 			</div>
-			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
+			<div class="section section-control">
 				<div class="toggle" style="display: inline-block; vertical-align: top;">
 					<button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button
 					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Team</button
 					><button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button>
 				</div
-				><select v-model="strengthSit">
-					<option value="all">All situations</option>
-					<option value="ev5">5 on 5</option>
-					<option value="sh">Short handed</option>
-					<option value="pp">Power play</option>
-				</select>
+				><div class="select-container">
+					<select v-model="strengthSit">
+						<option value="all">All situations</option>
+						<option value="ev5">5 on 5</option>
+						<option value="sh">Short handed</option>
+						<option value="pp">Power play</option>
+					</select>
+				</div>
 			</div>
 			<div class="section section-table" v-show="tabs.active === 'lines'">
 				<div class="loader" v-if="data.team && !lineData.lines"></div>
-				<select v-if="lineData.lines" v-model="search.positions">
-					<option value="all">All lines</option>
-					<option value="f">Forwards</option>
-					<option value="d">Defense</option>
-				</select
+				<div class="select-container">
+					<select v-if="lineData.lines" v-model="search.positions">
+						<option value="all">All lines</option>
+						<option value="f">Forwards</option>
+						<option value="d">Defense</option>
+					</select>
+				</div
 				><div v-if="lineData.lines" class="search-with-menu" style="margin-bottom: 24px;">
-					<select v-model="search.condition">
-						<option value="includes">With:</option>
-						<option value="excludes">Without:</option>
-					</select
+					<div class="select-container">
+						<select v-model="search.condition">
+							<option value="includes">With</option>
+							<option value="excludes">Without</option>
+						</select>
+					</div
 					><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
 				</div>
 				<table v-if="lineData.lines">
@@ -382,7 +389,7 @@ module.exports = {
 		fetchLineData: function() {
 			var self = this;
 			var xhr = new XMLHttpRequest();
-			xhr.open("GET", "./api/teams/" + this.tricode + "/lines");
+			xhr.open("GET", "./api/lines/" + this.tricode);
 			xhr.onload = function() {
 				self.lineData = JSON.parse(xhr.responseText);
 				// Process/append additional stats for the team's lines

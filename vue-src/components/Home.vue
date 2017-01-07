@@ -1,17 +1,17 @@
 <template>
 	<div>
 		<div class="section section-header">
-			<h1 style="margin-bottom: 0px;">Home</h1>
+			<h1>Home</h1>
 			<h2>2016-2017 Leaders</h2>
 		</div>
 		<div class="loader" v-if="!data.recent"></div>
 		<div v-if="data.recent">
-			<div class="section section-control" style="border-top-width: 1px; border-bottom-width: 1px; padding-top: 23px; padding-bottom: 15px; margin-bottom: 24px;">
-				<div class="toggle" style="display: inline-block; vertical-align: top;">
+			<div class="section section-control">
+				<div class="toggle">
 					<button :class="view === 'skaters' ? 'selected' : null" @click="view = 'skaters'">Top skaters</button
 					><button :class="view === 'teams' ? 'selected' : null" @click="view = 'teams'">Top teams</button>
 				</div
-				><div class="toggle" style="display: inline-block; vertical-align: top;">
+				><div class="toggle">
 					<button :class="mode === 'recent' ? 'selected' : null" @click="mode = 'recent'">Last 10 games</button
 					><button :class="mode === 'season' ? 'selected' : null" @click="mode = 'season'">Season</button>
 				</div>
@@ -132,29 +132,24 @@
 
 @import "../variables";
 
+.dashboard-tile-container {
+	padding-left: 0;
+	padding-right: 0;
+}
+
 .dashboard-tile {
 	display: inline-block;
 	vertical-align: top;
 	box-sizing: border-box;
-	margin: 0 0 2*$v-whitespace 0;
+	padding: 0 $h-whitespace $v-whitespace-lg $h-whitespace;
 	width: 100%;
 	position: relative;
-}
-
-.dashboard-tile table th {
-	font-size: $base-font-size;
-	font-weight: 700;
 }
 
 /* When width is 740px or wider */
 @media (min-width: 740px) {
 	.dashboard-tile {
 		width: calc(50% - 2px);
-		padding: 0 $h-whitespace;
-	}
-	.dashboard-tile-container {
-		padding-left: 0;
-		padding-right: 0;
 	}
 }
 

@@ -47,14 +47,14 @@ h1 {
 	font-size: 22px;
 	line-height: 32px;
 	font-weight: 400;
-	margin: 0 0 16px 0;
+	margin: 0;
 }
 
 h2 {
 	font-size: 18px;
 	line-height: 24px;
 	font-weight: 400;
-	margin: 0 0 16px 0;
+	margin: 0;
 }
 
 p {
@@ -85,7 +85,6 @@ a:focus {
 .header {
 	height: 64px;
 	position: relative;
-	margin-bottom: 32px;
 	background: $gray1;
 }
 
@@ -129,33 +128,61 @@ a:focus {
 }
 
 .section {
-	margin-bottom: $v-whitespace;
-	padding: 0 $h-whitespace;
+	padding: $v-whitespace $h-whitespace;
 	border: 0px solid $gray2;
-}
-
-.section.section-header {
-	margin-bottom: 40px;
-}
-
-.section.section-control {
-	margin-bottom: 16px;
 }
 
 .section.section-table {
 	overflow-x: auto;
 }
 
+/*
+* Page header
+*/
+
+.section.section-header {
+	padding-top: $v-whitespace-lg;
+	padding-bottom: $v-whitespace-lg - 1px;
+	border-bottom-width: 1px;
+}
+
+.section.section-header h1,
+.section.section-header h2 {
+	margin-bottom: 0;
+}
+
+/*
+* Control section
+*/
+
+.section.section-control {
+	padding-top: $v-whitespace - 1px;
+	border-bottom-width: 1px;
+	padding-bottom: $v-whitespace - 8px; /* 8px is the bottom-margin on controls */
+}
+
+.section.section-control.section-control-table {
+	border-bottom-width: 0;
+	padding-bottom: 0;
+	margin-bottom: -8px; /* Accounts for the 8px bottom-margin on controls */
+}
+
+/*
+* Page footer
+*/
+
 .section.section-footer {
-	margin: 48px 0;
+	border-top-width: 1px;
+	padding-top: $v-whitespace-lg - 1px;
+	padding-bottom: $v-whitespace-lg;
+	padding-left: 16px;
+	padding-right: 16px;
 }
 
 .section.section-footer > * {
 	display: inline-block;
-}
-
-.section.section-footer > * + * {
-	margin-left: 16px;
+	vertical-align: top;
+	margin: 0 8px;
 }
 
 /*
@@ -237,6 +264,32 @@ input[type="number"]:focus,
 button:focus {
 	outline: 0;
 	border-color: $green6;
+}
+
+.select-container {
+	display: inline-block;
+	vertical-align: top;
+	height: $control-height;
+	position: relative;
+}
+
+.select-container::after {
+	position: absolute;
+	right: 22px;
+	top: 14px;
+	content: "";
+	border: 4px solid $gray8;
+	border-right-color: transparent;
+	border-bottom-color: transparent;
+	border-left-color: transparent;
+}
+
+.search-with-menu .select-container::after {
+	right: 14px; /* Reduce by 8px because these controls don't have 8px right-margin (they're beside a text field) */
+}
+
+select {
+	padding-right: 31px; /* Increase right-padding so there's space for caret */
 }
 
 select::-ms-expand {
@@ -321,6 +374,8 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 
 .toggle {
 	margin: 0 8px 8px 0;
+	display: inline-block;
+	vertical-align: top;
 }
 
 .toggle button {
@@ -345,26 +400,37 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 
 /*
 *
-* Bulletchart legend
+* Bulletchart section and legend
 *
 */
 
-.section.legend {
+.section.section-bulletcharts {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.section.section-legend {
+	padding-top: 0;
 	padding-left: 16px;
 	padding-right: 16px;
+	padding-bottom: $v-whitespace - 1px - 8px; /* 8px accounts for the bottom-margin on the legend entries */
+	border-bottom-width: 1px;
 }
-.legend > div {
+
+.section-legend > div {
 	display: inline-block;
 	vertical-align: top;
 	margin: 0 8px 8px 8px;
 }
-.legend > div > span {
+
+.section-legend > div > span {
 	display: inline-block;
 	vertical-align: top;
 	font-size: $base-font-size;
 	line-height: $base-line-height;
 }
-.legend > div > span:first-child {
+
+.section-legend > div > span:first-child {
 	height: 12px;
 	width: 12px;
 	margin-top: 4px;

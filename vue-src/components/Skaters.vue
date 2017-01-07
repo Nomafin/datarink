@@ -1,15 +1,18 @@
 <template>
 	<div>
 		<div class="section section-header">
-			<h1>Skaters: 2016-2017</h1>
+			<h1>Skaters</h1>
+			<h2>2016-2017</h2>
 		</div>
-		<div class="section section-control" v-if="players">
-			<select v-model="strengthSit">
-				<option value="all">All situations</option>
-				<option value="ev5">5 on 5</option>
-				<option value="sh">Short handed</option>
-				<option value="pp">Power play</option>
-			</select
+		<div class="section section-control section-control-table" v-if="players">
+			<div class="select-container">
+				<select v-model="strengthSit">
+					<option value="all">All situations</option>
+					<option value="ev5">5 on 5</option>
+					<option value="sh">Short handed</option>
+					<option value="pp">Power play</option>
+				</select>
+			</div
 			><button type="button" class="toggle-button" @click="visibleColumns.individual = !visibleColumns.individual"
 				:class="{ 'toggle-button-checked': visibleColumns.individual }">
 				<span class="checkbox-container">
@@ -29,21 +32,25 @@
 				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
-				</span>Per 60 minutes</button
+				</span>Per 60 min.</button
 			><div class="search-with-menu">
-				<select v-model="search.col" @change="search.query = '';">
-					<option value="name">Name:</option>
-					<option value="teams">Team:</option>
-					<option value="positions">Position:</option>
-				</select
+				<div class="select-container">
+					<select v-model="search.col" @change="search.query = '';">
+						<option value="name">Name</option>
+						<option value="teams">Team</option>
+						<option value="positions">Position</option>
+					</select>
+				</div
 				><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
 				<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
 			</div
 			><div class="search-with-menu">
-				<select v-model="filter.col" @change="filter.query = 0;">
-					<option value="toi">Minimum minutes:</option>
-					<option value="gp">Minimum games:</option>
-				</select
+				<div class="select-container">
+					<select v-model="filter.col" @change="filter.query = 0;">
+						<option value="toi">Min. minutes</option>
+						<option value="gp">Min. games</option>
+					</select>
+				</div
 				><input v-model.number="filter.query" @keyup.enter="blurInput($event);" type="number" style="width: 62px;">
 			</div>
 		</div>
@@ -73,6 +80,7 @@
 						<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
 						<td>{{ p.gp }}</td>
 						<td>{{ Math.round(p.stats[strengthSit].toi) }}</td>
+						<td>{{ (p.stats[strengthSit].toi_per_gp).toFixed(1) }}</td>
 						<td class="cols-individual">{{ p.stats[strengthSit].ig | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
 						<td class="cols-individual">{{ p.stats[strengthSit].ia | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
 						<td class="cols-individual">{{ p.stats[strengthSit].ip1 | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
@@ -143,6 +151,7 @@ module.exports = {
 				{ key: "teams", heading: "Team", sortable: true, classes: "left-aligned" },
 				{ key: "gp", heading: "GP", sortable: true },
 				{ key: "toi", heading: "Mins", sortable: true },
+				{ key: "toi_per_gp", heading: "Mins/GP", sortable: true },
 				{ key: "ig", heading: "G", sortable: true, hasRate: true, classes: "cols-individual" },
 				{ key: "ia", heading: "A", sortable: true, hasRate: true, classes: "cols-individual" },
 				{ key: "ip1", heading: "P1", sortable: true, hasRate: true, classes: "cols-individual" },
@@ -246,6 +255,7 @@ module.exports = {
 					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
 						var s = p.stats[strSit];
 						s.toi /= 60;
+						s.toi_per_gp = s.toi / p.gp;
 						s.ia = s.ia1 + s.ia2;
 						s.ip1 = s.ig + s.ia1;
 						s.ip = s.ig + s.ia1 + s.ia2;
@@ -320,7 +330,7 @@ module.exports = {
 				});				
 			} else {
 				var sit = this.strengthSit;
-				if (!this.isRatesEnabled || ["toi", "i_sh_pct", "sh_pct", "sv_pct", "cf_pct", "cf_pct_rel", "cf_pct_adj"].indexOf(col) >= 0) {
+				if (!this.isRatesEnabled || ["toi", "toi_per_gp", "i_sh_pct", "sh_pct", "sv_pct", "cf_pct", "cf_pct_rel", "cf_pct_adj"].indexOf(col) >= 0) {
 					this.players.map(function(p) {
 						p.sort_val = p.stats[sit][col];
 						return p;
