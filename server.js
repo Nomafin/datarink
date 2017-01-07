@@ -41,6 +41,7 @@ function start() {
 	server.use("/api/highlights/", require("./routes/highlights"));
 	server.use("/api/teams/", require("./routes/teams"));
 	server.use("/api/players/", require("./routes/players"));
+	server.use("/api/lines/", require("./routes/lines"));
 
 	// Route to manually clear cached responses
 	server.get("/api/cache/clear", function(request, response) {

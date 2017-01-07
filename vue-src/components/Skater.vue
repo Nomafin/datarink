@@ -378,7 +378,7 @@ module.exports = {
 		fetchLineData: function() {
 			var self = this;
 			var xhr = new XMLHttpRequest();
-			xhr.open("GET", "./api/players/" + this.pId + "/lines");
+			xhr.open("GET", "./api/lines/" + this.pId);
 			xhr.onload = function() {
 				self.lineData = JSON.parse(xhr.responseText);
 				// Process/append additional stats for the player's lines

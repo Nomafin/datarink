@@ -382,7 +382,7 @@ module.exports = {
 		fetchLineData: function() {
 			var self = this;
 			var xhr = new XMLHttpRequest();
-			xhr.open("GET", "./api/teams/" + this.tricode + "/lines");
+			xhr.open("GET", "./api/lines/" + this.tricode);
 			xhr.onload = function() {
 				self.lineData = JSON.parse(xhr.responseText);
 				// Process/append additional stats for the team's lines

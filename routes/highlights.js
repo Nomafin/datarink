@@ -1,3 +1,5 @@
+"use strict"
+
 var express = require("express");
 var apicache = require("apicache");
 var _ = require("lodash");
@@ -20,6 +22,9 @@ router.get("/", cache("24 hours"), function(request, response) {
 	queryStats("recent");
 	queryStats("season");
 
+	// This is a more complicated query than the ones used to get the team and player lists because for the "recent" query,
+	// we need to get the last 10 games for each team, then get the team and player stats corresponding to those games.
+	// For simplicity (and because we can cache these results), reuse the "recent" query to get the season-long dashboard stats as well
 	function queryStats(mode) {
 		var limit;
 		if (mode === "recent") {
