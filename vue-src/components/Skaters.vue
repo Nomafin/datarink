@@ -1,7 +1,41 @@
 <template>
 	<div>
+		<div class="modal" v-show="isModalVisible">
+			<div @click="isModalVisible = false">Close</div>
+			<div class="tile-container">
+				<div v-for="c in comparisons" class="tile">
+					<table class="left-aligned barchart">
+						<thead>
+							<tr>
+								<th colspan="2">{{ c.label }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="(p, idx) in compared">
+								<td width="10%">{{ p.first + " " + p.last }}</td>
+								<td width="90%">
+									<div v-if="c.stat === 'toi_per_gp' || c.stat == 'cf_pct_adj'" class="barchart-bar">
+										<span>{{ p.stats[strengthSit][c.stat].toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: (100 * p.stats[strengthSit][c.stat] / c.extent[1]) + '%' }"></div>
+									</div>
+									<div v-else-if="c.stat === 'ip'" class="barchart-bar">
+										<span>{{ (60 * p.stats[strengthSit][c.stat] / p.stats[strengthSit]["toi"]).toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[strengthSit]['ip1'] / p.stats[strengthSit]['toi']) / c.extent[1]) + '%' }"></div
+										><div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[strengthSit]['ia2'] / p.stats[strengthSit]['toi']) / c.extent[1]) + '%' }"></div>
+									</div>
+									<div v-else class="barchart-bar">
+										<span>{{ (60 * p.stats[strengthSit][c.stat] / p.stats[strengthSit]["toi"]).toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[strengthSit][c.stat] / p.stats[strengthSit]['toi']) / c.extent[1]) + '%' }"></div>
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
 		<div class="section section-header">
-			<h1>Skaters</h1>
+			<h1 @click="isModalVisible = true">Skaters</h1>
 			<h2>2016-2017</h2>
 		</div>
 		<div class="section section-control section-control-table" v-if="players">
@@ -63,6 +97,7 @@
 			>
 				<thead>
 					<tr>
+						<th class="left-aligned">Compare</th>
 						<th v-for="c in columns" :tabindex="c.sortable ? 0 : null"
 							@click="sortBy(c.sortable, c.key)" @keyup.enter="sortBy(c.sortable, c.key)"
 							:class="[
@@ -74,6 +109,9 @@
 				</thead>
 				<tbody>
 					<tr v-for="p in playersOnPage">
+						<td class="left-aligned">
+							<input type="checkbox" :checked="compared.map(function(d) { return d.player_id; }).indexOf(p.player_id) >= 0" @click="updateComparisonList(p)">
+						</td>
 						<td class="left-aligned"><span class="rank" :class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
 						<td class="left-aligned"><router-link :to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>	
 						<td class="left-aligned">{{ p.positions.toUpperCase() }}</td>
@@ -121,6 +159,126 @@
 	</div>
 </template>
 
+<style lang="scss">
+
+@import "../variables";
+
+$bar-h: 24px;
+
+.modal-visible {
+	overflow: hidden;
+}
+
+.modal {
+	box-sizing: border-box;
+	width: calc(100% - 16px);
+	min-width: 304px;
+	height: calc(100% - 48px);
+	position: fixed;
+	right: 8px;
+	top: 24px;
+	background: #fff;
+	border: 1px solid $gray5;
+	overflow: auto;
+	z-index: 1000;
+}
+
+.tile-container {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.tile {
+	display: inline-block;
+	vertical-align: top;
+	box-sizing: border-box;
+	padding: 0 $h-whitespace $v-whitespace-lg $h-whitespace;
+	width: 100%;
+	position: relative;
+}
+
+@media (min-width: 341px) {
+	.modal {
+		width: calc(100% - 48px);
+		right: 24px;
+	}
+}
+
+/* When width is 740px or wider */
+@media (min-width: 641px) {
+	.tile {
+		width: calc(50% - 2px);
+	}
+}
+
+@media (min-width: 1021px) {
+	.tile {
+		width: calc(33.33333% - 2px);
+	}
+}
+
+table.barchart td:first-child {
+	font-size: $small-font-size;
+	line-height: $small-line-height;
+}
+
+table.barchart td .barchart-bar {
+	position: relative;
+	width: 100%;
+}
+
+table.barchart td .barchart-bar span {
+	font-size: $small-font-size;
+	line-height: $bar-h;
+	margin-left: 6px;
+	position: absolute;
+}
+
+table.barchart td .barchart-bar div {
+	height: $bar-h;
+	background: $gray2;
+	display: inline-block;
+	vertical-align: top;
+}
+
+table.barchart td .barchart-bar div:nth-child(3) {
+	opacity: 0.5;
+}
+
+table.barchart td .barchart-bar div.fill-0 {
+	background: #62D96B;
+}
+
+table.barchart td .barchart-bar div.fill-1 {
+	background: #669EFF;
+}
+
+table.barchart td .barchart-bar div.fill-2 {
+	background: #FFC940;
+}
+
+table.barchart td .barchart-bar div.fill-3 {
+	background: #FF6E4A;
+}
+
+table.barchart td .barchart-bar div.fill-4 {
+	background: #C274C2;
+}
+
+table.barchart td .barchart-bar div.fill-5 {
+	background: #2EE6D6;
+}
+
+table.barchart td .barchart-bar div.fill-6 {
+	background: #FF66A1;
+}
+
+table.barchart td .barchart-bar div.fill-7 {
+	background: #D1F26D;
+}
+
+</style>
+
 <script>
 var _ = require("lodash");
 var constants = require("./../app-constants.js");
@@ -144,6 +302,8 @@ module.exports = {
 				current: 0,
 				total: 0
 			},
+			isModalVisible: false,
+			compared: [],
 			columns: [
 				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
 				{ key: "name", heading: "Skater", sortable: true, classes: "left-aligned" },
@@ -195,6 +355,11 @@ module.exports = {
 		isRatesEnabled: function() {
 			this.filterPlayers();
 			this.sortPlayers();
+		},
+		isModalVisible: function() {
+			if (this.isModalVisible) {
+				document.body.style.overflow = "hidden";
+			}
 		}
 	},
 	computed: {
@@ -205,6 +370,28 @@ module.exports = {
 			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
 			var endIdx = startIdx + this.pagination.rowsPerPage;
 			return playersNotFilteredOut.slice(startIdx, endIdx);
+		},
+		comparisons: function() {
+			var comparisons = [
+				{ stat: "toi_per_gp", label: "Minutes per game", extent: [] },
+				{ stat: "ip", label: "Points per 60 min.", extent: [] },
+				{ stat: "cf_adj", label: "Corsi-for per 60 min., score-adj.", extent: [] },
+				{ stat: "ca_adj", label: "Corsi-against per 60 min., score-adj.", extent: [] },
+				{ stat: "cf_pct_adj", label: "Corsi-for percentage, score-adj.", extent: [] }
+			];
+			var players = this.compared;
+			var sit = this.strengthSit;
+			comparisons.forEach(function(c) {
+				var vals;
+				if (c.stat === "toi_per_gp" || c.stat === "cf_pct_adj") {
+					vals = players.map(function(p) { return p.stats[sit][c.stat]; });
+				} else {
+					vals = players.map(function(p) { return 60 * p.stats[sit][c.stat] / p.stats[sit]["toi"]; });
+				}
+				c.extent[0] = 0;
+				c.extent[1] = _.max(vals);
+			});
+			return comparisons;
 		}
 	},
 	filters: {
@@ -365,6 +552,15 @@ module.exports = {
 					return p;
 				});
 			}
+		},
+		updateComparisonList: function(p) {
+			// 'p' is a player object
+			if (_.find(this.compared, function(d) { return d.player_id === p.player_id; })) {
+				this.compared = this.compared.filter(function(d) { return d.player_id !== p.player_id; });
+			} else {
+				this.compared.push(p);
+			}
+			
 		}
 	}
 };
