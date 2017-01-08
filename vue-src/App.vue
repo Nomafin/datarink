@@ -216,6 +216,10 @@ button {
 	border-radius: $border-radius;
 }
 
+select {
+	margin: 0;
+}
+
 /* Hide number spinners */
 input[type="number"] {
 	-moz-appearance: textfield;
@@ -271,6 +275,7 @@ button:focus {
 	vertical-align: top;
 	height: $control-height;
 	position: relative;
+	margin: 0 8px 8px 0;
 }
 
 .select-container::after {
@@ -282,6 +287,10 @@ button:focus {
 	border-right-color: transparent;
 	border-bottom-color: transparent;
 	border-left-color: transparent;
+}
+
+.search-with-menu .select-container {
+	margin-right: 0;
 }
 
 .search-with-menu .select-container::after {
@@ -342,7 +351,6 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 .search-with-menu label {
 	border-top-right-radius: 0;
 	border-bottom-right-radius: 0;
-	margin: 0;
 }
 
 .search-with-menu input[type="text"],

@@ -1,9 +1,20 @@
 <template>
 	<div>
 		<div class="modal" v-show="isModalVisible">
-			<div @click="isModalVisible = false">Close</div>
+			<div class="section section-modal-header">
+				<div class="toggle" style="margin-bottom: 0;">
+					<button :class="compareSit === 'all' ? 'selected' : null" @click="compareSit = 'all'">All</button
+					><button :class="compareSit === 'ev5' ? 'selected' : null" @click="compareSit = 'ev5'">5v5</button
+					><button :class="compareSit === 'pp' ? 'selected' : null" @click="compareSit = 'pp'">PP</button
+					><button :class="compareSit === 'sh' ? 'selected' : null" @click="compareSit = 'sh'">SH</button>
+				</div>
+				<button class="close-button" @click="isModalVisible = false">
+					<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16"><path d="M7,9,2,14,0,12,5,7,0,2,2,0,7,5l5-5,2,2L9,7l5,5-2,2Z" transform="translate(1 1)"/></svg>					
+				</button>
+			</div>
 			<div class="tile-container">
-				<div v-for="c in comparisons" class="tile">
+				<p v-if="compared.length === 0" class="tile" style="text-align: center; width: 100%; padding: 80px 0;">Select some skaters to compare</p>
+				<div v-if="compared.length > 0" v-for="c in comparisons" class="tile">
 					<table class="left-aligned barchart">
 						<thead>
 							<tr>
@@ -15,25 +26,29 @@
 								<td width="10%">{{ p.first + " " + p.last }}</td>
 								<td width="90%">
 									<div v-if="c.stat === 'toi_per_gp' || c.stat == 'cf_pct_adj'" class="barchart-bar">
-										<span>{{ p.stats[strengthSit][c.stat].toFixed(1) }}</span>
-										<div :class="'fill-' + idx" :style="{ width: (100 * p.stats[strengthSit][c.stat] / c.extent[1]) + '%' }"></div>
+										<span>{{ p.stats[compareSit][c.stat].toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: (100 * p.stats[compareSit][c.stat] / c.extent[1]) + '%' }"></div>
 									</div>
 									<div v-else-if="c.stat === 'ip'" class="barchart-bar">
-										<span>{{ (60 * p.stats[strengthSit][c.stat] / p.stats[strengthSit]["toi"]).toFixed(1) }}</span>
-										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[strengthSit]['ip1'] / p.stats[strengthSit]['toi']) / c.extent[1]) + '%' }"></div
-										><div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[strengthSit]['ia2'] / p.stats[strengthSit]['toi']) / c.extent[1]) + '%' }"></div>
+										<span>{{ (60 * p.stats[compareSit][c.stat] / p.stats[compareSit]["toi"]).toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit]['ip1'] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div
+										><div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit]['ia2'] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
 									</div>
 									<div v-else class="barchart-bar">
-										<span>{{ (60 * p.stats[strengthSit][c.stat] / p.stats[strengthSit]["toi"]).toFixed(1) }}</span>
-										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[strengthSit][c.stat] / p.stats[strengthSit]['toi']) / c.extent[1]) + '%' }"></div>
+										<span>{{ (60 * p.stats[compareSit][c.stat] / p.stats[compareSit]["toi"]).toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit][c.stat] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
 									</div>
 								</td>
+							</tr>
+							<tr v-if="c.stat === 'ip'">
+								<td colspan="2" style="border: none; font-size: 12px; text-align: right;">Lighter areas are secondary assists</td>
 							</tr>
 						</tbody>
 					</table>
 				</div>
 			</div>
 		</div>
+		<div class="modal-mask" v-show="isModalVisible" @click="isModalVisible = false"></div>
 		<div class="section section-header">
 			<h1 @click="isModalVisible = true">Skaters</h1>
 			<h2>2016-2017</h2>
@@ -165,25 +180,63 @@
 
 $bar-h: 24px;
 
+.modal-mask {
+	background: $gray9;
+	opacity: 0.6;
+	z-index: 900;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
 .modal-visible {
 	overflow: hidden;
 }
 
 .modal {
-	box-sizing: border-box;
 	width: calc(100% - 16px);
 	min-width: 304px;
-	height: calc(100% - 48px);
+	max-height: calc(100% - 48px);
+	padding-bottom: $v-whitespace;
 	position: fixed;
 	right: 8px;
 	top: 24px;
 	background: #fff;
-	border: 1px solid $gray5;
 	overflow: auto;
 	z-index: 1000;
 }
 
+.section-modal-header {
+	position: fixed;
+	background: #fff;
+	padding-bottom: $v-whitespace - 1px;
+	border-bottom-width: 1px;
+	width: calc(100% - 64px);
+	z-index: 200;
+}
+
+.close-button {
+	float: right;
+	padding: 0;
+	position: relative;
+	width: 32px;
+	margin: 0;
+}
+
+.close-button svg {
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+	padding: 10px;
+	fill: $gray8;
+}
+
 .tile-container {
+	min-height: 160px;
+	padding-top: 80px;
 	padding-left: 0;
 	padding-right: 0;
 }
@@ -192,15 +245,18 @@ $bar-h: 24px;
 	display: inline-block;
 	vertical-align: top;
 	box-sizing: border-box;
-	padding: 0 $h-whitespace $v-whitespace-lg $h-whitespace;
+	padding: $v-whitespace $h-whitespace $v-whitespace $h-whitespace;
 	width: 100%;
 	position: relative;
 }
 
-@media (min-width: 341px) {
+@media (min-width: 351px) {
 	.modal {
 		width: calc(100% - 48px);
 		right: 24px;
+	}
+	.section-modal-header {
+		width: calc(100% - 96px);
 	}
 }
 
@@ -228,10 +284,12 @@ table.barchart td .barchart-bar {
 }
 
 table.barchart td .barchart-bar span {
+	color: $gray9;
 	font-size: $small-font-size;
 	line-height: $bar-h;
 	margin-left: 6px;
 	position: absolute;
+	z-index: 100;
 }
 
 table.barchart td .barchart-bar div {
@@ -246,11 +304,11 @@ table.barchart td .barchart-bar div:nth-child(3) {
 }
 
 table.barchart td .barchart-bar div.fill-0 {
-	background: #62D96B;
+	background: #669EFF;
 }
 
 table.barchart td .barchart-bar div.fill-1 {
-	background: #669EFF;
+	background: #62D96B;
 }
 
 table.barchart td .barchart-bar div.fill-2 {
@@ -303,6 +361,7 @@ module.exports = {
 				total: 0
 			},
 			isModalVisible: false,
+			compareSit: "all",
 			compared: [],
 			columns: [
 				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
@@ -349,6 +408,7 @@ module.exports = {
 			deep: true
 		},
 		strengthSit: function() {
+			this.compareSit = this.strengthSit;
 			this.filterPlayers();
 			this.sortPlayers();
 		},
@@ -359,6 +419,8 @@ module.exports = {
 		isModalVisible: function() {
 			if (this.isModalVisible) {
 				document.body.style.overflow = "hidden";
+			} else {
+				document.body.style.overflow = "auto";
 			}
 		}
 	},
@@ -380,7 +442,7 @@ module.exports = {
 				{ stat: "cf_pct_adj", label: "Corsi-for percentage, score-adj.", extent: [] }
 			];
 			var players = this.compared;
-			var sit = this.strengthSit;
+			var sit = this.compareSit;
 			comparisons.forEach(function(c) {
 				var vals;
 				if (c.stat === "toi_per_gp" || c.stat === "cf_pct_adj") {

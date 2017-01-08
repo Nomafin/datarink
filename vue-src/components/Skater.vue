@@ -21,7 +21,7 @@
 				<div v-if="data.player.f_or_d === 'f'"><span :style="{ background: colours.green2 }"></span><span>261-360</span></div>
 			</div>
 			<div class="section section-control">
-				<div class="toggle" style="display: inline-block; vertical-align: top;">
+				<div class="toggle">
 					<button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button
 					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Player</button
 					><button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button>
