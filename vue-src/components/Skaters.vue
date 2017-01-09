@@ -49,8 +49,12 @@
 			</div>
 		</div>
 		<div class="modal-mask" v-show="isModalVisible" @click="isModalVisible = false"></div>
+		<div class="floating-message" v-if="compared.length >= 1 && !isModalVisible">
+			<p>{{ compared.length | pluralize("skater") }} selected</p
+			><button @click="isModalVisible = true">Compare</button>
+		</div>
 		<div class="section section-header">
-			<h1 @click="isModalVisible = true">Skaters</h1>
+			<h1>Skaters</h1>
 			<h2>2016-2017</h2>
 		</div>
 		<div class="section section-control section-control-table" v-if="players">
@@ -112,7 +116,7 @@
 			>
 				<thead>
 					<tr>
-						<th class="left-aligned">Compare</th>
+						<th class="left-aligned" width="1%">Compare</th>
 						<th v-for="c in columns" :tabindex="c.sortable ? 0 : null"
 							@click="sortBy(c.sortable, c.key)" @keyup.enter="sortBy(c.sortable, c.key)"
 							:class="[
@@ -125,9 +129,12 @@
 				<tbody>
 					<tr v-for="p in playersOnPage">
 						<td class="left-aligned">
-							<input type="checkbox" :checked="compared.map(function(d) { return d.player_id; }).indexOf(p.player_id) >= 0" @click="updateComparisonList(p)">
+							<input tabindex="-1" :id="p.player_id" type="checkbox" :checked="compared.map(function(d) { return d.player_id; }).indexOf(p.player_id) >= 0" @click="updateComparisonList(p)">
+							<label tabindex="0" :for="p.player_id" class="checkbox-container">
+								<span class="checkbox-checkmark">
+							</label>
 						</td>
-						<td class="left-aligned"><span class="rank" :class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
+						<td><span class="rank" :class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
 						<td class="left-aligned"><router-link :to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>	
 						<td class="left-aligned">{{ p.positions.toUpperCase() }}</td>
 						<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
@@ -180,6 +187,57 @@
 
 $bar-h: 24px;
 
+.floating-message {
+	position: fixed;
+	width: 248px;
+	height: 40px;
+	left: 16px;
+	bottom: 16px;
+	z-index: 100;
+}
+
+.floating-message p {
+	height: 100%;
+	width: 100%;
+	background: $gray8;
+	color: $gray1;
+	border-radius: 4px;
+	padding: 10px 100px 10px 12px;
+	box-sizing: border-box;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	box-shadow: 0 0 2px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.24);
+}
+
+.floating-message button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 40px;
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	background: $green4;
+	border-color: $green4;
+	margin: 0;
+}
+
+.floating-message button:hover {
+	color: $gray9;
+	background: $green5;
+	border-color: $green5;
+}
+
+.floating-message button:active {
+	color: $gray9;
+	background: $green6;
+	border-color: $green6;	
+}
+
+.floating-message button:focus {
+	border-color: $green7;
+}
+
 .modal-mask {
 	background: $gray9;
 	opacity: 0.6;
@@ -200,6 +258,7 @@ $bar-h: 24px;
 	width: calc(100% - 16px);
 	min-width: 304px;
 	max-height: calc(100% - 48px);
+	box-sizing: border-box;
 	padding-bottom: $v-whitespace;
 	position: fixed;
 	right: 8px;
@@ -437,9 +496,9 @@ module.exports = {
 			var comparisons = [
 				{ stat: "toi_per_gp", label: "Minutes per game", extent: [] },
 				{ stat: "ip", label: "Points per 60 min.", extent: [] },
+				{ stat: "cf_pct_adj", label: "Corsi-for percentage, score-adj.", extent: [] },
 				{ stat: "cf_adj", label: "Corsi-for per 60 min., score-adj.", extent: [] },
-				{ stat: "ca_adj", label: "Corsi-against per 60 min., score-adj.", extent: [] },
-				{ stat: "cf_pct_adj", label: "Corsi-for percentage, score-adj.", extent: [] }
+				{ stat: "ca_adj", label: "Corsi-against per 60 min., score-adj.", extent: [] }
 			];
 			var players = this.compared;
 			var sit = this.compareSit;
@@ -457,6 +516,10 @@ module.exports = {
 		}
 	},
 	filters: {
+		pluralize: function(value, unit) {
+			var unitStr = value === 1 ? unit : unit + "s";
+			return value + " " + unitStr;
+		},
 		percentage: function(value, isSigned) {
 			var output = value.toFixed(1);
 			if (isSigned && value > 0) {
