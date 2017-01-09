@@ -27,16 +27,16 @@
 								<td width="90%">
 									<div v-if="c.stat === 'toi_per_gp' || c.stat == 'cf_pct_adj'" class="barchart-bar">
 										<span>{{ p.stats[compareSit][c.stat].toFixed(1) }}</span>
-										<div :class="'fill-' + idx" :style="{ width: (100 * p.stats[compareSit][c.stat] / c.extent[1]) + '%' }"></div>
+										<div :class="'fill-' + idx" :style="{  width: c.extent[1] === 0 ? 0 : (100 * p.stats[compareSit][c.stat] / c.extent[1]) + '%' }"></div>
 									</div>
 									<div v-else-if="c.stat === 'ip'" class="barchart-bar">
-										<span>{{ (60 * p.stats[compareSit][c.stat] / p.stats[compareSit]["toi"]).toFixed(1) }}</span>
-										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit]['ip1'] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div
-										><div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit]['ia2'] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
+										<span>{{ p.stats[compareSit]["toi"] === 0 ? "0.0" : (60 * p.stats[compareSit][c.stat] / p.stats[compareSit]["toi"]).toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: (c.extent[1] === 0 || p.stats[compareSit]['toi'] === 0) ? 0 : 100 * ((60 * p.stats[compareSit]['ip1'] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div
+										><div :class="'fill-' + idx" :style="{ width: (c.extent[1] === 0 || p.stats[compareSit]['toi'] === 0) ? 0 : 100 * ((60 * p.stats[compareSit]['ia2'] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
 									</div>
 									<div v-else class="barchart-bar">
-										<span>{{ (60 * p.stats[compareSit][c.stat] / p.stats[compareSit]["toi"]).toFixed(1) }}</span>
-										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit][c.stat] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
+										<span>{{ p.stats[compareSit]["toi"] === 0 ? "0.0" : (60 * p.stats[compareSit][c.stat] / p.stats[compareSit]["toi"]).toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: (c.extent[1] === 0 || p.stats[compareSit]['toi'] === 0) ? 0 : 100 * ((60 * p.stats[compareSit][c.stat] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
 									</div>
 								</td>
 							</tr>
