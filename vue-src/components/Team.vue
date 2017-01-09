@@ -22,7 +22,7 @@
 				><div><span :style="{ background: colours.green1 }"></span><span>25-30</span></div>
 			</div>
 			<div class="section section-control">
-				<div class="toggle" style="display: inline-block; vertical-align: top;">
+				<div class="toggle">
 					<button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button
 					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Team</button
 					><button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button>

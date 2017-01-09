@@ -1,5 +1,58 @@
 <template>
 	<div>
+		<div class="modal" v-show="isModalVisible">
+			<div class="section section-modal-header">
+				<div class="toggle" style="margin-bottom: 0;">
+					<button :class="compareSit === 'all' ? 'selected' : null" @click="compareSit = 'all'">All</button
+					><button :class="compareSit === 'ev5' ? 'selected' : null" @click="compareSit = 'ev5'">5v5</button
+					><button :class="compareSit === 'pp' ? 'selected' : null" @click="compareSit = 'pp'">PP</button
+					><button :class="compareSit === 'sh' ? 'selected' : null" @click="compareSit = 'sh'">SH</button>
+				</div>
+				<button class="close-button" @click="isModalVisible = false">
+					<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16"><path d="M7,9,2,14,0,12,5,7,0,2,2,0,7,5l5-5,2,2L9,7l5,5-2,2Z" transform="translate(1 1)"/></svg>					
+				</button>
+			</div>
+			<div class="tile-container">
+				<p v-if="compared.length === 0" class="tile" style="text-align: center; width: 100%; padding: 80px 0;">Select some skaters to compare</p>
+				<div v-if="compared.length > 0" v-for="c in comparisons" class="tile">
+					<table class="left-aligned barchart">
+						<thead>
+							<tr>
+								<th colspan="2">{{ c.label }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="(p, idx) in compared">
+								<td width="10%">{{ p.first + " " + p.last }}</td>
+								<td width="90%">
+									<div v-if="c.stat === 'toi_per_gp' || c.stat == 'cf_pct_adj'" class="barchart-bar">
+										<span>{{ p.stats[compareSit][c.stat].toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: (100 * p.stats[compareSit][c.stat] / c.extent[1]) + '%' }"></div>
+									</div>
+									<div v-else-if="c.stat === 'ip'" class="barchart-bar">
+										<span>{{ (60 * p.stats[compareSit][c.stat] / p.stats[compareSit]["toi"]).toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit]['ip1'] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div
+										><div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit]['ia2'] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
+									</div>
+									<div v-else class="barchart-bar">
+										<span>{{ (60 * p.stats[compareSit][c.stat] / p.stats[compareSit]["toi"]).toFixed(1) }}</span>
+										<div :class="'fill-' + idx" :style="{ width: 100 * ((60 * p.stats[compareSit][c.stat] / p.stats[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
+									</div>
+								</td>
+							</tr>
+							<tr v-if="c.stat === 'ip'">
+								<td colspan="2" style="border: none; font-size: 12px; text-align: right;">Lighter areas are secondary assists</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="modal-mask" v-show="isModalVisible" @click="isModalVisible = false"></div>
+		<div class="floating-message" v-if="compared.length >= 1 && !isModalVisible">
+			<p>{{ compared.length | pluralize("skater") }} selected</p
+			><button @click="isModalVisible = true">Compare</button>
+		</div>
 		<div class="section section-header">
 			<h1>Skaters</h1>
 			<h2>2016-2017</h2>
@@ -63,6 +116,7 @@
 			>
 				<thead>
 					<tr>
+						<th class="left-aligned" width="1%">Compare</th>
 						<th v-for="c in columns" :tabindex="c.sortable ? 0 : null"
 							@click="sortBy(c.sortable, c.key)" @keyup.enter="sortBy(c.sortable, c.key)"
 							:class="[
@@ -74,7 +128,13 @@
 				</thead>
 				<tbody>
 					<tr v-for="p in playersOnPage">
-						<td class="left-aligned"><span class="rank" :class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
+						<td class="left-aligned">
+							<input tabindex="-1" :id="p.player_id" type="checkbox" :checked="compared.map(function(d) { return d.player_id; }).indexOf(p.player_id) >= 0" @click="updateComparisonList(p)">
+							<label tabindex="0" :for="p.player_id" class="checkbox-container">
+								<span class="checkbox-checkmark">
+							</label>
+						</td>
+						<td><span class="rank" :class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
 						<td class="left-aligned"><router-link :to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>	
 						<td class="left-aligned">{{ p.positions.toUpperCase() }}</td>
 						<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
@@ -121,6 +181,221 @@
 	</div>
 </template>
 
+<style lang="scss">
+
+@import "../variables";
+
+$bar-h: 24px;
+
+.floating-message {
+	position: fixed;
+	width: 248px;
+	height: 40px;
+	left: 16px;
+	bottom: 16px;
+	z-index: 100;
+}
+
+.floating-message p {
+	height: 100%;
+	width: 100%;
+	background: $gray8;
+	color: $gray1;
+	border-radius: 4px;
+	padding: 10px 100px 10px 12px;
+	box-sizing: border-box;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	box-shadow: 0 0 2px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.24);
+}
+
+.floating-message button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 40px;
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	background: $green4;
+	border-color: $green4;
+	margin: 0;
+}
+
+.floating-message button:hover {
+	color: $gray9;
+	background: $green5;
+	border-color: $green5;
+}
+
+.floating-message button:active {
+	color: $gray9;
+	background: $green6;
+	border-color: $green6;	
+}
+
+.floating-message button:focus {
+	border-color: $green7;
+}
+
+.modal-mask {
+	background: $gray9;
+	opacity: 0.6;
+	z-index: 900;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+.modal-visible {
+	overflow: hidden;
+}
+
+.modal {
+	width: calc(100% - 16px);
+	min-width: 304px;
+	max-height: calc(100% - 48px);
+	box-sizing: border-box;
+	padding-bottom: $v-whitespace;
+	position: fixed;
+	right: 8px;
+	top: 24px;
+	background: #fff;
+	overflow: auto;
+	z-index: 1000;
+}
+
+.section-modal-header {
+	position: fixed;
+	background: #fff;
+	padding-bottom: $v-whitespace - 1px;
+	border-bottom-width: 1px;
+	width: calc(100% - 64px);
+	z-index: 200;
+}
+
+.close-button {
+	float: right;
+	padding: 0;
+	position: relative;
+	width: 32px;
+	margin: 0;
+}
+
+.close-button svg {
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+	padding: 10px;
+	fill: $gray8;
+}
+
+.tile-container {
+	min-height: 160px;
+	padding-top: 80px;
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.tile {
+	display: inline-block;
+	vertical-align: top;
+	box-sizing: border-box;
+	padding: $v-whitespace $h-whitespace $v-whitespace $h-whitespace;
+	width: 100%;
+	position: relative;
+}
+
+@media (min-width: 351px) {
+	.modal {
+		width: calc(100% - 48px);
+		right: 24px;
+	}
+	.section-modal-header {
+		width: calc(100% - 96px);
+	}
+}
+
+/* When width is 740px or wider */
+@media (min-width: 641px) {
+	.tile {
+		width: calc(50% - 2px);
+	}
+}
+
+@media (min-width: 1021px) {
+	.tile {
+		width: calc(33.33333% - 2px);
+	}
+}
+
+table.barchart td:first-child {
+	font-size: $small-font-size;
+	line-height: $small-line-height;
+}
+
+table.barchart td .barchart-bar {
+	position: relative;
+	width: 100%;
+}
+
+table.barchart td .barchart-bar span {
+	color: $gray9;
+	font-size: $small-font-size;
+	line-height: $bar-h;
+	margin-left: 6px;
+	position: absolute;
+	z-index: 100;
+}
+
+table.barchart td .barchart-bar div {
+	height: $bar-h;
+	background: $gray2;
+	display: inline-block;
+	vertical-align: top;
+}
+
+table.barchart td .barchart-bar div:nth-child(3) {
+	opacity: 0.5;
+}
+
+table.barchart td .barchart-bar div.fill-0 {
+	background: #669EFF;
+}
+
+table.barchart td .barchart-bar div.fill-1 {
+	background: #62D96B;
+}
+
+table.barchart td .barchart-bar div.fill-2 {
+	background: #FFC940;
+}
+
+table.barchart td .barchart-bar div.fill-3 {
+	background: #FF6E4A;
+}
+
+table.barchart td .barchart-bar div.fill-4 {
+	background: #C274C2;
+}
+
+table.barchart td .barchart-bar div.fill-5 {
+	background: #2EE6D6;
+}
+
+table.barchart td .barchart-bar div.fill-6 {
+	background: #FF66A1;
+}
+
+table.barchart td .barchart-bar div.fill-7 {
+	background: #D1F26D;
+}
+
+</style>
+
 <script>
 var _ = require("lodash");
 var constants = require("./../app-constants.js");
@@ -144,6 +419,9 @@ module.exports = {
 				current: 0,
 				total: 0
 			},
+			isModalVisible: false,
+			compareSit: "all",
+			compared: [],
 			columns: [
 				{ key: "rank", heading: "", sortable: false, classes: "left-aligned" },
 				{ key: "name", heading: "Skater", sortable: true, classes: "left-aligned" },
@@ -189,12 +467,20 @@ module.exports = {
 			deep: true
 		},
 		strengthSit: function() {
+			this.compareSit = this.strengthSit;
 			this.filterPlayers();
 			this.sortPlayers();
 		},
 		isRatesEnabled: function() {
 			this.filterPlayers();
 			this.sortPlayers();
+		},
+		isModalVisible: function() {
+			if (this.isModalVisible) {
+				document.body.style.overflow = "hidden";
+			} else {
+				document.body.style.overflow = "auto";
+			}
 		}
 	},
 	computed: {
@@ -205,9 +491,35 @@ module.exports = {
 			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
 			var endIdx = startIdx + this.pagination.rowsPerPage;
 			return playersNotFilteredOut.slice(startIdx, endIdx);
+		},
+		comparisons: function() {
+			var comparisons = [
+				{ stat: "toi_per_gp", label: "Minutes per game", extent: [] },
+				{ stat: "ip", label: "Points per 60 min.", extent: [] },
+				{ stat: "cf_pct_adj", label: "Corsi-for percentage, score-adj.", extent: [] },
+				{ stat: "cf_adj", label: "Corsi-for per 60 min., score-adj.", extent: [] },
+				{ stat: "ca_adj", label: "Corsi-against per 60 min., score-adj.", extent: [] }
+			];
+			var players = this.compared;
+			var sit = this.compareSit;
+			comparisons.forEach(function(c) {
+				var vals;
+				if (c.stat === "toi_per_gp" || c.stat === "cf_pct_adj") {
+					vals = players.map(function(p) { return p.stats[sit][c.stat]; });
+				} else {
+					vals = players.map(function(p) { return 60 * p.stats[sit][c.stat] / p.stats[sit]["toi"]; });
+				}
+				c.extent[0] = 0;
+				c.extent[1] = _.max(vals);
+			});
+			return comparisons;
 		}
 	},
 	filters: {
+		pluralize: function(value, unit) {
+			var unitStr = value === 1 ? unit : unit + "s";
+			return value + " " + unitStr;
+		},
 		percentage: function(value, isSigned) {
 			var output = value.toFixed(1);
 			if (isSigned && value > 0) {
@@ -365,6 +677,15 @@ module.exports = {
 					return p;
 				});
 			}
+		},
+		updateComparisonList: function(p) {
+			// 'p' is a player object
+			if (_.find(this.compared, function(d) { return d.player_id === p.player_id; })) {
+				this.compared = this.compared.filter(function(d) { return d.player_id !== p.player_id; });
+			} else {
+				this.compared.push(p);
+			}
+			
 		}
 	}
 };

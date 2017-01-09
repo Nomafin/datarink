@@ -191,10 +191,15 @@ a:focus {
 *
 */
 
+input[type="checkbox"] {
+	position: absolute;
+	opacity: 0;
+}
+
 select,
 input[type="text"],
 input[type="number"],
-label,
+.search-with-menu label,
 button {
 	-moz-appearance: none; 
 	-webkit-appearance: none;
@@ -216,6 +221,10 @@ button {
 	border-radius: $border-radius;
 }
 
+select {
+	margin: 0;
+}
+
 /* Hide number spinners */
 input[type="number"] {
 	-moz-appearance: textfield;
@@ -229,13 +238,8 @@ input[type="number"]::-webkit-outer-spin-button {
 select,
 input[type="text"],
 input[type="number"],
-label.checkbox-label,
 button {
 	cursor: pointer;
-}
-
-label.checkbox-label {
-	padding-left: 11px;
 }
 
 input[type="text"],
@@ -271,6 +275,7 @@ button:focus {
 	vertical-align: top;
 	height: $control-height;
 	position: relative;
+	margin: 0 8px 8px 0;
 }
 
 .select-container::after {
@@ -282,6 +287,10 @@ button:focus {
 	border-right-color: transparent;
 	border-bottom-color: transparent;
 	border-left-color: transparent;
+}
+
+.search-with-menu .select-container {
+	margin-right: 0;
 }
 
 .search-with-menu .select-container::after {
@@ -300,7 +309,8 @@ button.toggle-button {
 	padding-left: 8px;
 }
 
-button.toggle-button span.checkbox-container {
+button.toggle-button span.checkbox-container,
+input[type="checkbox"] + label.checkbox-container {
 	display: inline-block;
 	vertical-align: top;
 	position: relative;
@@ -314,9 +324,20 @@ button.toggle-button span.checkbox-container {
 	border: 1px solid $gray3;
 	border-radius: 2px;
 	background: #fff;
+	cursor: pointer;
 }
 
-button.toggle-button.toggle-button-checked span.checkbox-checkmark {
+input[type="checkbox"] + label.checkbox-container:hover {
+	background: $gray1;
+}
+
+input[type="checkbox"] + label.checkbox-container:focus {
+	border-color: $green6;
+	outline: 0;
+}
+
+button.toggle-button.toggle-button-checked span.checkbox-checkmark,
+input[type="checkbox"]:checked + label.checkbox-container span.checkbox-checkmark {
 	content: "";
 	display: block;
 
@@ -342,7 +363,6 @@ button.toggle-button.toggle-button-checked span.checkbox-checkmark {
 .search-with-menu label {
 	border-top-right-radius: 0;
 	border-bottom-right-radius: 0;
-	margin: 0;
 }
 
 .search-with-menu input[type="text"],
