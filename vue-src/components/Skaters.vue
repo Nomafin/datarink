@@ -85,7 +85,7 @@
 				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
-				</span>Per 60 min.</button
+				</span>Per 60 mins</button
 			><div class="search-with-menu">
 				<div class="select-container">
 					<select v-model="search.col" @change="search.query = '';">
@@ -100,8 +100,8 @@
 			><div class="search-with-menu">
 				<div class="select-container">
 					<select v-model="filter.col" @change="filter.query = 0;">
-						<option value="toi">Min. minutes</option>
-						<option value="gp">Min. games</option>
+						<option value="toi">Minimum mins</option>
+						<option value="gp">Minimum games</option>
 					</select>
 				</div
 				><input v-model.number="filter.query" @keyup.enter="blurInput($event);" type="number" style="width: 62px;">
@@ -353,7 +353,7 @@ table.barchart td .barchart-bar span {
 
 table.barchart td .barchart-bar div {
 	height: $bar-h;
-	background: $gray2;
+	background: $gray3;
 	display: inline-block;
 	vertical-align: top;
 }
@@ -363,35 +363,31 @@ table.barchart td .barchart-bar div:nth-child(3) {
 }
 
 table.barchart td .barchart-bar div.fill-0 {
-	background: #669EFF;
+	background: #66c2a5;
 }
 
 table.barchart td .barchart-bar div.fill-1 {
-	background: #62D96B;
+	background: #fc8d62;
 }
 
 table.barchart td .barchart-bar div.fill-2 {
-	background: #FFC940;
+	background: #8da0cb;
 }
 
 table.barchart td .barchart-bar div.fill-3 {
-	background: #FF6E4A;
+	background: #e78ac3;
 }
 
 table.barchart td .barchart-bar div.fill-4 {
-	background: #C274C2;
+	background: #a6d854;
 }
 
 table.barchart td .barchart-bar div.fill-5 {
-	background: #2EE6D6;
+	background: #ffd92f;
 }
 
 table.barchart td .barchart-bar div.fill-6 {
-	background: #FF66A1;
-}
-
-table.barchart td .barchart-bar div.fill-7 {
-	background: #D1F26D;
+	background: #e5c494;
 }
 
 </style>

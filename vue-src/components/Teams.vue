@@ -27,7 +27,7 @@
 				:class="{ 'toggle-button-checked': isRatesEnabled }">
 				<span class="checkbox-container">
 					<span class="checkbox-checkmark"></span>
-				</span>Per 60 min.</button>
+				</span>Per 60 mins</button>
 		</div>
 		<div class="loader" v-if="!teams"></div>
 		<div class="section section-table" v-if="teams">
