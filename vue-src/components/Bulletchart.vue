@@ -1,5 +1,5 @@
 <template>
-	<div class="bullet-chart-container">
+	<div class="bullet-chart-container chart-tile">
 		<div class="title"><span>{{ titleVal }}</span><span>{{ label }}</span></div>
 		<div class="chart">
 			<div class="ranges">
@@ -78,13 +78,6 @@ module.exports = {
 
 @import "../variables";
 
-.bullet-chart-container {
-	display: inline-block;
-	vertical-align: top;
-	margin: 0 $h-whitespace $v-whitespace $h-whitespace;
-	width: 272px;
-	position: relative;
-}
 .bullet-chart-container .chart {
 	position: relative;
 	height: 32px;

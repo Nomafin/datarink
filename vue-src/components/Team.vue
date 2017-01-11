@@ -6,7 +6,7 @@
 				<h1>{{ data.team.team_name }}</h1>
 				<h2>2016-2017</h2>
 			</div>
-			<div class="section section-bulletcharts">
+			<div class="section section-tiled-charts">
 				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="data.breakpoints.ev5_cf_adj_per60" :isInverted="false"></bulletchart>
 				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="data.breakpoints.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
 				<bulletchart :label="'GF/60, 5 on 5'" :data="data.breakpoints.ev5_gf_per60" :isInverted="false"></bulletchart>
@@ -179,6 +179,14 @@
 					</tr>
 				</table>
 			</div>
+			<div class="section section-tiled-charts" v-if="data.team.gp >= 3" v-show="tabs.active === 'games'" style="padding-bottom: 0;">
+				<div v-if="chartData">
+					<barchart :data="chartData.g_diff"></barchart>
+					<barchart :data="chartData.c_diff_adj"></barchart>
+					<barchart :data="chartData.cf_adj"></barchart>
+					<barchart :data="chartData.ca_adj"></barchart>
+				</div>
+			</div>
 			<div class="section section-table" v-show="tabs.active === 'games'">
 				<table>
 					<thead>
@@ -219,6 +227,7 @@
 
 <script>
 var Bulletchart = require("./Bulletchart.vue");
+var Barchart = require("./Barchart.vue");
 var _ = require("lodash");
 var constants = require("./../app-constants.js");
 module.exports = {
@@ -236,7 +245,8 @@ module.exports = {
 		};
 	},
 	components: {
-		"bulletchart": Bulletchart
+		"bulletchart": Bulletchart,
+		"barchart": Barchart
 	},
 	computed: {
 		sortedLines: function() {
@@ -271,7 +281,37 @@ module.exports = {
 				}
 			}
 			return data;
-		}		
+		},
+		chartData: function() {
+			var obj = {
+				"g_diff": { stat: "g_diff", title: "Goal differential", values: [], extent: [] },
+				"c_diff_adj": { stat: "c_diff_adj", title: "Corsi differential, score-adj.", values: [], extent: [] },
+				"cf_adj": { stat: "cf_adj", title: "Corsi-for per 60 mins, score-adj.", values: [], extent: [] },
+				"ca_adj": { stat: "ca_adj", title: "Corsi-against per 60 mins, score-adj.", values: [], extent: [] }
+			}
+			var data = this.data.history;
+			var sit = this.strengthSit;
+			Object.keys(obj).forEach(function(s) {
+				// Get values
+				if (s === "g_diff") {
+					obj[s].values = data.map(function(g) { return g.stats[sit].gf - g.stats[sit].ga; });
+				} else if (s === "c_diff_adj") {
+					obj[s].values = data.map(function(g) { return g.stats[sit].cf_adj - g.stats[sit].ca_adj; });
+				} else if (s === "cf_adj" || s === "ca_adj") {
+					obj[s].values = data.map(function(g) { return g.stats[sit].toi === 0 ? 0 : 60 * g.stats[sit][s] / g.stats[sit].toi; });
+				}
+				// Games were originally sorted from most recent to oldest, so reverse the values (without modifying the original data)
+				obj[s].values.reverse();
+				// Get extent
+				var extent = [_.min(obj[s].values), _.max(obj[s].values)];
+				obj[s].extent = [_.min([0, extent[0]]), _.max([0, extent[1]])];
+			});
+			// Make the cf_adj and ca_adj extents equivalent
+			var max = _.max([obj.cf_adj.extent[1], obj.ca_adj.extent[1]]);
+			obj.cf_adj.extent[1] = max;
+			obj.ca_adj.extent[1] = max;
+			return obj;
+		}
 	},
 	filters: {
 		pluralize: function(value, unit) {

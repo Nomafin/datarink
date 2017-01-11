@@ -1,7 +1,7 @@
 <template>
 	<div id="app">
 		<div class="header">
-			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+			<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32">
 				<rect class="logo-r" x="20" y="24" width="8" height="8"/>
 				<path class="logo-d" d="M4,8V32h8V16h16V0h-8v8Z"/>
 			</svg
@@ -165,6 +165,7 @@ a:focus {
 	border-bottom-width: 0;
 	padding-bottom: 0;
 	margin-bottom: -8px; /* Accounts for the 8px bottom-margin on controls */
+	margin-right: -8px; /* Accounts for the 8px right-margin on controls */
 }
 
 /*
@@ -424,9 +425,18 @@ input[type="checkbox"]:checked + label.checkbox-container span.checkbox-checkmar
 *
 */
 
-.section.section-bulletcharts {
+.section.section-tiled-charts {
 	padding-left: 0;
 	padding-right: 0;
+}
+
+.section.section-tiled-charts .chart-tile {
+	display: inline-block;
+	vertical-align: top;
+	white-space: nowrap;
+	position: relative;
+	width: 272px;
+	margin: 0 $h-whitespace $v-whitespace $h-whitespace;
 }
 
 .section.section-legend {
