@@ -23,8 +23,8 @@
 						</thead>
 						<tbody>
 							<tr v-for="(p, idx) in compared">
-								<td width="10%">{{ p.first + " " + p.last }}</td>
-								<td width="90%">
+								<td width="30%">{{ p.first + " " + p.last }}</td>
+								<td width="70%">
 									<div v-if="c.stat === 'toi_per_gp' || c.stat == 'cf_pct_adj'" class="barchart-bar">
 										<span>{{ p.stats[compareSit][c.stat].toFixed(1) }}</span>
 										<div :class="'fill-' + idx" :style="{  width: c.extent[1] === 0 ? 0 : (100 * p.stats[compareSit][c.stat] / c.extent[1]) + '%' }"></div>
@@ -88,23 +88,23 @@
 				</span>Per 60 mins</button
 			><div class="search-with-menu">
 				<div class="select-container">
-					<select v-model="search.col" @change="search.query = '';">
+					<select v-model="search.col" @change="searchInput = '';">
 						<option value="name">Name</option>
 						<option value="teams">Team</option>
 						<option value="positions">Position</option>
 					</select>
 				</div
-				><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
+				><input v-model="searchInput" type="text" @keyup.enter="blurInput($event);">
 				<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
 			</div
 			><div class="search-with-menu">
 				<div class="select-container">
-					<select v-model="filter.col" @change="filter.query = 0;">
+					<select v-model="filter.col" @change="filterInput = 0;">
 						<option value="toi">Minimum mins</option>
 						<option value="gp">Minimum games</option>
 					</select>
 				</div
-				><input v-model.number="filter.query" @keyup.enter="blurInput($event);" type="number" style="width: 62px;">
+				><input v-model.number="filterInput" @keyup.enter="blurInput($event);" type="number" style="width: 62px;">
 			</div>
 		</div>
 		<div class="loader" v-if="!players"></div>
@@ -127,7 +127,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="p in playersOnPage">
+					<tr v-for="p in onPage(sorted)">
 						<td class="left-aligned">
 							<input tabindex="-1" :id="p.player_id" type="checkbox" :checked="compared.map(function(d) { return d.player_id; }).indexOf(p.player_id) >= 0" @click="updateComparisonList(p)">
 							<label tabindex="0" :for="p.player_id" class="checkbox-container">
@@ -162,7 +162,7 @@
 			</table>
 			<div class="pagination" v-if="pagination.total > 0">
 				<button type="button" @click="pagination.current--;" class="previous">
-					<svg viewBox="0 0 16 16">
+					<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16">
 						<path d="M10,3,5,8l5,5L11,12,7,8,11,4Z"/>
 					</svg>
 				</button
@@ -172,7 +172,7 @@
 					><span>{{ pagination.total }}</span>
 				</div
 				><button type="button" @click="pagination.current++;" class="next">
-					<svg viewBox="0 0 16 16">
+					<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16">
 						<path d="M10,3,5,8l5,5L11,12,7,8,11,4Z" transform="rotate(180 8 8)"/>
 					</svg>
 				</button>
@@ -340,6 +340,7 @@ table.barchart td:first-child {
 table.barchart td .barchart-bar {
 	position: relative;
 	width: 100%;
+	padding: 4px 0; /* Pad bar so that row height doesn't change when names are 1 line vs 2 lines */
 }
 
 table.barchart td .barchart-bar span {
@@ -408,6 +409,8 @@ module.exports = {
 				onIceCorsi: false
 			},
 			sort: { col: "ip", order: -1 },
+			searchInput: "", // Bound to search text field, and passed to search.query with a debounce
+			filterInput: 0,  // Bound to filter text field, and passed to filter.query with a debounce
 			search: { col: "name", query: "" },
 			filter: { col: "toi", query: 0 },
 			pagination: {
@@ -454,40 +457,16 @@ module.exports = {
 		}
 	},
 	watch: {
-		search: {
-			handler: "filterPlayers",
-			deep: true
-		},
-		filter: {
-			handler: "filterPlayers",
-			deep: true
-		},
+		filterInput: _.debounce(function() { this.filter.query = this.filterInput; }, 250),
+		searchInput: _.debounce(function() { this.search.query = this.searchInput; }, 250),
 		strengthSit: function() {
 			this.compareSit = this.strengthSit;
-			this.filterPlayers();
-			this.sortPlayers();
-		},
-		isRatesEnabled: function() {
-			this.filterPlayers();
-			this.sortPlayers();
 		},
 		isModalVisible: function() {
-			if (this.isModalVisible) {
-				document.body.style.overflow = "hidden";
-			} else {
-				document.body.style.overflow = "auto";
-			}
+			document.body.style.overflow = this.isModalVisible ? "hidden" : "auto";
 		}
 	},
 	computed: {
-		playersOnPage: function() {
-			var playersNotFilteredOut = this.players.filter(function(p) { return !p.isFilteredOut; });
-			this.pagination.total = Math.ceil(playersNotFilteredOut.length / this.pagination.rowsPerPage);
-			this.pagination.current = Math.min(this.pagination.total - 1, Math.max(0, this.pagination.current));
-			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
-			var endIdx = startIdx + this.pagination.rowsPerPage;
-			return playersNotFilteredOut.slice(startIdx, endIdx);
-		},
 		comparisons: function() {
 			var comparisons = [
 				{ stat: "toi_per_gp", label: "Minutes per game", extent: [] },
@@ -505,10 +484,85 @@ module.exports = {
 				} else {
 					vals = players.map(function(p) { return 60 * p.stats[sit][c.stat] / p.stats[sit]["toi"]; });
 				}
-				c.extent[0] = 0;
-				c.extent[1] = _.max(vals);
+				c.extent = [0, _.max(vals)];
 			});
 			return comparisons;
+		},
+		filtered: function() {
+			// Find players matching search string
+			var players = this.players;
+			if (this.search.query) {
+				var col = this.search.col;
+				var query = this.search.query.toLowerCase();
+				if (col === "name") {
+					players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
+				} else if (col === "teams") {
+					players = players.filter(function(p) { return p[col].indexOf(query) >= 0 || p.team_names.indexOf(query) >= 0; });
+				} else if (col === "positions" && query === "f") {
+					players = players.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p[col].indexOf("l") >= 0; });
+				} else if (col === "positions") {
+					players = players.filter(function(p) { return p[col].indexOf(query) >= 0; });
+				}
+			}
+			// Find players satisying minimum toi or gp
+			if (this.filter.query) {
+				var min = this.filter.query;
+				if (this.filter.col === "toi") {
+					var sit = this.strengthSit;
+					players = players.filter(function(p) { return Math.round(p.stats[sit].toi) >= min; });
+				} else if (this.filter.col === "gp") {
+					players = players.filter(function(p) { return p.gp >= min; });
+				}
+			}
+			return players;	
+		},
+		sorted: function() {
+			// Create a player property for their sort value - used to sort rate stats and used for ranking
+			var players = this.filtered;
+			var col = this.sort.col;
+			var order = this.sort.order < 0 ? "desc" : "asc";
+			if (["name", "positions", "teams", "gp"].indexOf(col) >= 0) {
+				players.map(function(p) {
+					p.sort_val = p[col];
+					return p;
+				});
+			} else {
+				var sit = this.strengthSit;
+				if (!this.isRatesEnabled || ["toi", "toi_per_gp", "i_sh_pct", "sh_pct", "sv_pct", "cf_pct", "cf_pct_rel", "cf_pct_adj"].indexOf(col) >= 0) {
+					players.map(function(p) {
+						p.sort_val = p.stats[sit][col];
+						return p;
+					});		
+				} else {
+					players.map(function(p) {
+						p.sort_val = p.stats[sit].toi === 0 ? 0 : p.stats[sit][col] / p.stats[sit].toi;
+						return p;
+					});							
+				}
+			}
+			// Sort players
+			players = _.orderBy(players, "sort_val", order);
+			// Rank players
+			if (["name", "positions", "teams"].indexOf(this.sort.col) >= 0) {
+				players = players.map(function(p) {
+					p.rank = ["", false];	// Don't show ranks if sorting by name, position, or team
+					return p;
+				});
+			} else {
+				var values = players.map(function(p) { return p.sort_val; });				// Get array of sorted *unique* values
+				var valueCounts = _.groupBy(players, "sort_val");							// Group players by their stat value to find ties
+				players = players.map(function(p) {
+					p.rank = ["", false];
+					if (players.length > 1) {											// Don't get ranks if only 1 player is in table
+						p.rank[0] = values.indexOf(p.sort_val) + 1;						// In idx0, store player's rank
+						p.rank[1] = valueCounts[p.sort_val].length > 1 ? true : false;	// In idx1, store if multiple players are tied with this value
+					}
+					return p;
+				});
+			}
+			// Reset pagination and return
+			this.pagination.current = 0;
+			return players;
 		}
 	},
 	filters: {
@@ -536,9 +590,6 @@ module.exports = {
 		}
 	},
 	methods: {
-		blurInput: function(event) {
-			event.target.blur();
-		},
 		fetchData: function() {
 			var self = this;
 			var xhr = new XMLHttpRequest();
@@ -556,9 +607,7 @@ module.exports = {
 					p.team_names = p.teams.map(function(t) {
 						return constants.teamNames[t];
 					}).toString().toLowerCase();
-					p.teams= p.teams.toString().toLowerCase();
-					// Use a flag for filtering so that we can debounce the filter method
-					p.isFilteredOut = false;
+					p.teams = p.teams.toString().toLowerCase();
 					// Process/append stats for each score situation
 					["all", "ev5", "pp", "sh"].forEach(function(strSit) {
 						var s = p.stats[strSit];
@@ -577,102 +626,20 @@ module.exports = {
 						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
 					});
 				});
-				self.filterPlayers();
-				self.sortPlayers();
 			}
 			xhr.send();
 		},
-		filterPlayers: 
-			_.debounce(
-				function() {
-					// Find players matching search string
-					var matchedPlayers = this.players;
-					if (this.search.query) {
-						var col = this.search.col;
-						var query = this.search.query.toLowerCase();
-						if (col === "name") {
-							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0; });
-						} else if (col === "teams") {
-							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0 || p.team_names.indexOf(query) >= 0; });
-						} else if (col === "positions" && query === "f") {
-							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf("c") >= 0 || p[col].indexOf("r") >= 0 || p[col].indexOf("l") >= 0; });
-						} else if (col === "positions") {
-							matchedPlayers = matchedPlayers.filter(function(p) { return p[col].indexOf(query) >= 0; });
-						}
-					}
-					// Find players satisying minimum toi or gp
-					if (this.filter.query) {
-						var min = this.filter.query;
-						if (this.filter.col === "toi") {
-							var sit = this.strengthSit;
-							matchedPlayers = matchedPlayers.filter(function(p) { return Math.round(p.stats[sit].toi) >= min; });
-						} else if (this.filter.col === "gp") {
-							matchedPlayers = matchedPlayers.filter(function(p) { return p.gp >= min; });
-						}
-					}
-					// Update filter players' filter flag
-					matchedPlayers = matchedPlayers.map(function(p) { return p.player_id; });
-					this.players.map(function(p) {
-						p.isFilteredOut = matchedPlayers.indexOf(p.player_id) >= 0 ? false : true;
-						return p;
-					});
-					this.pagination.current = 0;
-					this.rankPlayers();
-				}, 350
-			),
 		sortBy: function(isSortable, newSortCol) {
 			if (isSortable) {
 				this.sort.order = newSortCol === this.sort.col ? -this.sort.order : -1;
 				this.sort.col = newSortCol;
-				this.sortPlayers();
 			}
 		},
-		sortPlayers: function() {
-			// Create a player property for their sort value - used to sort rate stats and used for ranking
-			var col = this.sort.col;
-			var order = this.sort.order < 0 ? "desc" : "asc";
-			if (["name", "positions", "teams", "gp"].indexOf(col) >= 0) {
-				this.players.map(function(p) {
-					p.sort_val = p[col];
-					return p;
-				});				
-			} else {
-				var sit = this.strengthSit;
-				if (!this.isRatesEnabled || ["toi", "toi_per_gp", "i_sh_pct", "sh_pct", "sv_pct", "cf_pct", "cf_pct_rel", "cf_pct_adj"].indexOf(col) >= 0) {
-					this.players.map(function(p) {
-						p.sort_val = p.stats[sit][col];
-						return p;
-					});		
-				} else {
-					this.players.map(function(p) {
-						p.sort_val = p.stats[sit].toi === 0 ? 0 : p.stats[sit][col] / p.stats[sit].toi;
-						return p;
-					});							
-				}
-			}
-			this.players = _.orderBy(this.players, "sort_val", order);
-			this.pagination.current = 0;
-			this.rankPlayers();
-		},
-		rankPlayers: function() {
-			if (["name", "positions", "teams"].indexOf(this.sort.col) >= 0) {
-				this.players = this.players.map(function(p) {	// Use this.player = this.players.map() to trigger an update
-					p.rank = ["", false];						// Don't show ranks if sorting by name, position, or team
-					return p;
-				});
-			} else {
-				var rankedPlayers = this.players.filter(function(p) { return !p.isFilteredOut; });	// Rank players that aren't filtered out
-				var values = rankedPlayers.map(function(p) { return p.sort_val; });					// Get array of sorted *unique* values
-				var valueCounts = _.groupBy(rankedPlayers, "sort_val");								// Group players by their stat value to find ties
-				this.players = this.players.map(function(p) {
-					p.rank = ["", false];
-					if (rankedPlayers.length > 1 && !p.isFilteredOut) {					// Don't get ranks if only 1 player is in table, or if player is filtered out
-						p.rank[0] = values.indexOf(p.sort_val) + 1;						// In idx0, store player's rank
-						p.rank[1] = valueCounts[p.sort_val].length > 1 ? true : false;	// In idx1, store if multiple players are tied with this value
-					}
-					return p;
-				});
-			}
+		onPage: function(list) {
+			this.pagination.total = Math.ceil(list.length / this.pagination.rowsPerPage);
+			this.pagination.current = Math.min(this.pagination.total - 1, Math.max(0, this.pagination.current));
+			var startIdx = this.pagination.current * this.pagination.rowsPerPage;
+			return list.slice(startIdx, startIdx + this.pagination.rowsPerPage);
 		},
 		updateComparisonList: function(p) {
 			// 'p' is a player object
@@ -681,7 +648,9 @@ module.exports = {
 			} else {
 				this.compared.push(p);
 			}
-			
+		},
+		blurInput: function(event) {
+			event.target.blur();
 		}
 	}
 };
