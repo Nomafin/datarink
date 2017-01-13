@@ -1,19 +1,13 @@
 <template>
 	<div>
-		<div class="modal" v-show="isModalVisible">
-			<div class="section section-modal-header">
-				<div class="toggle" style="margin-bottom: 0;">
-					<button :class="compareSit === 'all' ? 'selected' : null" @click="compareSit = 'all'">All</button
-					><button :class="compareSit === 'ev5' ? 'selected' : null" @click="compareSit = 'ev5'">5v5</button
-					><button :class="compareSit === 'pp' ? 'selected' : null" @click="compareSit = 'pp'">PP</button
-					><button :class="compareSit === 'sh' ? 'selected' : null" @click="compareSit = 'sh'">SH</button>
-				</div>
-				<button class="close-button" @click="isModalVisible = false">
-					<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16"><path d="M7,9,2,14,0,12,5,7,0,2,2,0,7,5l5-5,2,2L9,7l5,5-2,2Z" transform="translate(1 1)"/></svg>					
-				</button>
+		<modal v-if="isModalVisible" @close="isModalVisible = false">
+			<div slot="header" class="toggle" style="margin-bottom: 0;">
+				<button :class="compareSit === 'all' ? 'selected' : null" @click="compareSit = 'all'">All</button
+				><button :class="compareSit === 'ev5' ? 'selected' : null" @click="compareSit = 'ev5'">5v5</button
+				><button :class="compareSit === 'pp' ? 'selected' : null" @click="compareSit = 'pp'">PP</button
+				><button :class="compareSit === 'sh' ? 'selected' : null" @click="compareSit = 'sh'">SH</button>
 			</div>
-			<div class="tile-container">
-				<p v-if="compared.length === 0" class="tile" style="text-align: center; width: 100%; padding: 80px 0;">Select some skaters to compare</p>
+			<div slot="body" class="tile-container">
 				<div v-if="compared.length > 0" v-for="c in comparisons" class="tile">
 					<table class="left-aligned barchart">
 						<thead>
@@ -23,7 +17,7 @@
 						</thead>
 						<tbody>
 							<tr v-for="(p, idx) in compared">
-								<td width="30%">{{ p.first + " " + p.last }}</td>
+								<td width="30%" class="label">{{ p.first.charAt(0) + ". " + p.last }}</td>
 								<td width="70%">
 									<div v-if="c.stat === 'toi_per_gp' || c.stat == 'cf_pct_adj'" class="barchart-bar">
 										<span>{{ p.stats[compareSit][c.stat].toFixed(1) }}</span>
@@ -47,8 +41,7 @@
 					</table>
 				</div>
 			</div>
-		</div>
-		<div class="modal-mask" v-show="isModalVisible" @click="isModalVisible = false"></div>
+		</modal>
 		<div class="floating-message" v-if="compared.length >= 1 && !isModalVisible">
 			<p>{{ compared.length | pluralize("skater") }} selected</p
 			><button @click="isModalVisible = true">Compare</button>
@@ -181,221 +174,10 @@
 	</div>
 </template>
 
-<style lang="scss">
-
-@import "../variables";
-
-$bar-h: 24px;
-
-.floating-message {
-	position: fixed;
-	width: 248px;
-	height: 40px;
-	left: 16px;
-	bottom: 16px;
-	z-index: 100;
-}
-
-.floating-message p {
-	height: 100%;
-	width: 100%;
-	background: $gray8;
-	color: $gray1;
-	border-radius: 4px;
-	padding: 10px 100px 10px 12px;
-	box-sizing: border-box;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	overflow: hidden;
-	box-shadow: 0 0 2px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.24);
-}
-
-.floating-message button {
-	position: absolute;
-	top: 0;
-	right: 0;
-	height: 40px;
-	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
-	background: $green4;
-	border-color: $green4;
-	margin: 0;
-}
-
-.floating-message button:hover {
-	color: $gray9;
-	background: $green5;
-	border-color: $green5;
-}
-
-.floating-message button:active {
-	color: $gray9;
-	background: $green6;
-	border-color: $green6;	
-}
-
-.floating-message button:focus {
-	border-color: $green7;
-}
-
-.modal-mask {
-	background: $gray9;
-	opacity: 0.6;
-	z-index: 900;
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
-}
-
-.modal-visible {
-	overflow: hidden;
-}
-
-.modal {
-	width: calc(100% - 16px);
-	min-width: 304px;
-	max-height: calc(100% - 48px);
-	box-sizing: border-box;
-	padding-bottom: $v-whitespace;
-	position: fixed;
-	right: 8px;
-	top: 24px;
-	background: #fff;
-	overflow: auto;
-	z-index: 1000;
-}
-
-.section-modal-header {
-	position: fixed;
-	background: #fff;
-	padding-bottom: $v-whitespace - 1px;
-	border-bottom-width: 1px;
-	width: calc(100% - 64px);
-	z-index: 200;
-}
-
-.close-button {
-	float: right;
-	padding: 0;
-	position: relative;
-	width: 32px;
-	margin: 0;
-}
-
-.close-button svg {
-	box-sizing: border-box;
-	height: 100%;
-	width: 100%;
-	padding: 10px;
-	fill: $gray8;
-}
-
-.tile-container {
-	min-height: 160px;
-	padding-top: 80px;
-	padding-left: 0;
-	padding-right: 0;
-}
-
-.tile {
-	display: inline-block;
-	vertical-align: top;
-	box-sizing: border-box;
-	padding: $v-whitespace $h-whitespace $v-whitespace $h-whitespace;
-	width: 100%;
-	position: relative;
-}
-
-@media (min-width: 351px) {
-	.modal {
-		width: calc(100% - 48px);
-		right: 24px;
-	}
-	.section-modal-header {
-		width: calc(100% - 96px);
-	}
-}
-
-/* When width is 740px or wider */
-@media (min-width: 641px) {
-	.tile {
-		width: calc(50% - 2px);
-	}
-}
-
-@media (min-width: 1021px) {
-	.tile {
-		width: calc(33.33333% - 2px);
-	}
-}
-
-table.barchart td:first-child {
-	font-size: $small-font-size;
-	line-height: $small-line-height;
-}
-
-table.barchart td .barchart-bar {
-	position: relative;
-	width: 100%;
-	padding: 4px 0; /* Pad bar so that row height doesn't change when names are 1 line vs 2 lines */
-}
-
-table.barchart td .barchart-bar span {
-	color: $gray9;
-	font-size: $small-font-size;
-	line-height: $bar-h;
-	margin-left: 6px;
-	position: absolute;
-	z-index: 100;
-}
-
-table.barchart td .barchart-bar div {
-	height: $bar-h;
-	background: $gray3;
-	display: inline-block;
-	vertical-align: top;
-}
-
-table.barchart td .barchart-bar div:nth-child(3) {
-	opacity: 0.5;
-}
-
-table.barchart td .barchart-bar div.fill-0 {
-	background: #66c2a5;
-}
-
-table.barchart td .barchart-bar div.fill-1 {
-	background: #fc8d62;
-}
-
-table.barchart td .barchart-bar div.fill-2 {
-	background: #8da0cb;
-}
-
-table.barchart td .barchart-bar div.fill-3 {
-	background: #e78ac3;
-}
-
-table.barchart td .barchart-bar div.fill-4 {
-	background: #a6d854;
-}
-
-table.barchart td .barchart-bar div.fill-5 {
-	background: #ffd92f;
-}
-
-table.barchart td .barchart-bar div.fill-6 {
-	background: #e5c494;
-}
-
-</style>
-
 <script>
 var _ = require("lodash");
 var constants = require("./../app-constants.js");
+var Modal = require("./Modal.vue");
 module.exports = {
 	name: "Skaters",
 	data: function() {
@@ -448,6 +230,9 @@ module.exports = {
 			]
 		};
 	},
+	components: {
+		"modal": Modal,
+	},
 	created: function() {
 		this.fetchData();
 		// Google Analytics
@@ -470,10 +255,10 @@ module.exports = {
 		comparisons: function() {
 			var comparisons = [
 				{ stat: "toi_per_gp", label: "Minutes per game", extent: [] },
-				{ stat: "ip", label: "Points per 60 min.", extent: [] },
+				{ stat: "ip", label: "Points per 60 mins", extent: [] },
 				{ stat: "cf_pct_adj", label: "Corsi-for percentage, score-adj.", extent: [] },
-				{ stat: "cf_adj", label: "Corsi-for per 60 min., score-adj.", extent: [] },
-				{ stat: "ca_adj", label: "Corsi-against per 60 min., score-adj.", extent: [] }
+				{ stat: "cf_adj", label: "Corsi-for per 60 mins, score-adj.", extent: [] },
+				{ stat: "ca_adj", label: "Corsi-against per 60 mins, score-adj.", extent: [] }
 			];
 			var players = this.compared;
 			var sit = this.compareSit;

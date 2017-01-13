@@ -78,6 +78,63 @@ a:focus {
 
 /*
 *
+* Floating message
+*
+*/
+
+.floating-message {
+	position: fixed;
+	width: 248px;
+	height: 40px;
+	left: 16px;
+	bottom: 16px;
+	z-index: 100;
+}
+
+.floating-message p {
+	height: 100%;
+	width: 100%;
+	background: $gray8;
+	color: $gray1;
+	border-radius: 4px;
+	padding: 10px 100px 10px 12px;
+	box-sizing: border-box;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	box-shadow: 0 0 2px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.24);
+}
+
+.floating-message button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 40px;
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	background: $green4;
+	border-color: $green4;
+	margin: 0;
+}
+
+.floating-message button:hover {
+	color: $gray9;
+	background: $green5;
+	border-color: $green5;
+}
+
+.floating-message button:active {
+	color: $gray9;
+	background: $green6;
+	border-color: $green6;	
+}
+
+.floating-message button:focus {
+	border-color: $green7;
+}
+
+/*
+*
 * Page header
 *
 */

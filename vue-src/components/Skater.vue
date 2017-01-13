@@ -2,6 +2,44 @@
 	<div>
 		<div class="loader" v-if="!data"></div>
 		<div v-if="data">
+			<modal v-if="isModalVisible" @close="isModalVisible = false">
+				<div slot="header" class="toggle" style="margin-bottom: 0;">
+					<button :class="compareSit === 'all' ? 'selected' : null" @click="compareSit = 'all'">All</button
+					><button :class="compareSit === 'ev5' ? 'selected' : null" @click="compareSit = 'ev5'">5v5</button
+					><button :class="compareSit === 'pp' ? 'selected' : null" @click="compareSit = 'pp'">PP</button
+					><button :class="compareSit === 'sh' ? 'selected' : null" @click="compareSit = 'sh'">SH</button>
+				</div>
+				<div slot="body" class="tile-container">
+					<div v-if="compared.length > 0" v-for="c in comparisons" class="tile">
+						<table class="left-aligned barchart">
+							<thead>
+								<tr>
+									<th colspan="2">{{ c.label }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="(l, idx) in compared">
+									<td width="30%" class="label">{{ l.firsts[0].charAt(0) + ". " + l.lasts[0] }}<span v-if="data.player.f_or_d === 'f'"><br>{{ l.firsts[1].charAt(0) + ". " + l.lasts[1] }}</span></td>
+									<td width="70%">
+										<div v-if="c.stat === 'toi' || c.stat == 'cf_pct_adj'" class="barchart-bar">
+											<span>{{ l[compareSit][c.stat].toFixed(1) }}</span>
+											<div :class="'fill-' + idx" :style="{  width: c.extent[1] === 0 ? 0 : (100 * l[compareSit][c.stat] / c.extent[1]) + '%' }"></div>
+										</div>
+										<div v-else class="barchart-bar">
+											<span>{{ l[compareSit]["toi"] === 0 ? "0.0" : (60 * l[compareSit][c.stat] / l[compareSit]["toi"]).toFixed(1) }}</span>
+											<div :class="'fill-' + idx" :style="{ width: (c.extent[1] === 0 || l[compareSit]['toi'] === 0) ? 0 : 100 * ((60 * l[compareSit][c.stat] / l[compareSit]['toi']) / c.extent[1]) + '%' }"></div>
+										</div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</modal>
+			<div class="floating-message" v-if="compared.length >= 1 && !isModalVisible">
+				<p>{{ compared.length | pluralize("line") }} selected</p
+				><button @click="isModalVisible = true">Compare</button>
+			</div>
 			<div class="section section-header">
 				<h1>{{ data.player.first + " " + data.player.last }}</h1>
 				<h2>2016-2017</h2>
@@ -49,6 +87,7 @@
 				<table v-if="lineData">
 					<thead>
 						<tr>
+							<th class="left-aligned">Compare</th>
 							<th class="left-aligned">Linemates</th>
 							<th class="left-aligned" v-if="data.player.f_or_d === 'f'"></th>
 							<th @click="sortBy('toi')" @keyup.enter="sortBy('toi')" tabindex="0"
@@ -60,27 +99,29 @@
 							<th @click="sortBy('cf_pct_adj')" @keyup.enter="sortBy(cf_pct_adj)" tabindex="0"
 								:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
 							>CF% score-adj</th>
-							<th @click="sortBy('cf_pct')" @keyup.enter="sortBy(cf_pct)" tabindex="0"
-								:class="[ sort.col === 'cf_pct' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-							>CF%</th>
 							<th @click="sortBy('cf')" @keyup.enter="sortBy(cf)" tabindex="0"
-								:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-							>CF/60</th>
+								:class="[ sort.col === 'cf_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CF/60 score-adj</th>
 							<th @click="sortBy('ca')" @keyup.enter="sortBy(ca)" tabindex="0"
-								:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-							>CA/60</th>
+								:class="[ sort.col === 'ca_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CA/60 score-adj</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr v-for="l in filteredLines">
+							<td class="left-aligned">
+								<input tabindex="-1" :id="l.line_id" type="checkbox" :checked="compared.map(function(d) { return d.line_id; }).indexOf(l.line_id) >= 0" @click="updateComparisonList(l)">
+								<label tabindex="0" :for="l.line_id" class="checkbox-container">
+									<span class="checkbox-checkmark">
+								</label>
+							</td>
 							<td class="left-aligned">{{ l.firsts[0] + " " + l.lasts[0] }}</td>
 							<td class="left-aligned" v-if="data.player.f_or_d === 'f'">{{ l.firsts[1] + " " + l.lasts[1] }}</td>
 							<td>{{ Math.round(l[strengthSit].toi) }}</td>
 							<td>{{ l[strengthSit].g_diff | signed }}</td>
 							<td>{{ l[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>
-							<td>{{ l[strengthSit].cf_pct | percentage(false) }}<span class="pct">%</span></td>
-							<td>{{ l[strengthSit].cf | rate(true, l[strengthSit].toi, false) }}</td>
-							<td>{{ l[strengthSit].ca | rate(true, l[strengthSit].toi, false) }}</td>
+							<td>{{ l[strengthSit].cf_adj | rate(true, l[strengthSit].toi, false) }}</td>
+							<td>{{ l[strengthSit].ca_adj | rate(true, l[strengthSit].toi, false) }}</td>
 						</tr>
 						<tr v-if="filteredLines.length === 0">
 							<td class="left-aligned" :colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines with at least 5 minutes together</td>
@@ -241,6 +282,7 @@
 <script>
 var Bulletchart = require("./Bulletchart.vue");
 var Barchart = require("./Barchart.vue");
+var Modal = require("./Modal.vue");
 var _ = require("lodash");
 var constants = require("./../app-constants.js");
 module.exports = {
@@ -256,14 +298,46 @@ module.exports = {
 			strengthSit: "ev5",
 			tabs: { active: "games" },
 			sort: { col: "toi", order: -1 },
-			search: { col: "names", condition: "includes", query: "" }
+			search: { col: "names", condition: "includes", query: "" },
+			isModalVisible: false,
+			compareSit: "ev5",
+			compared: []
 		};
 	},
 	components: {
 		"bulletchart": Bulletchart,
-		"barchart": Barchart
+		"barchart": Barchart,
+		"modal": Modal,
+	},
+	watch: {
+		strengthSit: function() {
+			this.compareSit = this.strengthSit;
+		},
+		isModalVisible: function() {
+			document.body.style.overflow = this.isModalVisible ? "hidden" : "auto";
+		}
 	},
 	computed: {
+		comparisons: function() {
+			var comparisons = [
+				{ stat: "toi", label: "Minutes", extent: [] },
+				{ stat: "cf_pct_adj", label: "Corsi-for percentage, score-adj.", extent: [] },
+				{ stat: "cf_adj", label: "Corsi-for per 60 mins, score-adj.", extent: [] },
+				{ stat: "ca_adj", label: "Corsi-against per 60 mins, score-adj.", extent: [] }
+			];
+			var lines = this.compared;
+			var sit = this.compareSit;
+			comparisons.forEach(function(c) {
+				var vals;
+				if (c.stat === "toi" || c.stat === "cf_pct_adj") {
+					vals = lines.map(function(l) { return l[sit][c.stat]; });
+				} else {
+					vals = lines.map(function(l) { return 60 * l[sit][c.stat] / l[sit]["toi"]; });
+				}
+				c.extent = [0, _.max(vals)];
+			});
+			return comparisons;
+		},
 		sortedLines: function() {
 			var col = this.sort.col;
 			var order = this.sort.order < 0 ? "desc" : "asc";
@@ -430,6 +504,7 @@ module.exports = {
 				self.lineData = JSON.parse(xhr.responseText);
 				// Process/append additional stats for the player's lines
 				self.lineData.lines.forEach(function(l) {
+					l.line_id = l.player_ids.toString().replace(/,/g , "");
 					l.name1 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
 					if (self.lineData.lines[0].f_or_d === "d") {
 						l.firsts[1] = "";
@@ -440,7 +515,6 @@ module.exports = {
 						var s = l[strSit];
 						s.toi /= 60;
 						s.g_diff = s.gf - s.ga;
-						s.cf_pct = s.cf + s.ca === 0 ? 0 : 100 * s.cf / (s.cf + s.ca);
 						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
 					});
 				});
@@ -507,6 +581,14 @@ module.exports = {
 		sortBy: function(newSortCol) {
 			this.sort.order = newSortCol === this.sort.col ? -this.sort.order : -1;
 			this.sort.col = newSortCol;
+		},
+		updateComparisonList: function(l) {
+			// 'l' is a line object
+			if (_.find(this.compared, function(d) { return d.line_id === l.line_id; })) {
+				this.compared = this.compared.filter(function(d) { return d.line_id !== l.line_id; });
+			} else {
+				this.compared.push(l);
+			}
 		},
 		blurInput: function(event) {
 			event.target.blur();
