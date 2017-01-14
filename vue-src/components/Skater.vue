@@ -62,7 +62,8 @@
 				<div class="toggle">
 					<button :class="tabs.active === 'games' ? 'selected' : null" @click="tabs.active = 'games'">Games</button
 					><button :class="tabs.active === 'self' ? 'selected' : null" @click="tabs.active = 'self'">Player</button
-					><button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button>
+					><button :class="tabs.active === 'lines' ? 'selected' : null" @click="tabs.active = 'lines'">Lines</button
+					><button :class="tabs.active === 'wowy' ? 'selected' : null" @click="tabs.active = 'wowy'">WOWY</button>
 				</div
 				><div class="select-container">
 					<select v-model="strengthSit">
@@ -73,58 +74,51 @@
 					</select>
 				</div>
 			</div>
-			<div class="section section-table" v-show="tabs.active === 'lines'">
-				<div class="loader" v-if="data && !lineData"></div>
-				<div v-if="lineData" class="search-with-menu" style="margin-bottom: 24px;">
-					<div class="select-container">
-						<select v-model="search.condition">
-							<option value="includes">With</option>
-							<option value="excludes">Without</option>
-						</select>
-					</div
-					><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
+			<div class="section section-tiled-charts" v-if="data.player.gp >= 3" v-show="tabs.active === 'games'" style="padding-bottom: 0;">
+				<div v-if="chartData">
+					<barchart :data="chartData.toi"></barchart
+					><barchart :data="chartData.c_diff_adj"></barchart
+					><barchart :data="chartData.cf_adj"></barchart
+					><barchart :data="chartData.ca_adj"></barchart>
 				</div>
-				<table v-if="lineData">
+			</div>
+			<div class="section section-table" v-show="tabs.active === 'games'">
+				<table>
 					<thead>
 						<tr>
-							<th class="left-aligned">Compare</th>
-							<th class="left-aligned">Linemates</th>
-							<th class="left-aligned" v-if="data.player.f_or_d === 'f'"></th>
-							<th @click="sortBy('toi')" @keyup.enter="sortBy('toi')" tabindex="0"
-								:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-							>Mins</th>
-							<th @click="sortBy('g_diff')" @keyup.enter="sortBy('g_diff')" tabindex="0"
-								:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-							>Goal diff</th>
-							<th @click="sortBy('cf_pct_adj')" @keyup.enter="sortBy(cf_pct_adj)" tabindex="0"
-								:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-							>CF% score-adj</th>
-							<th @click="sortBy('cf')" @keyup.enter="sortBy(cf)" tabindex="0"
-								:class="[ sort.col === 'cf_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-							>CF/60 score-adj</th>
-							<th @click="sortBy('ca')" @keyup.enter="sortBy(ca)" tabindex="0"
-								:class="[ sort.col === 'ca_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
-							>CA/60 score-adj</th>
+							<th class="left-aligned">Date</th>
+							<th class="left-aligned">Team</th>
+							<th class="left-aligned">Opponent</th>
+							<th class="left-aligned">Result</th>
+							<th class="left-aligned">Points</th>
+							<th>Mins</th>
+							<th>Own C</th>
+							<th>GF</th>
+							<th>GA</th>
+							<th>G diff</th>
+							<th>CF</th>
+							<th>CA</th>
+							<th>C diff</th>
+							<th>C diff, score-adj</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="l in filteredLines">
-							<td class="left-aligned">
-								<input tabindex="-1" :id="l.line_id" type="checkbox" :checked="compared.map(function(d) { return d.line_id; }).indexOf(l.line_id) >= 0" @click="updateComparisonList(l)">
-								<label tabindex="0" :for="l.line_id" class="checkbox-container">
-									<span class="checkbox-checkmark">
-								</label>
-							</td>
-							<td class="left-aligned">{{ l.firsts[0] + " " + l.lasts[0] }}</td>
-							<td class="left-aligned" v-if="data.player.f_or_d === 'f'">{{ l.firsts[1] + " " + l.lasts[1] }}</td>
-							<td>{{ Math.round(l[strengthSit].toi) }}</td>
-							<td>{{ l[strengthSit].g_diff | signed }}</td>
-							<td>{{ l[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>
-							<td>{{ l[strengthSit].cf_adj | rate(true, l[strengthSit].toi, false) }}</td>
-							<td>{{ l[strengthSit].ca_adj | rate(true, l[strengthSit].toi, false) }}</td>
-						</tr>
-						<tr v-if="filteredLines.length === 0">
-							<td class="left-aligned" :colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines with at least 5 minutes together</td>
+						<tr v-for="g in data.history">
+							<td class="left-aligned">{{ g.date }}</td>
+							<td class="left-aligned">{{ g.team.toUpperCase() }}</td>
+							<td class="left-aligned">{{ g.opp.toUpperCase() }}</td>
+							<td class="left-aligned">{{ g.result }}</td>
+							<td class="left-aligned" v-if="g.position === 'na'" colspan="10">Scratched or injured</td>
+							<td class="left-aligned" v-if="g.position !== 'na'">{{ g.stats[strengthSit].points }}</td>
+							<td v-if="g.position !== 'na'">{{ Math.round(g.stats[strengthSit].toi) }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].ic }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].gf }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].ga }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].g_diff | signed }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].cf }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].ca }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].c_diff | signed }}</td>
+							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].c_diff_adj | signed }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -226,51 +220,101 @@
 					</tr>
 				</table>
 			</div>
-			<div class="section section-tiled-charts" v-if="data.player.gp >= 3" v-show="tabs.active === 'games'" style="padding-bottom: 0;">
-				<div v-if="chartData">
-					<barchart :data="chartData.toi"></barchart
-					><barchart :data="chartData.c_diff_adj"></barchart
-					><barchart :data="chartData.cf_adj"></barchart
-					><barchart :data="chartData.ca_adj"></barchart>
+			<div class="section section-table" v-show="tabs.active === 'lines'">
+				<div class="loader" v-if="data && !lineData"></div>
+				<div v-if="lineData" class="search-with-menu" style="margin-bottom: 24px;">
+					<div class="select-container">
+						<select v-model="search.condition">
+							<option value="includes">With</option>
+							<option value="excludes">Without</option>
+						</select>
+					</div
+					><input v-model="search.query" type="text" @keyup.enter="blurInput($event);">
 				</div>
-			</div>
-			<div class="section section-table" v-show="tabs.active === 'games'">
-				<table>
+				<table v-if="lineData">
 					<thead>
 						<tr>
-							<th class="left-aligned">Date</th>
-							<th class="left-aligned">Team</th>
-							<th class="left-aligned">Opponent</th>
-							<th class="left-aligned">Result</th>
-							<th class="left-aligned">Points</th>
-							<th>Mins</th>
-							<th>Own C</th>
-							<th>GF</th>
-							<th>GA</th>
-							<th>G diff</th>
-							<th>CF</th>
-							<th>CA</th>
-							<th>C diff</th>
-							<th>C diff, score-adj</th>
+							<th class="left-aligned">Compare</th>
+							<th class="left-aligned">Linemates</th>
+							<th class="left-aligned" v-if="data.player.f_or_d === 'f'"></th>
+							<th @click="sortBy('toi')" @keyup.enter="sortBy('toi')" tabindex="0"
+								:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>Mins</th>
+							<th @click="sortBy('g_diff')" @keyup.enter="sortBy('g_diff')" tabindex="0"
+								:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>Goal diff</th>
+							<th @click="sortBy('cf_pct_adj')" @keyup.enter="sortBy(cf_pct_adj)" tabindex="0"
+								:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CF% score-adj</th>
+							<th @click="sortBy('cf')" @keyup.enter="sortBy(cf)" tabindex="0"
+								:class="[ sort.col === 'cf_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CF/60 score-adj</th>
+							<th @click="sortBy('ca')" @keyup.enter="sortBy(ca)" tabindex="0"
+								:class="[ sort.col === 'ca_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+							>CA/60 score-adj</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="g in data.history">
-							<td class="left-aligned">{{ g.date }}</td>
-							<td class="left-aligned">{{ g.team.toUpperCase() }}</td>
-							<td class="left-aligned">{{ g.opp.toUpperCase() }}</td>
-							<td class="left-aligned">{{ g.result }}</td>
-							<td class="left-aligned" v-if="g.position === 'na'" colspan="10">Scratched or injured</td>
-							<td class="left-aligned" v-if="g.position !== 'na'">{{ g.stats[strengthSit].points }}</td>
-							<td v-if="g.position !== 'na'">{{ Math.round(g.stats[strengthSit].toi) }}</td>
-							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].ic }}</td>
-							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].gf }}</td>
-							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].ga }}</td>
-							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].g_diff | signed }}</td>
-							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].cf }}</td>
-							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].ca }}</td>
-							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].c_diff | signed }}</td>
-							<td v-if="g.position !== 'na'">{{ g.stats[strengthSit].c_diff_adj | signed }}</td>
+						<tr v-for="l in filteredLines">
+							<td class="left-aligned">
+								<input tabindex="-1" :id="l.line_id" type="checkbox" :checked="compared.map(function(d) { return d.line_id; }).indexOf(l.line_id) >= 0" @click="updateComparisonList(l)">
+								<label tabindex="0" :for="l.line_id" class="checkbox-container">
+									<span class="checkbox-checkmark">
+								</label>
+							</td>
+							<td class="left-aligned">{{ l.firsts[0] + " " + l.lasts[0] }}</td>
+							<td class="left-aligned" v-if="data.player.f_or_d === 'f'">{{ l.firsts[1] + " " + l.lasts[1] }}</td>
+							<td>{{ Math.round(l[strengthSit].toi) }}</td>
+							<td>{{ l[strengthSit].g_diff | signed }}</td>
+							<td>{{ l[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>
+							<td>{{ l[strengthSit].cf_adj | rate(true, l[strengthSit].toi, false) }}</td>
+							<td>{{ l[strengthSit].ca_adj | rate(true, l[strengthSit].toi, false) }}</td>
+						</tr>
+						<tr v-if="filteredLines.length === 0">
+							<td class="left-aligned" :colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines with at least 5 minutes together</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="section section-table" v-show="tabs.active === 'wowy'">
+				<div class="loader" v-if="data && !lineData"></div>
+				<table v-if="lineData">
+					<thead>
+						<tr>
+							<th class="left-aligned" rowspan="2">Partner</th>
+							<th style="border-bottom: 0;">Together</th>
+							<th class="left-aligned" style="border-bottom: 0;"></th>
+							<th style="border-bottom: 0;">Partner w/o {{ data.player.last }}</th>
+							<th class="left-aligned" style="border-bottom: 0;"></th>
+							<th style="border-bottom: 0;">{{ data.player.last }} w/o partner</th>
+							<th class="left-aligned" style="border-bottom: 0;"></th>
+						</tr>
+						<tr>
+							<th style="border-top: 0;">CF% score-adj</th>
+							<th class="left-aligned" style="font-weight: 400; border-top: 0;">Mins</th>
+							<th style="border-top: 0;">CF% score-adj</th>
+							<th class="left-aligned" style="font-weight: 400; border-top: 0;">Mins</th>
+							<th style="border-top: 0;">CF% score-adj</th>
+							<th class="left-aligned" style="font-weight: 400; border-top: 0;">Mins</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="w in filteredWowys">
+							<td class="left-aligned">{{ w.first + " " + w.last }}</td>
+							<td class="delta">{{ w.together[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>
+							<td class="left-aligned toi">{{ Math.round(w.together[strengthSit].toi) }}</td>
+							<td class="delta"
+								:class="
+									w.mate_only[strengthSit].cf_pct_adj - w.together[strengthSit].cf_pct_adj > 0 ? 'increase' :
+									w.mate_only[strengthSit].cf_pct_adj - w.together[strengthSit].cf_pct_adj < 0 ? 'decrease' : null"
+								>{{ (w.mate_only[strengthSit].cf_pct_adj - w.together[strengthSit].cf_pct_adj) | percentage(true) }}<span class="pct">%</span></td>
+							<td class="left-aligned toi">{{ Math.round(w.mate_only[strengthSit].toi) }}</td>
+							<td class="delta"
+								:class="
+									w.self_only[strengthSit].cf_pct_adj - w.together[strengthSit].cf_pct_adj > 0 ? 'increase' :
+									w.self_only[strengthSit].cf_pct_adj - w.together[strengthSit].cf_pct_adj < 0 ? 'decrease' : null"
+								>{{ (w.self_only[strengthSit].cf_pct_adj - w.together[strengthSit].cf_pct_adj) | percentage(true) }}<span class="pct">%</span></td>
+							<td class="left-aligned toi">{{ Math.round(w.self_only[strengthSit].toi) }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -367,6 +411,14 @@ module.exports = {
 				}
 			}
 			return data;
+		},
+		sortedWowys: function() {
+			var sit = this.strengthSit;
+			return _.orderBy(this.lineData.wowy, function(d) { return d["together"][sit]["toi"]; }, "desc");
+		},
+		filteredWowys: function() {
+			var sit = this.strengthSit;
+			return this.sortedWowys.filter(function(d) { return d["together"][sit]["toi"] >= 5; });
 		},
 		chartData: function() {
 			var obj = {
@@ -518,6 +570,16 @@ module.exports = {
 						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
 					});
 				});
+				// Process/append additional stats for the player's wowy stats
+				self.lineData.wowy.forEach(function(w) {
+					["together", "mate_only", "self_only"].forEach(function(context) {
+						["all", "ev5", "pp", "sh"].forEach(function(strSit) {
+							var obj = w[context][strSit];
+							obj.toi /= 60;
+							obj.cf_pct_adj = obj.cf_adj + obj.ca_adj === 0 ? 0 : 100 * obj.cf_adj / (obj.cf_adj + obj.ca_adj);
+						});
+					});
+				});
 			}
 			xhr.send();
 		},
@@ -595,3 +657,24 @@ module.exports = {
 	}
 };
 </script>
+
+<style lang="scss">
+
+@import "../variables";
+
+td.delta {
+	font-weight: 700;
+}
+
+td.increase {
+	color: $green8;
+}
+
+td.decrease {
+	color: #cc4c02;
+}
+
+td.toi {
+	color: $gray6;
+}
+</style>
