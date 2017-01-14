@@ -45,12 +45,12 @@
 				<h2>2016-2017</h2>
 			</div>
 			<div class="section section-tiled-charts">
-				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="data.breakpoints.ev5_cf_adj_per60" :isInverted="false"></bulletchart>
-				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="data.breakpoints.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
-				<bulletchart :label="'GF/60, 5 on 5'" :data="data.breakpoints.ev5_gf_per60" :isInverted="false"></bulletchart>
-				<bulletchart :label="'GA/60, 5 on 5'" :data="data.breakpoints.ev5_ga_per60" :isInverted="true"></bulletchart>
-				<bulletchart :label="'GF/60, power play'" :data="data.breakpoints.pp_gf_per60" :isInverted="false"></bulletchart>
-				<bulletchart :label="'GA/60, short handed'" :data="data.breakpoints.sh_ga_per60" :isInverted="true"></bulletchart>
+				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="data.breakpoints.ev5_cf_adj_per60" :isInverted="false"></bulletchart
+				><bulletchart :label="'score adj. CA/60, 5 on 5'" :data="data.breakpoints.ev5_ca_adj_per60" :isInverted="true"></bulletchart
+				><bulletchart :label="'GF/60, 5 on 5'" :data="data.breakpoints.ev5_gf_per60" :isInverted="false"></bulletchart
+				><bulletchart :label="'GA/60, 5 on 5'" :data="data.breakpoints.ev5_ga_per60" :isInverted="true"></bulletchart
+				><bulletchart :label="'GF/60, power play'" :data="data.breakpoints.pp_gf_per60" :isInverted="false"></bulletchart
+				><bulletchart :label="'GA/60, short handed'" :data="data.breakpoints.sh_ga_per60" :isInverted="true"></bulletchart>
 			</div>
 			<div class="section section-legend">
 				<div><span :style="{ background: colours.green8 }"></span><span>Top 6 teams</span></div
@@ -220,10 +220,10 @@
 			</div>
 			<div class="section section-tiled-charts" v-if="data.team.gp >= 3" v-show="tabs.active === 'games'" style="padding-bottom: 0;">
 				<div v-if="chartData">
-					<barchart :data="chartData.g_diff"></barchart>
-					<barchart :data="chartData.c_diff_adj"></barchart>
-					<barchart :data="chartData.cf_adj"></barchart>
-					<barchart :data="chartData.ca_adj"></barchart>
+					<barchart :data="chartData.g_diff"></barchart
+					><barchart :data="chartData.c_diff_adj"></barchart
+					><barchart :data="chartData.cf_adj"></barchart
+					><barchart :data="chartData.ca_adj"></barchart>
 				</div>
 			</div>
 			<div class="section section-table" v-show="tabs.active === 'games'">

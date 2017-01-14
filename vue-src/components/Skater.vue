@@ -46,11 +46,11 @@
 			</div>
 			<div class="loader" v-if="data && !bulletchartData"></div>
 			<div v-if="bulletchartData" class="section section-tiled-charts">
-				<bulletchart :label="'mins/game, total'" :data="bulletchartData.all_toi" :isInverted="false"></bulletchart>
-				<bulletchart :label="'score adj. CF/60, 5 on 5'" :data="bulletchartData.ev5_cf_adj_per60" :isInverted="false"></bulletchart>
-				<bulletchart :label="'score adj. CA/60, 5 on 5'" :data="bulletchartData.ev5_ca_adj_per60" :isInverted="true"></bulletchart>
-				<bulletchart :label="'P1/60, 5 on 5'" :data="bulletchartData.ev5_p1_per60" :isInverted="false"></bulletchart>
-				<bulletchart :label="'P1/60, power play'" :data="bulletchartData.pp_p1_per60" :isInverted="false"></bulletchart>
+				<bulletchart :label="'mins/game, total'" :data="bulletchartData.all_toi" :isInverted="false"></bulletchart
+				><bulletchart :label="'score adj. CF/60, 5 on 5'" :data="bulletchartData.ev5_cf_adj_per60" :isInverted="false"></bulletchart
+				><bulletchart :label="'score adj. CA/60, 5 on 5'" :data="bulletchartData.ev5_ca_adj_per60" :isInverted="true"></bulletchart
+				><bulletchart :label="'P1/60, 5 on 5'" :data="bulletchartData.ev5_p1_per60" :isInverted="false"></bulletchart
+				><bulletchart :label="'P1/60, power play'" :data="bulletchartData.pp_p1_per60" :isInverted="false"></bulletchart>
 			</div>
 			<div v-if="bulletchartData" class="section section-legend">
 				<div><span :style="{ background: colours.green8 }"></span><span v-if="data.player.f_or_d === 'f'">Top 90 forwards</span><span v-if="data.player.f_or_d === 'd'">Top 60 defenders</span></div>
@@ -228,10 +228,10 @@
 			</div>
 			<div class="section section-tiled-charts" v-if="data.player.gp >= 3" v-show="tabs.active === 'games'" style="padding-bottom: 0;">
 				<div v-if="chartData">
-					<barchart :data="chartData.toi"></barchart>
-					<barchart :data="chartData.c_diff_adj"></barchart>
-					<barchart :data="chartData.cf_adj"></barchart>
-					<barchart :data="chartData.ca_adj"></barchart>
+					<barchart :data="chartData.toi"></barchart
+					><barchart :data="chartData.c_diff_adj"></barchart
+					><barchart :data="chartData.cf_adj"></barchart
+					><barchart :data="chartData.ca_adj"></barchart>
 				</div>
 			</div>
 			<div class="section section-table" v-show="tabs.active === 'games'">
@@ -525,7 +525,6 @@ module.exports = {
 			var self = this;
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", "./api/players/breakpoints");
-			xhr.setRequestHeader("x-no-compression", true);
 			xhr.onload = function() {
 				self.fetchLineData(); // Fetch line data after breakpoint data is loaded
 				self.breakpointData = JSON.parse(xhr.responseText);

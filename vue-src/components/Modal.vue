@@ -103,16 +103,16 @@ $bar-h: 24px;
 	position: relative;
 }
 
-/* When width is 740px or wider */
+/* When width is 640px or wider */
 @media (min-width: 641px) {
 	.tile {
-		width: calc(50% - 2px);
+		width: 50%;
 	}
 }
 
-@media (min-width: 1021px) {
+@media (min-width: 961px) {
 	.tile {
-		width: calc(33.33333% - 2px);
+		width: 33.33333%;
 	}
 }
 

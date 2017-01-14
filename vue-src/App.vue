@@ -492,8 +492,34 @@ input[type="checkbox"]:checked + label.checkbox-container span.checkbox-checkmar
 	vertical-align: top;
 	white-space: nowrap;
 	position: relative;
-	width: 272px;
-	margin: 0 $h-whitespace $v-whitespace $h-whitespace;
+	box-sizing: border-box;
+	min-width: 320px;
+	padding: 0 $h-whitespace $v-whitespace $h-whitespace;
+}
+
+.section.section-tiled-charts .chart-tile {
+	width: 100%;
+}
+
+/* When width is 640px or wider */
+@media (min-width: 641px) {
+	.section.section-tiled-charts .chart-tile {
+		width: 50%;
+	}
+}
+
+/* When width is 961px or wider */
+@media (min-width: 961px) {
+	.section.section-tiled-charts .chart-tile {
+		width: 33%;
+	}
+}
+
+/* When width is 1281px or wider */
+@media (min-width: 1281px) {
+	.section.section-tiled-charts .chart-tile {
+		width: 25%;
+	}
 }
 
 .section.section-legend {

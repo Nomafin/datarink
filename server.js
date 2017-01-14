@@ -20,19 +20,7 @@ function start() {
 	var server = express();
 	
 	// Enable compression for static assets and api responses
-	server.use(compression({ filter: shouldCompress }));
-
-	// Filter to determine whether or not responses should be compressed
-	// Due to a limitation with apicache, do not compress responses that we want cached
-	function shouldCompress(request, response) {
-		if (request.headers["x-no-compression"]
-			|| request.baseUrl === "/api/players"
-			|| request.baseUrl === "/api/players/breakpoints"
-			|| request.baseUrl === "/api/highlights") {
-			return false;
-		}
-		return compression.filter(request, response);
-	}
+	server.use(compression());
 
 	// Serve static files, including the Vue application in public/index.html
 	server.use(express.static("public"));

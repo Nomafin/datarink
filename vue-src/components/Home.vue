@@ -189,7 +189,6 @@ module.exports = {
 			var self = this;
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", "./api/highlights");
-			xhr.setRequestHeader("x-no-compression", true);
 			xhr.onload = function() {
 				self.data = JSON.parse(xhr.responseText);
 			}

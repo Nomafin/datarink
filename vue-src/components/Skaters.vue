@@ -81,6 +81,15 @@
 				</span>Per 60 mins</button
 			><div class="search-with-menu">
 				<div class="select-container">
+					<select v-model="filter.col" @change="filterInput = 0;">
+						<option value="toi">Minimum mins</option>
+						<option value="gp">Minimum games</option>
+					</select>
+				</div
+				><input v-model.number="filterInput" @keyup.enter="blurInput($event);" type="number" style="width: 62px;">
+			</div
+			><div class="search-with-menu">
+				<div class="select-container">
 					<select v-model="search.col" @change="searchInput = '';">
 						<option value="name">Name</option>
 						<option value="teams">Team</option>
@@ -89,15 +98,6 @@
 				</div
 				><input v-model="searchInput" type="text" @keyup.enter="blurInput($event);">
 				<p v-if="search.col === 'positions'" class="tooltip">For forwards, type 'f'</p>
-			</div
-			><div class="search-with-menu">
-				<div class="select-container">
-					<select v-model="filter.col" @change="filterInput = 0;">
-						<option value="toi">Minimum mins</option>
-						<option value="gp">Minimum games</option>
-					</select>
-				</div
-				><input v-model.number="filterInput" @keyup.enter="blurInput($event);" type="number" style="width: 62px;">
 			</div>
 		</div>
 		<div class="loader" v-if="!players"></div>
@@ -379,7 +379,6 @@ module.exports = {
 			var self = this;
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", "./api/players");
-			xhr.setRequestHeader("x-no-compression", true);
 			xhr.onload = function() {
 				self.players = JSON.parse(xhr.responseText).players;
 				self.players.forEach(function(p) {

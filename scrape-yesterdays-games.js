@@ -135,8 +135,7 @@ function cacheApis() {
 		endpoints.forEach(function(endpoint) {
 			var route = apiRoot + endpoint;
 			request(
-				{	headers: { "x-no-compression": true },
-					uri: route,
+				{	uri: route,
 					method: "GET"
 				}, 
 				function (error, response, body) {
