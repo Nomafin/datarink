@@ -194,14 +194,15 @@ router.get("/:id", function(request, response) {
 
 	var eventQueryStr;
 	if (scope === "player") {
-		eventQueryStr = "SELECT *"
-			+ " FROM game_events"
-			+ " WHERE season = $1"
-			+ " AND (type = 'goal' OR type = 'shot' OR type = 'missed_shot' OR type = 'blocked_shot')"
-			+ " AND ("
-				+ " a_s1 = $2 OR a_s2 = $2 OR a_s3 = $2 OR a_s4 = $2 OR a_s5 = $2 OR a_s6 = $2 OR a_g = $2 OR"
-				+ " h_s1 = $2 OR h_s2 = $2 OR h_s3 = $2 OR h_s4 = $2 OR h_s5 = $2 OR h_s6 = $2 OR h_g = $2"
-			+ ")";
+		// Query for all events that occurred in games the player was in
+		// 'p' contains all of the specified player's game_rosters row (i.e., all games they played in, regardless of team)
+		// Join the game ids in 'p' with the game ids in 'e' to get all of those games' events
+		eventQueryStr = "SELECT e.*"
+			+ " FROM game_rosters AS p"
+			+ " LEFT JOIN game_events AS e"
+			+ " ON p.season = e.season AND p.game_id = e.game_id"
+			+ " WHERE (e.type = 'goal' OR e.type = 'shot' OR e.type = 'missed_shot' OR e.type = 'blocked_shot')"
+				+ " AND p.season = $1 AND p.player_id = $2"; 
 	} else if (scope === "team") {
 		eventQueryStr = "SELECT e.*"
 			+ " FROM game_events AS e"
@@ -334,7 +335,6 @@ router.get("/:id", function(request, response) {
 						}
 					});
 				});
-
 			}); // End of f/d loop
 		}); // End of game id loop
 
@@ -347,6 +347,13 @@ router.get("/:id", function(request, response) {
 			// Combine the database home/away skater columns into an array, removing null values
 			ev["a_sIds"] = [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
 			ev["h_sIds"] = [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; });
+
+			// If we're getting line stats for a specified player, skip events that don't involve the player
+			if (scope === "player") {
+				if (ev["h_sIds"].indexOf(id) < 0 && ev["a_sIds"].indexOf(id) < 0) {
+					return;
+				}
+			}
 
 			// Get isHome: true or false to indicate if the player or team was at home
 			// Get suffix: 'f' or 'a' to indicate if the event was for/against the team or player
