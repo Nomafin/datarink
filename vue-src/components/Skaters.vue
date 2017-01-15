@@ -113,7 +113,7 @@
 						<th v-for="c in columns" :tabindex="c.sortable ? 0 : null"
 							@click="sortBy(c.sortable, c.key)" @keyup.enter="sortBy(c.sortable, c.key)"
 							:class="[
-								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '',
+								sort.col === c.key ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : null,
 								c.classes
 							]"
 						>{{ c.heading }}<span v-if="isRatesEnabled && c.hasRate">/60</span></th>
