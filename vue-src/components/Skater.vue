@@ -297,19 +297,19 @@
 						<tr>
 							<th @click="sortWowyBy('together', wowyStat)" @keyup.enter="sortWowyBy('together', wowyStat)" tabindex="0"
 								:class="[ wowySort.context === 'together' && wowySort.col === wowyStat ? (wowySort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
-								style="border-top: 0;">{{ wowyStat === "cf_pct_adj" ? "CF%" : wowyStat === "cf_per_60" ? "CF/60" : "CA/60" }}, score-adj</th>
+								style="border-top: 0;">{{ wowyStat === "cf_pct_adj" ? "CF%" : wowyStat === "cf_per_60" ? "CF/60" : "CA/60" }} score-adj</th>
 							<th @click="sortWowyBy('together', 'toi')" @keyup.enter="sortWowyBy('together', 'toi')" tabindex="0"
 								:class="[ wowySort.context === 'together' && wowySort.col === 'toi' ? (wowySort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
 								class="left-aligned" style="font-weight: 400; border-top: 0;">Mins</th>
 							<th @click="sortWowyBy('mate_only', wowyStat)" @keyup.enter="sortWowyBy('mate_only', wowyStat)" tabindex="0"
 								:class="[ wowySort.context === 'mate_only' && wowySort.col === wowyStat ? (wowySort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
-								style="border-top: 0;">{{ wowyStat === "cf_pct_adj" ? "CF%" : wowyStat === "cf_per_60" ? "CF/60" : "CA/60" }}, score-adj</th>
+								style="border-top: 0;">{{ wowyStat === "cf_pct_adj" ? "CF%" : wowyStat === "cf_per_60" ? "CF/60" : "CA/60" }} score-adj</th>
 							<th @click="sortWowyBy('mate_only', 'toi')" @keyup.enter="sortWowyBy('mate_only', 'toi')" tabindex="0"
 								:class="[ wowySort.context === 'mate_only' && wowySort.col === 'toi' ? (wowySort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
 								class="left-aligned" style="font-weight: 400; border-top: 0;">Mins</th>
 							<th @click="sortWowyBy('self_only', wowyStat)" @keyup.enter="sortWowyBy('self_only', wowyStat)" tabindex="0"
 								:class="[ wowySort.context === 'self_only' && wowySort.col === wowyStat ? (wowySort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
-								style="border-top: 0;">{{ wowyStat === "cf_pct_adj" ? "CF%" : wowyStat === "cf_per_60" ? "CF/60" : "CA/60" }}, score-adj</th>
+								style="border-top: 0;">{{ wowyStat === "cf_pct_adj" ? "CF%" : wowyStat === "cf_per_60" ? "CF/60" : "CA/60" }} score-adj</th>
 							<th @click="sortWowyBy('self_only', 'toi')" @keyup.enter="sortWowyBy('self_only', 'toi')" tabindex="0"
 								:class="[ wowySort.context === 'self_only' && wowySort.col === 'toi' ? (wowySort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
 								class="left-aligned" style="font-weight: 400; border-top: 0;">Mins</th>
