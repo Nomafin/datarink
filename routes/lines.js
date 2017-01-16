@@ -83,18 +83,20 @@ function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
 	combos.forEach(function(c) {
 		c.sort(function(a, b) { return a - b; });
 		var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
-		var sits = strSit ? ["all", strSit] : ["all"];
-		sits.forEach(function(sit) {
-			lineObj[sit]["c" + suffix]++;
-			if (suffix === "f") {
-				lineObj[sit]["cf_adj"] += constants.cfWeights[scoreSit];
-			} else if (suffix === "a") {
-				lineObj[sit]["ca_adj"] += constants.cfWeights[-1 * scoreSit];
-			}
-			if (ev.type === "goal") {
-				lineObj[sit]["g" + suffix]++;
-			}
-		})
+		if (lineObj) {
+			var sits = strSit ? ["all", strSit] : ["all"];
+			sits.forEach(function(sit) {
+				lineObj[sit]["c" + suffix]++;
+				if (suffix === "f") {
+					lineObj[sit]["cf_adj"] += constants.cfWeights[scoreSit];
+				} else if (suffix === "a") {
+					lineObj[sit]["ca_adj"] += constants.cfWeights[-1 * scoreSit];
+				}
+				if (ev.type === "goal") {
+					lineObj[sit]["g" + suffix]++;
+				}
+			})
+		}
 	});	
 };
 
@@ -260,6 +262,11 @@ router.get("/:id", function(request, response) {
 		// Loop through each game and period and calculate line toi
 		//
 
+		// Store all f/d combinations that have been generated for a particular *roster*
+		// 		key: roster player ids in ascending order: 123,234,345,... - the key will contain *all* f/d players in a roster
+		// 		value: all generated combinations for those player ids
+		var generatedShiftCombos = {};
+
 		var gIds = _.uniqBy(shiftRows, "game_id").map(function(d) { return d.game_id; });
 		gIds.forEach(function(gId) {
 
@@ -271,15 +278,25 @@ router.get("/:id", function(request, response) {
 				// Generate combinations
 				var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === fd; });
 				var uniqLinemates = _.uniqBy(posShiftRows, "player_id");
-				var numLinemates = fd === "f" ? 3 : 2;
-				var combos = combinations.k_combinations(uniqLinemates, numLinemates);
-				var lineTeam = gShiftRows[0].team;
 
-				// Create objects to store each combination's results
+				// Generate key to check if we've already generated combinations for the combination of players
+				var lineKey = uniqLinemates.map(function(d) { return d.player_id; });
+				lineKey = lineKey.sort(function(a, b) { return a - b; });
+				lineKey = lineKey.toString();
+
+				// Reuse or create objects to store each combination's results
 				var lines = [];
-				combos.forEach(function(combo) {
-					initLine(fd, combo, lines, lineResults, lineTeam);
-				});
+				if (generatedShiftCombos.hasOwnProperty(lineKey)) {
+					lines = generatedShiftCombos[lineKey];
+				} else {
+					var numLinemates = fd === "f" ? 3 : 2;
+					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
+					var lineTeam = gShiftRows[0].team;
+					combos.forEach(function(combo) {
+						initLine(fd, combo, lines, lineResults, lineTeam);
+					});
+					generatedShiftCombos[lineKey] = lines;
+				}
 
 				// Get period numbers in the current game
 				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
