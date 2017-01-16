@@ -619,6 +619,7 @@ table th[tabindex="0"]:focus {
 table th span.pct,
 table td span.pct {
 	font-size: $small-font-size;
+	line-height: $small-font-size;
 }
 
 table th span.rank,

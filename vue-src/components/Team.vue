@@ -98,19 +98,19 @@
 							<th class="left-aligned">Compare</th>
 							<th class="left-aligned" colspan="3">Linemates</th>
 							<th @click="sortBy('toi')" @keyup.enter="sortBy('toi')" tabindex="0"
-								:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								:class="[ sort.col === 'toi' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
 							>Mins</th>
 							<th @click="sortBy('g_diff')" @keyup.enter="sortBy('g_diff')" tabindex="0"
-								:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								:class="[ sort.col === 'g_diff' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
 							>Goal diff</th>
 							<th @click="sortBy('cf_pct_adj')" @keyup.enter="sortBy(cf_pct_adj)" tabindex="0"
-								:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								:class="[ sort.col === 'cf_pct_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
 							>CF% score-adj</th>
 							<th @click="sortBy('cf')" @keyup.enter="sortBy(cf)" tabindex="0"
-								:class="[ sort.col === 'cf_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								:class="[ sort.col === 'cf' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
 							>CF/60 score-adj</th>
 							<th @click="sortBy('ca')" @keyup.enter="sortBy(ca)" tabindex="0"
-								:class="[ sort.col === 'ca_adj' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : '' ]"
+								:class="[ sort.col === 'ca' ? (sort.order === -1 ? 'sort-desc' : 'sort-asc') : null ]"
 							>CA/60 score-adj</th>
 						</tr>
 					</thead>

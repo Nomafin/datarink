@@ -1,13 +1,16 @@
 "use strict"
 
 var express = require("express");
+var apicache = require("apicache");
 var _ = require("lodash");
+var intersect = require("intersect");
 var constants = require("../helpers/analysis-constants.json");
 var db = require("../helpers/db");
 var ah = require("../helpers/analysis-helpers");
 var combinations = require("../helpers/combinations");
 
 var router = express.Router();
+var cache = apicache.middleware;
 
 // 'timeranges' is a string: "start-end;start-end;..."
 // First split the string into an array of intervals: ["start-end", "start-end", ...]
@@ -27,7 +30,8 @@ function getTimepointArray(timeranges) {
 // 'players' is an array of player objects: [ { player_id: ... }, { player_id: ... }] - contains player properties used to generate lines
 // 'lines' is an array of player id arrays: [ [111, 222, 333], [222, 333, 444] ] - we'll loop through these lines and increment the stats
 // 'lineResults' is an array of line objects that will be send in the api response
-function initLine(f_or_d, players, lines, lineResults) {
+// 'lineTeam' is the tricode of the line's team
+function initLine(f_or_d, players, lines, lineResults, lineTeam) {
 	var pIds = [];
 	var firsts = [];
 	var lasts = [];
@@ -49,6 +53,7 @@ function initLine(f_or_d, players, lines, lineResults) {
 			firsts: firsts,
 			lasts: lasts,
 			f_or_d: f_or_d,
+			team: lineTeam,
 			all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
 			ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
 			pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
@@ -81,18 +86,20 @@ function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
 	combos.forEach(function(c) {
 		c.sort(function(a, b) { return a - b; });
 		var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
-		var sits = strSit ? ["all", strSit] : ["all"];
-		sits.forEach(function(sit) {
-			lineObj[sit]["c" + suffix]++;
-			if (suffix === "f") {
-				lineObj[sit]["cf_adj"] += constants.cfWeights[scoreSit];
-			} else if (suffix === "a") {
-				lineObj[sit]["ca_adj"] += constants.cfWeights[-1 * scoreSit];
-			}
-			if (ev.type === "goal") {
-				lineObj[sit]["g" + suffix]++;
-			}
-		})
+		if (lineObj) {
+			var sits = strSit ? ["all", strSit] : ["all"];
+			sits.forEach(function(sit) {
+				lineObj[sit]["c" + suffix]++;
+				if (suffix === "f") {
+					lineObj[sit]["cf_adj"] += constants.cfWeights[scoreSit];
+				} else if (suffix === "a") {
+					lineObj[sit]["ca_adj"] += constants.cfWeights[-1 * scoreSit];
+				}
+				if (ev.type === "goal") {
+					lineObj[sit]["g" + suffix]++;
+				}
+			})
+		}
 	});	
 };
 
@@ -101,7 +108,7 @@ function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
 // Specify a player using a player id 8471675; specify a team using a tricode 'tor'
 //
 
-router.get("/:id", function(request, response) {
+router.get("/:id", cache("24 hours"), function(request, response) {
 
 	var season = 2016;
 	var scope;					// 'team' or 'player'
@@ -197,7 +204,7 @@ router.get("/:id", function(request, response) {
 		// Query for all events that occurred in games the player was in
 		// 'p' contains all of the specified player's game_rosters row (i.e., all games they played in, regardless of team)
 		// Join the game ids in 'p' with the game ids in 'e' to get all of those games' events
-		eventQueryStr = "SELECT e.*"
+		eventQueryStr = "SELECT e.*, p.team AS p_team"
 			+ " FROM game_rosters AS p"
 			+ " LEFT JOIN game_events AS e"
 			+ " ON p.season = e.season AND p.game_id = e.game_id"
@@ -254,6 +261,11 @@ router.get("/:id", function(request, response) {
 			fdToLoop = [fdVals[id]];
 		}
 
+		// Store all f/d combinations that have been generated for a particular *roster*
+		// 		key: roster player ids in ascending order: 123,234,345,... - the key will contain *all* f/d players in a roster
+		// 		value: all generated combinations for those player ids
+		var generatedShiftCombos = {};
+
 		//
 		// Loop through each game and period and calculate line toi
 		//
@@ -267,26 +279,27 @@ router.get("/:id", function(request, response) {
 			fdToLoop.forEach(function(fd) {
 
 				// Generate combinations
-				var uniqLinemates;
-				var numLinemates;
-				var posShiftRows;
-				if (scope === "team") {
-					posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === fd; });
-					uniqLinemates = _.uniqBy(posShiftRows, "player_id");
-					numLinemates = fd === "f" ? 3 : 2;
-				} else if (scope === "player") {
-					// If we're getting lines for a particular player, we can ignore the player when generating combinations
-					posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === fd; });
-					uniqLinemates = _.uniqBy(posShiftRows, "player_id").filter(function(d) { return d.player_id !== id; });
-					numLinemates = fd === "f" ? 2 : 1;
-				}
-				var combos = combinations.k_combinations(uniqLinemates, numLinemates);
+				var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === fd; });
+				var uniqLinemates = _.uniqBy(posShiftRows, "player_id");
 
-				// Create objects to store each combination's results
+				// Generate key to check if we've already generated combinations for the combination of players
+				var lineKey = uniqLinemates.map(function(d) { return d.player_id; });
+				lineKey = lineKey.sort(function(a, b) { return a - b; });
+				lineKey = lineKey.toString();
+
+				// Reuse or create objects to store each combination's results
 				var lines = [];
-				combos.forEach(function(combo) {
-					initLine(fd, combo, lines, lineResults);
-				});
+				if (generatedShiftCombos.hasOwnProperty(lineKey)) {
+					lines = generatedShiftCombos[lineKey];
+				} else {
+					var numLinemates = fd === "f" ? 3 : 2;
+					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
+					var lineTeam = gShiftRows[0].team;
+					combos.forEach(function(combo) {
+						initLine(fd, combo, lines, lineResults, lineTeam);
+					});
+					generatedShiftCombos[lineKey] = lines;
+				}
 
 				// Get period numbers in the current game
 				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
@@ -297,32 +310,14 @@ router.get("/:id", function(request, response) {
 
 					prds.forEach(function(prd) {
 
-						// If we're getting a particular player's linemates, get their own row for the period
-						// If they didn't play in the period, they won't have a row and we don't have to increment toi
-						var ownRow;
-						if (scope === "player") {
-							ownRow = gShiftRows.find(function(d) { return d.player_id === id && d.period === prd; });
-							if (!ownRow) {
-								return;
-							}
-						}
-
 						// Get intersecting timepoints for all players
 						// Ensure we have the expected number of linemate rows before populating playerIntersection
 						var playerIntersection;
 						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
-						if (scope === "player") {
-							if (fd === "f" && linemateRows.length === 2) {
-								playerIntersection = _.intersection(ownRow.shifts, linemateRows[0].shifts, linemateRows[1].shifts);
-							} else if (fd === "d" && linemateRows.length === 1) {
-								playerIntersection = _.intersection(ownRow.shifts, linemateRows[0].shifts);
-							}
-						} else if (scope === "team") {
-							if (fd === "f" && linemateRows.length === 3) {
-								playerIntersection = _.intersection(linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts);
-							} else if (fd === "d" && linemateRows.length === 2) {
-								playerIntersection = _.intersection(linemateRows[0].shifts, linemateRows[1].shifts);
-							}
+						if (fd === "f" && linemateRows.length === 3) {
+							playerIntersection = intersect([linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts]);
+						} else if (fd === "d" && linemateRows.length === 2) {
+							playerIntersection = intersect(linemateRows[0].shifts, linemateRows[1].shifts);
 						}
 
 						// Increment toi for all situations and ev5/sh/pp
@@ -330,7 +325,7 @@ router.get("/:id", function(request, response) {
 							lineObj.all.toi += playerIntersection.length;
 							var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
 							prdSsRows.forEach(function(sr) {
-								lineObj[sr.strength_sit].toi += _.intersection(playerIntersection, sr.timeranges).length;
+								lineObj[sr.strength_sit].toi += intersect(playerIntersection, sr.timeranges).length;
 							});
 						}
 					});
@@ -348,17 +343,10 @@ router.get("/:id", function(request, response) {
 			ev["a_sIds"] = [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
 			ev["h_sIds"] = [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; });
 
-			// If we're getting line stats for a specified player, skip events that don't involve the player
-			if (scope === "player") {
-				if (ev["h_sIds"].indexOf(id) < 0 && ev["a_sIds"].indexOf(id) < 0) {
-					return;
-				}
-			}
-
 			// Get isHome: true or false to indicate if the player or team was at home
 			// Get suffix: 'f' or 'a' to indicate if the event was for/against the team or player
 			var isHome;
-			var suffix; 
+			var suffix;
 			if (scope === "team") {
 				suffix = ev.team === id ? "f" : "a";
 				if (ev.venue === "home") {
@@ -367,10 +355,11 @@ router.get("/:id", function(request, response) {
 					isHome = ev.team === id ? false : true;
 				}
 			} else if (scope === "player") {
-				isHome = ev["h_sIds"].indexOf(id) >= 0 ? true : false;
-				suffix = "f";
-				if ((isHome && ev.venue === "away") || (!isHome && ev.venue === "home"))  {
-					suffix = "a";
+				suffix = ev.team === ev.p_team ? "f" : "a";
+				if (ev.venue === "home") {
+					isHome = ev.team === ev.p_team ? true : false;
+				} else if (ev.venue === "away") {
+					isHome = ev.team === ev.p_team ? false : true;
 				}
 			}
 
@@ -387,20 +376,129 @@ router.get("/:id", function(request, response) {
 					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);				
 				});
 			} else if (scope === "player") {
-				// Get the skaters for which to increment stats (same f/d value), and remove the specified player
-				skaters = skaters.filter(function(sid) { return sid !== id; })
-					.filter(function(sid) { return fdVals[sid] === fdVals[id]; });
+				// Get the skaters for which to increment stats (same f/d value)
+				skaters = skaters.filter(function(sid) { return fdVals[sid] === fdVals[id]; });
 				// Get combinations of linemates for which to increment stats
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
-				var numLinemates = fdVals[id] === "d" ? 1 : 2;
+				var numLinemates = fdVals[id] === "d" ? 2 : 3;
 				var combos = combinations.k_combinations(skaters, numLinemates);
 				incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
 			}
 		}); // End of events loop
 
-		// Filter lines by toi before responding
+		//
+		// For a specified team, no further analysis is needed
+		// Filter lines by toi before returning results
+		//
+
+		if (scope === "team") {
+			return response.status(200).send({
+				lines: lineResults.filter(function(d) { return d.all.toi >= 300; })
+			});
+		}
+
+		//
+		// For a specified player, return only lines they played on
+		// Before returning the line results, filter by toi and remove the specified player's id and name
+		// Create new objects 'obj' to store the player's line results because
+		// 		we need the original line result objects (that contain the full list of player ids) to calculate wowy stats
+		//
+
+		var playerLineResults = [];
+		lineResults.forEach(function(l) {
+			// Filter out lines that don't meet the minimum toi or don't contain the specified player
+			var playerIdx = l.player_ids.indexOf(id);
+			if (l.all.toi < 300 || playerIdx < 0) {
+				return;
+			}
+			// Remove the specified player's properties from the response
+			var pids = l.player_ids.filter(function(d, i) { return i !== playerIdx; });
+			var firsts = l.firsts.filter(function(d, i) { return i !== playerIdx; });
+			var lasts = l.lasts.filter(function(d, i) { return i !== playerIdx; });		
+			var obj = {
+				player_ids: pids,
+				firsts: firsts,
+				lasts: lasts,
+				all: l.all,
+				ev5: l.ev5,
+				pp: l.pp,
+				sh: l.sh
+			}
+			playerLineResults.push(obj);
+		});
+
+		//
+		// For a specified player, calculate wowy stats
+		//
+
+		var wowyResults = [];
+
+		// Initialize partner objects by looping through each player id of each line
+		lineResults.forEach(function(l) {
+			l.player_ids.forEach(function(pid, idx) {
+				var existingObj = wowyResults.find(function(d) { return d.player_id === pid; });
+				// Create partner object - ignore the specified player
+				if (!existingObj && pid !== id) {
+					wowyResults.push({
+						player_id: pid,
+						first: l.firsts[idx],
+						last: l.lasts[idx],
+						teams: [l.team]
+					});
+				} else if (existingObj) {
+					// If the partner already has an object, record if the player and partner played together on a different team
+					if (existingObj.teams.indexOf(l.team) < 0) {
+						existingObj.teams.push(l.team);
+					}
+				}
+			});
+		});
+
+		// Initialize stat counts
+		wowyResults.forEach(function(p) {
+			["together", "self_only", "mate_only"].forEach(function(context) {
+				p[context] = {};
+				["all", "ev5", "pp", "sh"].forEach(function(sit) {
+					p[context][sit] = { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 };
+				});
+			});
+		});
+
+		// Increment stats with/without each partner by looping through each line's results
+		wowyResults.forEach(function(p) {
+			lineResults.forEach(function(l) {
+				// Determine wowy context
+				var hasSelf = l.player_ids.indexOf(id) >= 0 ? true: false; 			// Whether or not the player is in the line
+				var hasMate = l.player_ids.indexOf(p.player_id) >= 0 ? true: false;	// Whether or not the linemate is in the line
+				var context = "";
+				if (!hasSelf && !hasMate) {
+					return; // Skip line if it doesn't contain either player
+				} else if (hasSelf && hasMate) {
+					context = "together";
+				} else if (hasSelf && !hasMate) {
+					context = "self_only";
+				} else if (!hasSelf && hasMate) {
+					context = "mate_only";
+				}
+				// Increment stats for the context
+				if (context) {
+					["all", "ev5", "pp", "sh"].forEach(function(sit) {
+						p[context][sit].toi += l[sit].toi;
+						p[context][sit].cf += l[sit].cf;
+						p[context][sit].ca += l[sit].ca;
+						p[context][sit].cf_adj += l[sit].cf_adj;
+						p[context][sit].ca_adj += l[sit].ca_adj;
+						p[context][sit].gf += l[sit].gf;
+						p[context][sit].ga += l[sit].ga;
+					});
+				}
+			});
+		});
+
+		// Return results for the specified player
 		return response.status(200).send({
-			lines: lineResults.filter(function(d) { return d.all.toi >= 300; })
+			lines: playerLineResults,
+			wowy: wowyResults
 		});
 	}
 });
