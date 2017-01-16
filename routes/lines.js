@@ -1,6 +1,7 @@
 "use strict"
 
 var express = require("express");
+var apicache = require("apicache");
 var _ = require("lodash");
 var intersect = require("intersect");
 var constants = require("../helpers/analysis-constants.json");
@@ -9,6 +10,7 @@ var ah = require("../helpers/analysis-helpers");
 var combinations = require("../helpers/combinations");
 
 var router = express.Router();
+var cache = apicache.middleware;
 
 // 'timeranges' is a string: "start-end;start-end;..."
 // First split the string into an array of intervals: ["start-end", "start-end", ...]
@@ -106,7 +108,7 @@ function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
 // Specify a player using a player id 8471675; specify a team using a tricode 'tor'
 //
 
-router.get("/:id", function(request, response) {
+router.get("/:id", cache("24 hours"), function(request, response) {
 
 	var season = 2016;
 	var scope;					// 'team' or 'player'

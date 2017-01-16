@@ -1,12 +1,14 @@
 "use strict"
 
 var express = require("express");
+var apicache = require("apicache");
 var _ = require("lodash");
 var constants = require("../helpers/analysis-constants.json");
 var db = require("../helpers/db");
 var ah = require("../helpers/analysis-helpers");
 
 var router = express.Router();
+var cache = apicache.middleware;
 
 var teamStatQueryString = "SELECT result1.*, result2.gp"
 	+ " FROM "
@@ -30,7 +32,7 @@ var teamStatQueryString = "SELECT result1.*, result2.gp"
 // Handle GET request for teams list
 //
 
-router.get("/", function(request, response) {
+router.get("/", cache("24 hours"), function(request, response) {
 
 	var season = 2016;
 
@@ -81,7 +83,7 @@ router.get("/", function(request, response) {
 // Handle GET request for a particular team
 //
 
-router.get("/:tricode", function(request, response) {
+router.get("/:tricode", cache("24 hours"), function(request, response) {
 
 	var tricode = request.params.tricode;
 	var season = 2016;

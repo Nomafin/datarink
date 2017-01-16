@@ -125,7 +125,7 @@ router.get("/breakpoints", cache("24 hours"), function(request, response) {
 // Handle GET request for a particular player id
 //
 
-router.get("/:id", function(request, response) {
+router.get("/:id", cache("24 hours"), function(request, response) {
 
 	var pId = +request.params.id;
 	var season = 2016;
