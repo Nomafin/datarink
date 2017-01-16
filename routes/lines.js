@@ -260,15 +260,6 @@ router.get("/:id", function(request, response) {
 		// Loop through each game and period and calculate line toi
 		//
 
-		// Store all f/d combinations that have been generated for a particular *roster*
-		// 		key: roster player ids in ascending order: 123,234,345,... - the key will contain *all* f/d players in a roster
-		// 		value: all generated combinations for those player ids
-		var generatedShiftCombos = {};
-
-		// Similar to generatedShiftCombos, but the combos are generated for the on-ice skaters of an event
-		// 		as a result, 'key' will be shorter than in generatedShiftCombos
-		var generatedEvCombos = {};
-
 		var gIds = _.uniqBy(shiftRows, "game_id").map(function(d) { return d.game_id; });
 		gIds.forEach(function(gId) {
 
@@ -278,27 +269,17 @@ router.get("/:id", function(request, response) {
 			fdToLoop.forEach(function(fd) {
 
 				// Generate combinations
-				// Each entry in 'combos' is an array of player objects
 				var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === fd; });
 				var uniqLinemates = _.uniqBy(posShiftRows, "player_id");
+				var numLinemates = fd === "f" ? 3 : 2;
+				var combos = combinations.k_combinations(uniqLinemates, numLinemates);
+				var lineTeam = gShiftRows[0].team;
 
-				var lineKey = uniqLinemates.map(function(d) { return d.player_id; });
-				lineKey = lineKey.sort(function(a, b) { return a - b; });
-				lineKey = lineKey.toString();
-
+				// Create objects to store each combination's results
 				var lines = [];
-
-				if (generatedShiftCombos.hasOwnProperty(lineKey)) {
-					lines = generatedShiftCombos[lineKey];
-				} else {
-					var numLinemates = fd === "f" ? 3 : 2;
-					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
-					var lineTeam = gShiftRows[0].team;
-					combos.forEach(function(combo) {
-						initLine(fd, combo, lines, lineResults, lineTeam);
-					});
-					generatedShiftCombos[lineKey] = lines;
-				}
+				combos.forEach(function(combo) {
+					initLine(fd, combo, lines, lineResults, lineTeam);
+				});
 
 				// Get period numbers in the current game
 				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
@@ -371,37 +352,16 @@ router.get("/:id", function(request, response) {
 				// Get combinations of linemates for which to increment stats
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
 				["f", "d"].forEach(function(fd) {
-					// Generate key to check if we've already generated combinations for the combination of players
-					var key = fd === "f" ? fwds : defs;
-					key = key.sort(function(a, b) { return a - b; });
-					key = key.toString();
-					// Reuse or generate combos
-					var combos;
-					if (generatedEvCombos.hasOwnProperty(key)) {
-						combos = generatedEvCombos[key];
-					} else {
-						combos = fd === "f" ? combinations.k_combinations(fwds, 3) : combinations.k_combinations(defs, 2);
-						generatedEvCombos[key] = combos;
-					}
+					var combos = fd === "f" ? combinations.k_combinations(fwds, 3) : combinations.k_combinations(defs, 2);
 					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);				
-				});			
-				
+				});
 			} else if (scope === "player") {
 				// Get the skaters for which to increment stats (same f/d value)
 				skaters = skaters.filter(function(sid) { return fdVals[sid] === fdVals[id]; });
-				// Generate key to check if we've already generated combinations for the combination of players
-				var key = skaters.sort(function(a, b) { return a - b; });
-				key = key.toString();
-				// Reuse or generate combos combinations of linemates for which to increment stats
+				// Get combinations of linemates for which to increment stats
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
-				var combos;
-				if (generatedEvCombos.hasOwnProperty(key)) {
-					combos = generatedEvCombos[key];
-				} else {
-					var numLinemates = fdVals[id] === "d" ? 2 : 3;
-					combos = combinations.k_combinations(skaters, numLinemates);
-					generatedEvCombos[key] = combos;
-				}
+				var numLinemates = fdVals[id] === "d" ? 2 : 3;
+				var combos = combinations.k_combinations(skaters, numLinemates);
 				incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
 			}
 		}); // End of events loop
