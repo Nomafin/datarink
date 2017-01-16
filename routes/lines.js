@@ -2,46 +2,13 @@
 
 var express = require("express");
 var _ = require("lodash");
+var intersect = require("intersect");
 var constants = require("../helpers/analysis-constants.json");
 var db = require("../helpers/db");
 var ah = require("../helpers/analysis-helpers");
 var combinations = require("../helpers/combinations");
 
 var router = express.Router();
-
-// Efficiently get intersection of arrays: https://gist.github.com/lovasoa/3361645
-// Usage: array_intersect(array1, array2, ..., arrayN)
-function array_intersect() {
-	var i, all, shortest, nShortest, n, len, ret = [], obj={}, nOthers;
-	nOthers = arguments.length-1;
-	nShortest = arguments[0].length;
-	shortest = 0;
-	for (i=0; i<=nOthers; i++){
-		n = arguments[i].length;
-		if (n<nShortest) {
-			shortest = i;
-			nShortest = n;
-		}
-	}
-	for (i=0; i<=nOthers; i++) {
-		n = (i===shortest)?0:(i||shortest); //Read the shortest array first. Read the first array instead of the shortest
-		len = arguments[n].length;
-		for (var j=0; j<len; j++) {
-			var elem = arguments[n][j];
-			if(obj[elem] === i-1) {
-				if(i === nOthers) {
-					ret.push(elem);
-					obj[elem]=0;
-				} else {
-					obj[elem]=i;
-				}
-			} else if (i===0) {
-				obj[elem]=0;
-			}
-		}
-	}
-	return ret;
-}
 
 // 'timeranges' is a string: "start-end;start-end;..."
 // First split the string into an array of intervals: ["start-end", "start-end", ...]
@@ -346,9 +313,9 @@ router.get("/:id", function(request, response) {
 						var playerIntersection;
 						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
 						if (fd === "f" && linemateRows.length === 3) {
-							playerIntersection = array_intersect(linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts);
+							playerIntersection = intersect([linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts]);
 						} else if (fd === "d" && linemateRows.length === 2) {
-							playerIntersection = array_intersect(linemateRows[0].shifts, linemateRows[1].shifts);
+							playerIntersection = intersect(linemateRows[0].shifts, linemateRows[1].shifts);
 						}
 
 						// Increment toi for all situations and ev5/sh/pp
@@ -356,7 +323,7 @@ router.get("/:id", function(request, response) {
 							lineObj.all.toi += playerIntersection.length;
 							var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
 							prdSsRows.forEach(function(sr) {
-								lineObj[sr.strength_sit].toi += array_intersect(playerIntersection, sr.timeranges).length;
+								lineObj[sr.strength_sit].toi += intersect(playerIntersection, sr.timeranges).length;
 							});
 						}
 					});
