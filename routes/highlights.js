@@ -11,10 +11,134 @@ var router = express.Router();
 var cache = apicache.middleware;
 
 //
-// Handle GET request for highlights
+// Handle GET request for yesterday's highlights
 //
 
-router.get("/", cache("24 hours"), function(request, response) {
+router.get("/yesterday", cache("24 hours"), function(request, response) {
+
+	// Get yesterday's date for query
+	var today = new Date();
+	var yesterday = new Date(new Date().setDate(today.getDate() - 1));
+	var yyyy = yesterday.getFullYear();
+	var mm = yesterday.getMonth() + 1;
+	var dd = yesterday.getDate();
+	var dateStr = yyyy + "-" + mm + "-" + dd;
+
+	// Query for events
+	var evRows;
+	var evQueryStr = "SELECT *"
+		+ " FROM ("
+			+ " SELECT season, game_id, a_team, h_team, a_final, h_final, periods, datetime AT TIME ZONE 'America/New_York' AS datetime"
+			+ " FROM game_results"
+		+ " ) AS results"
+		+ " LEFT JOIN game_events"
+		+ " ON results.season = game_events.season AND results.game_id = game_events.game_id"
+		+ " WHERE results.datetime >= $1"
+		+ " AND (game_events.type = 'goal' OR game_events.type = 'shot' OR game_events.type = 'missed_shot' OR game_events.type = 'blocked_shot')"
+		+ " AND ((game_events.game_id < 30000 AND game_events.period < 5) OR game_events.game_id >= 30000)";
+	db.query(evQueryStr, [dateStr], function(err, rows) {
+		if (err) { return response.status(500).send("Error running query: " + err); }
+		evRows = rows;
+		processRows();
+	});
+
+	// Query for rosters and each player's stats in all score and strength situations
+	var rosRows;
+	var rosQueryStr = "SELECT *"
+		+ " FROM ("
+		+ " SELECT season, game_id, a_team, h_team, a_final, h_final, periods, datetime AT TIME ZONE 'America/New_York' AS datetime"
+		+ " FROM game_results"
+	+ " ) AS results"
+	+ " LEFT JOIN game_rosters AS ros"
+	+ " ON results.season = ros.season AND results.game_id = ros.game_id"
+	+ " LEFT JOIN ("
+		+ " SELECT season, game_id, player_id, SUM(toi) AS toi, SUM(ig) AS ig, SUM(ia1) AS ia1, SUM(ia2) AS ia2, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic,"
+			+ " SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca"
+		+ " FROM game_stats"
+		+ " GROUP BY season, game_id, player_id"
+	+ " ) AS stats"
+	+ " ON ros.season = stats.season AND ros.game_id = stats.game_id AND ros.player_id = stats.player_id"
+	+ " WHERE results.datetime >= $1";
+
+	db.query(rosQueryStr, [dateStr], function(err, rows) {
+		if (err) { return response.status(500).send("Error running query: " + err); }
+		rosRows = rows;
+		processRows();
+	});
+
+	// Process query results
+	function processRows() {
+
+		// Start processing only after all queries are finished
+		if (!evRows || !rosRows) {
+			return;
+		}
+
+		// Initialize result object
+		var gameResults = [];
+		_.uniqBy(evRows, "game_id").forEach(function(gm) {
+			gameResults.push({
+				game_id: gm.game_id,
+				a_team: gm.a_team,
+				h_team: gm.h_team,
+				a_final: gm.a_final,
+				h_final: gm.h_final,
+				periods: gm.periods,
+				shots: [],
+			});
+		});
+
+		// Postgres aggregate functions like SUM return strings, so cast them as ints
+		rosRows.forEach(function(r) {
+			["toi", "ig", "is", "ic", "ia1", "ia2", "gf", "ga", "sf", "sa", "cf", "ca"].forEach(function(col) {
+				r[col] = +r[col];
+			});
+		});
+
+		// Group event and roster rows by game id
+		evRows = _.groupBy(evRows, "game_id");
+		rosRows = _.groupBy(rosRows, "game_id");
+
+		// Store shot data for each game
+		Object.keys(evRows).forEach(function(gid) {
+			// Sort shots from earliest to latest
+			evRows[gid] = _.orderBy(evRows[gid], function(d) { return d.period * 10000 + d.time; }, "asc");
+			// Store shot data
+			var resultObj = gameResults.find(function(d) { return d.game_id === +gid; });
+			evRows[gid].forEach(function(ev) {
+				var shotObj = {
+					type: ev.type,
+					period: ev.period,
+					time: ev.time,
+					team: ev.team,
+					venue: ev.venue,
+					roles: [ev.p1, ev.p2, ev.p3].filter(function(d) { return d; }),
+					skaters: [ev.a_skaters, ev.h_skaters],
+					goalies: [ev.a_g, ev.h_g]
+				};
+				resultObj.shots.push(shotObj);
+				// Store player names
+				var names = [];
+				shotObj.roles.forEach(function(r) {
+					var playerObj = rosRows[gid].find(function(d) { return d.player_id === r; });
+					names.push([playerObj.first, playerObj.last]);
+				});
+				shotObj.role_names = names;
+			});
+		});
+
+		// Send response
+		return response.status(200).send({
+			games: gameResults
+		});
+	}
+});
+
+//
+// Handle GET request for stat leaders
+//
+
+router.get("/leaders", cache("24 hours"), function(request, response) {
 
 	var season = 2016;
 	var result = {};

@@ -131,7 +131,7 @@ function cacheApis() {
 	setTimeout(function() {
 		console.log("Requesting apis to cache them...");
 		var apiRoot = "http://datarink.herokuapp.com/api/";
-		var endpoints = ["highlights", "teams", "players", "players/breakpoints"];
+		var endpoints = ["highlights/leaders", "teams", "players", "players/breakpoints"];
 		endpoints.forEach(function(endpoint) {
 			var route = apiRoot + endpoint;
 			request(
