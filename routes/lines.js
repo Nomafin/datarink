@@ -265,6 +265,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 		// 		key: roster player ids in ascending order: 123,234,345,... - the key will contain *all* f/d players in a roster
 		// 		value: all generated combinations for those player ids
 		var generatedShiftCombos = {};
+		var shGeneratedShiftCombos = {};
 
 		//
 		// Loop through each game and period and calculate line toi
@@ -330,6 +331,40 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 						}
 					});
 				});
+
+				//
+				// Generate SH forward pairings
+				//
+
+				var shLines = [];
+
+				// Reuse or create objects to store each combination's results
+				if (fd === "f") {
+					if (shGeneratedShiftCombos.hasOwnProperty(lineKey)) {
+						shLines = shGeneratedShiftCombos[lineKey];
+					} else {
+						var shCombos = combinations.k_combinations(uniqLinemates, 2);
+						shCombos.forEach(function(shCombo) {
+							initLine(fd, shCombo, shLines, lineResults, lineTeam);
+						});
+						shGeneratedShiftCombos[lineKey] = shLines;
+					}
+				}
+
+				// Increment toi
+				shLines.forEach(function(l) {
+					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
+					prds.forEach(function(prd) {
+						// Get intersecting timepoints for all players and SH timeranges
+						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
+						var shRow = strSitRows.find(function(d) { return d.game_id === gId && d.period === prd && d.strength_sit === "sh"; });
+						if (linemateRows.length === 2 && shRow) {
+							var duration = intersect([linemateRows[0].shifts, linemateRows[1].shifts, shRow.timeranges]).length;
+							lineObj.all.toi += duration;
+							lineObj.sh.toi += duration;
+						}
+					});
+				});
 			}); // End of f/d loop
 		}); // End of game id loop
 
@@ -375,6 +410,11 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 					var combos = fd === "f" ? combinations.k_combinations(fwds, 3) : combinations.k_combinations(defs, 2);
 					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);				
 				});
+				// Increment stats for SH forward pairings
+				if ((isHome && ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) || (!isHome && ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3)) {
+					var combos = combinations.k_combinations(fwds, 2);
+					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
+				}
 			} else if (scope === "player") {
 				// Get the skaters for which to increment stats (same f/d value)
 				skaters = skaters.filter(function(sid) { return fdVals[sid] === fdVals[id]; });
@@ -383,6 +423,13 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 				var numLinemates = fdVals[id] === "d" ? 2 : 3;
 				var combos = combinations.k_combinations(skaters, numLinemates);
 				incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
+				// Increment stats for SH forward pairings
+				if (fdVals[id] === "f") {
+					if ((isHome && ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) || (!isHome && ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3)) {
+						var combos = combinations.k_combinations(skaters, 2);
+						incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
+					}
+				}
 			}
 		}); // End of events loop
 

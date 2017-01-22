@@ -19,7 +19,7 @@
 							</thead>
 							<tbody>
 								<tr v-for="(l, idx) in compared">
-									<td width="30%" class="label">{{ l.firsts[0].charAt(0) + ". " + l.lasts[0] }}<span v-if="data.player.f_or_d === 'f'"><br>{{ l.firsts[1].charAt(0) + ". " + l.lasts[1] }}</span></td>
+									<td width="30%" class="label">{{ l.firsts[0].charAt(0) + ". " + l.lasts[0] }}<span v-if="l.firsts[1]"><br>{{ l.firsts[1].charAt(0) + ". " + l.lasts[1] }}</span></td>
 									<td width="70%">
 										<div v-if="c.stat === 'toi' || c.stat == 'cf_pct_adj'" class="barchart-bar">
 											<span>{{ l[compareSit][c.stat].toFixed(1) }}</span>
@@ -587,7 +587,7 @@ module.exports = {
 				self.lineData.lines.forEach(function(l) {
 					l.line_id = l.player_ids.toString().replace(/,/g , "");
 					l.name1 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
-					if (self.lineData.lines[0].f_or_d === "d") {
+					if (!l.firsts[1]) {
 						l.firsts[1] = "";
 						l.lasts[1] = "";
 					}

@@ -509,7 +509,7 @@ module.exports = {
 					l.line_id = l.player_ids.toString().replace(/,/g , "");
 					l.name1 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
 					l.name2 = (l.firsts[1] + " " + l.lasts[1]).toLowerCase();
-					if (l.f_or_d === "d") {
+					if (!l.firsts[2]) {
 						l.firsts[2] = "";
 						l.lasts[2] = "";
 					}
