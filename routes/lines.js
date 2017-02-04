@@ -3,7 +3,6 @@
 var express = require("express");
 var apicache = require("apicache");
 var _ = require("lodash");
-var intersect = require("intersect");
 var constants = require("../helpers/analysis-constants.json");
 var db = require("../helpers/db");
 var ah = require("../helpers/analysis-helpers");
@@ -13,18 +12,32 @@ var router = express.Router();
 var cache = apicache.middleware;
 
 // 'timeranges' is a string: "start-end;start-end;..."
-// First split the string into an array of intervals: ["start-end", "start-end", ...]
-// Then convert each interval into an array of seconds played: [[start, start+1, start+2,..., end], [start, start+1, start+2,..., end]]
-// Then flatten the nested arrays: [1,2,3,4,10,11,12,13,...]
-function getTimepointArray(timeranges) {
+// Return an array of tuples: [[start, end], [start, end]]
+function formatTimeranges(timeranges) {
 	timeranges = timeranges
 		.split(";")					
 		.map(function(interval) {
 			var times = interval.split("-");
-			return _.range(+times[0], +times[1]);
+			return [+times[0], +times[1]];
 		});
-	return [].concat.apply([], timeranges);
+	return timeranges;
 };
+
+// arr0 and arr1 are arrays of tuples: [[start, end], [start, end]]
+// Return an array of tuples of overlapping timeranges: [[start, end], [start, end]]
+function getRangeOverlaps(arr0, arr1) {
+	var overlaps = [];
+	arr0.forEach(function(s0) {
+		arr1.forEach(function(s1) {
+			var start = Math.max(s0[0], s1[0]);
+			var end = Math.min(s0[1], s1[1]);
+			if (start < end) {
+				overlaps.push([start, end]);
+			}
+		});
+	});
+	return overlaps;
+}
 
 // 'f_or_d' is 'f' or 'd'
 // 'players' is an array of player objects: [ { player_id: ... }, { player_id: ... }] - contains player properties used to generate lines
@@ -238,10 +251,10 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		// Convert the raw timerange data in shiftRows and strSitRows into an array of timepoints
 		shiftRows.forEach(function(s) {
-			s.shifts = getTimepointArray(s.shifts);
+			s.shifts = formatTimeranges(s.shifts);
 		});
 		strSitRows.forEach(function(s) {
-			s.timeranges = getTimepointArray(s.timeranges);
+			s.timeranges = formatTimeranges(s.timeranges);
 		});
 
 		// Get each player's f_or_d value and store it in fdVals
@@ -311,22 +324,28 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 					prds.forEach(function(prd) {
 
-						// Get intersecting timepoints for all players
-						// Ensure we have the expected number of linemate rows before populating playerIntersection
-						var playerIntersection;
+						var intersections = [];
 						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
+						linemateRows.sort(function(a, b) { return a.shifts.length - b.shifts.length; });
+
+						// Ensure we have the expected number of linemate rows before getting overlaps
 						if (fd === "f" && linemateRows.length === 3) {
-							playerIntersection = intersect([linemateRows[0].shifts, linemateRows[1].shifts, linemateRows[2].shifts]);
+							intersections = getRangeOverlaps(getRangeOverlaps(linemateRows[0].shifts, linemateRows[1].shifts), linemateRows[2].shifts);
 						} else if (fd === "d" && linemateRows.length === 2) {
-							playerIntersection = intersect(linemateRows[0].shifts, linemateRows[1].shifts);
+							intersections = getRangeOverlaps(linemateRows[0].shifts, linemateRows[1].shifts);
 						}
 
 						// Increment toi for all situations and ev5/sh/pp
-						if (playerIntersection) {
-							lineObj.all.toi += playerIntersection.length;
+						if (intersections.length > 0) {
 							var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
+							intersections.forEach(function(int) {
+								lineObj.all.toi += int[1] - int[0];
+							});
 							prdSsRows.forEach(function(sr) {
-								lineObj[sr.strength_sit].toi += intersect(playerIntersection, sr.timeranges).length;
+								var srIntersections = getRangeOverlaps(sr.timeranges, intersections);
+								srIntersections.forEach(function(int) {
+									lineObj[sr.strength_sit].toi += int[1] - int[0];
+								});
 							});
 						}
 					});
@@ -358,11 +377,15 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 						// Get intersecting timepoints for all players and SH timeranges
 						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
 						var shRow = strSitRows.find(function(d) { return d.game_id === gId && d.period === prd && d.strength_sit === "sh"; });
-						if (linemateRows.length === 2 && shRow) {
-							var duration = intersect([linemateRows[0].shifts, linemateRows[1].shifts, shRow.timeranges]).length;
-							lineObj.all.toi += duration;
-							lineObj.sh.toi += duration;
+						if (!shRow || !linemateRows[0] || !linemateRows[1]) {
+							return;
 						}
+						linemateRows.sort(function(a, b) { return a.shifts.length - b.shifts.length; });
+						var intersections = getRangeOverlaps(getRangeOverlaps(shRow.timeranges, linemateRows[0].shifts), linemateRows[1].shifts);
+						intersections.forEach(function(int) {
+							lineObj.sh.toi += int[1] - int[0];
+							lineObj.all.toi = lineObj.sh.toi;
+						});
 					});
 				});
 			}); // End of f/d loop
