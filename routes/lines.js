@@ -116,6 +116,197 @@ function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
 	});	
 };
 
+router.get("/ot", cache("24 hours"), function(request, response) {
+
+	var season = 2016;
+
+	var shiftRows;
+	var eventRows;
+	var strSitRows;
+
+	//
+	// Query for OT shifts
+	//
+
+	var shiftQueryStr = "SELECT s.game_id, s.team, s.player_id, s.period, s.shifts, r.\"first\", r.\"last\", r.\"positions\""
+		+ " FROM game_shifts AS s"
+		+ " INNER JOIN ("
+			+ " SELECT player_id, \"first\", \"last\", string_agg(position, ',') as positions"
+			+ " FROM game_rosters"
+			+ " WHERE position != 'na' AND position != 'g' AND season = $1" 
+			+ " GROUP BY player_id, \"first\", \"last\""
+		+ " ) AS r"
+		+ " ON s.player_id = r.player_id"
+		+ " WHERE s.season = $1 AND s.period = 4";
+	db.query(shiftQueryStr, [season], function(err, rows) {
+		if (err) { return response.status(500).send("Error running query: " + err); }
+		shiftRows = rows;
+		getLineResults();
+	});
+
+	//
+	// Query for OT strength situation rows
+	//
+
+	var sitQueryStr = "SELECT *"
+		+ " FROM game_strength_situations"
+		+ " WHERE season = $1 AND period = 4";
+	db.query(sitQueryStr, [season], function(err, rows) {
+		if (err) { return response.status(500).send("Error running query: " + err); }
+		strSitRows = rows;
+		getLineResults();
+	});		
+
+	//
+	// Query for OT events
+	//
+
+	var eventQueryStr = "SELECT e.*"
+		+ " FROM game_events AS e"
+		+ " LEFT JOIN game_results AS r"
+		+ " ON e.season = r.season AND e.game_id = r.game_id"
+		+ " WHERE (e.type = 'goal' OR e.type = 'shot' OR e.type = 'missed_shot' OR e.type = 'blocked_shot')"
+			+ " AND e.season = $1 AND e.period = 4";
+	db.query(eventQueryStr, [season], function(err, rows) {
+		if (err) { return response.status(500).send("Error running query: " + err); }
+		eventRows = rows;
+		getLineResults();
+	});		
+
+	function getLineResults() {
+
+		if (!shiftRows || !strSitRows || !eventRows) {
+			return;
+		}
+
+		// Convert the raw timerange data in shiftRows and strSitRows into an array of timepoints
+		shiftRows.forEach(function(s) {
+			s.shifts = formatTimeranges(s.shifts);
+		});
+		strSitRows.forEach(function(s) {
+			s.timeranges = formatTimeranges(s.timeranges);
+		});
+
+		var results = [];
+
+		// Loop through teams
+		var teams = _.uniqBy(shiftRows, "team").map(function(d) { return d.team; });
+		teams.forEach(function(id) {
+
+			// Create result object
+			var tmResults = [];
+
+			// Get the game ids and rows that apply to the current team
+			var tmShiftRows = shiftRows.filter(function(d) { return d.team === id; });
+			var tmStrSitRows = strSitRows.filter(function(d) { return d.team === id; });
+			var gIds = _.uniqBy(tmShiftRows, "game_id").map(function(d) { return d.game_id; });
+			var tmEventRows = eventRows.filter(function(d) { return gIds.indexOf(d.game_id) > 0; });
+
+			gIds.forEach(function(gId) {
+
+				// Get the team's rows for the current game
+				var gShiftRows = tmShiftRows.filter(function(d) { return d.game_id === gId; });
+				var gStrSitRows = tmStrSitRows.filter(function(d) { return d.game_id === gId; });
+
+				// Generate combinations
+				var uniqLinemates = _.uniqBy(gShiftRows, "player_id");
+				var lines = [];
+				var combos = combinations.k_combinations(uniqLinemates, 3);
+				combos.forEach(function(combo) {
+					initLine("ot", combo, lines, tmResults, id);
+				});
+
+				// Loop through each line and increment its toi for each period in the current game
+				lines.forEach(function(l) {
+					// Get object to store line result, and the linemates' shift rows
+					var lineObj = tmResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
+					var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0; });
+					linemateRows.sort(function(a, b) { return a.shifts.length - b.shifts.length; });
+					// Ensure we have the expected number of linemate rows before getting overlaps
+					var intersections = [];
+					if (linemateRows.length === 3) {
+						intersections = getRangeOverlaps(getRangeOverlaps(linemateRows[0].shifts, linemateRows[1].shifts), linemateRows[2].shifts);
+					}
+					// Increment toi for all situations and ev5/sh/pp
+					if (intersections.length > 0) {
+						intersections.forEach(function(int) {
+							lineObj.all.toi += int[1] - int[0];
+						});
+						gStrSitRows.forEach(function(sr) {
+							var srIntersections = getRangeOverlaps(sr.timeranges, intersections);
+							srIntersections.forEach(function(int) {
+								lineObj[sr.strength_sit].toi += int[1] - int[0];
+							});
+						});
+					}
+				}); // End of line loop
+			}); // End of game loop
+
+			//
+			// Get event stats
+			//
+
+			tmEventRows.forEach(function(ev) {
+				// Combine the database home/away skater columns into an array, removing null values
+				ev["a_sIds"] = [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
+				ev["h_sIds"] = [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; });
+				// Get isHome: true or false to indicate if the player or team was at home
+				// Get suffix: 'f' or 'a' to indicate if the event was for/against the team or player
+				var isHome;
+				var suffix = ev.team === id ? "f" : "a";
+				if (ev.venue === "home") {
+					isHome = ev.team === id ? true : false;
+				} else if (ev.venue === "away") {
+					isHome = ev.team === id ? false : true;
+				}
+				// Get combinations of linemates for which to increment stats
+				var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
+				var combos = combinations.k_combinations(skaters, 3);
+				incrementLineShotStats(tmResults, combos, ev, isHome, suffix);
+			}); // End of events loop
+
+			// Filter out lines with 0 toi before storing team results
+			results.push(tmResults.filter(function(ln) { return ln.all.toi > 0; }));
+
+		}); // End of team loop
+
+		//
+		// Format results
+		// Since we only want 3-on-3 stats, we use: 4on4 = all - pp - sh
+		// This works because we can assume the teams didn't play with empty nets, 4v4, or 5v5 in overtime
+		//
+
+		results.forEach(function(tm) {									// Loop through teams
+			tm.forEach(function(ln) {									// Loop through the team's lines
+				ln.f_or_d = undefined;
+				ln.player_ids = undefined;
+				ln.ev3 = {
+					toi: ln.all.toi - ln.sh.toi - ln.pp.toi,
+					gf: ln.all.gf - ln.sh.gf - ln.pp.gf,
+					ga: ln.all.ga - ln.sh.ga - ln.pp.ga,
+					cf: ln.all.cf - ln.sh.cf - ln.pp.cf,
+					ca: ln.all.ca - ln.sh.ca - ln.pp.ca,
+					cf_adj: ln.all.cf_adj - ln.sh.cf_adj - ln.pp.cf_adj,
+					ca_adj: ln.all.ca_adj - ln.sh.ca_adj - ln.pp.ca_adj
+				};
+				ln.all = undefined;
+				ln.ev5 = undefined;
+				ln.sh = undefined;
+				ln.pp = undefined;
+			});
+		});
+
+		// Apply minimum ev3 toi
+		var filteredResults = [];
+		results.forEach(function(tm) {
+			filteredResults.push(tm.filter(function(ln) { return ln.ev3.toi >= 60; }));
+		});
+
+		// Return result
+		return response.status(200).send({ results: filteredResults });
+	}
+});
+
 //
 // Handle GET requests for a particular player's linemates, or a particular team's lines
 // Specify a player using a player id 8471675; specify a team using a tricode 'tor'
