@@ -7,11 +7,16 @@ var apicache = require("apicache");
 var PORT = process.env.PORT || 5000;
 var WORKERS = process.env.WEB_CONCURRENCY || 1;
 
-throng({
-	workers: WORKERS,
-	lifetime: Infinity,
-	start: start
-});
+if (process.env.NODE_ENV === "development") {
+	// Start server without throng since the debugger doesn't work well with throng
+	start();
+} else {
+	throng({
+		workers: WORKERS,
+		lifetime: Infinity,
+		start: start
+	});
+}
 
 function start() {
 
