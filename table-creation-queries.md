@@ -64,7 +64,7 @@ CREATE TABLE game_stats (
 	ig SMALLINT,
 	"is" SMALLINT,
 	ibs SMALLINT,
-	ims SMALLINT, 
+	ims SMALLINT,
 	ia1 SMALLINT,
 	ia2 SMALLINT,
 	blocked SMALLINT,

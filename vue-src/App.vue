@@ -126,7 +126,7 @@ a:focus {
 .floating-message button:active {
 	color: $gray9;
 	background: $green6;
-	border-color: $green6;	
+	border-color: $green6;
 }
 
 .floating-message button:focus {
@@ -259,7 +259,7 @@ input[type="text"],
 input[type="number"],
 .search-with-menu label,
 button {
-	-moz-appearance: none; 
+	-moz-appearance: none;
 	-webkit-appearance: none;
 	appearance: none;
 
@@ -287,10 +287,10 @@ select {
 input[type="number"] {
 	-moz-appearance: textfield;
 }
-input[type="number"]::-webkit-inner-spin-button, 
-input[type="number"]::-webkit-outer-spin-button { 
-	-webkit-appearance: none; 
-	margin: 0; 
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
 }
 
 select,

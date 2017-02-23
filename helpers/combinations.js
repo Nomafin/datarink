@@ -2,7 +2,7 @@
  * Copyright 2012 Akseli Palén.
  * Created 2012-07-15.
  * Licensed under the MIT license.
- * 
+ *
  * <license>
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -11,10 +11,10 @@
  * publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -24,9 +24,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * </lisence>
- * 
+ *
  * Implements functions to calculate combinations of elements in JS Arrays.
- * 
+ *
  * Functions:
  *   k_combinations(set, k) -- Return all k-sized combinations in a set
  *   combinations(set) -- Return all combinations of the set
@@ -35,56 +35,56 @@
 
 /**
  * K-combinations
- * 
+ *
  * Get k-sized combinations of elements in a set.
- * 
+ *
  * Usage:
  *   k_combinations(set, k)
- * 
+ *
  * Parameters:
  *   set: Array of objects of any type. They are treated as unique.
  *   k: size of combinations to search for.
- * 
+ *
  * Return:
  *   Array of found combinations, size of a combination is k.
- * 
+ *
  * Examples:
- * 
+ *
  *   k_combinations([1, 2, 3], 1)
  *   -> [[1], [2], [3]]
- * 
+ *
  *   k_combinations([1, 2, 3], 2)
  *   -> [[1,2], [1,3], [2, 3]
- * 
+ *
  *   k_combinations([1, 2, 3], 3)
  *   -> [[1, 2, 3]]
- * 
+ *
  *   k_combinations([1, 2, 3], 4)
  *   -> []
- * 
+ *
  *   k_combinations([1, 2, 3], 0)
  *   -> []
- * 
+ *
  *   k_combinations([1, 2, 3], -1)
  *   -> []
- * 
+ *
  *   k_combinations([], 0)
  *   -> []
  */
 
 /**
  * Combinations
- * 
+ *
  * Get all possible combinations of elements in a set.
- * 
+ *
  * Usage:
  *   combinations(set)
- * 
+ *
  * Examples:
- * 
+ *
  *   combinations([1, 2, 3])
  *   -> [[1],[2],[3],[1,2],[1,3],[2,3],[1,2,3]]
- * 
+ *
  *   combinations([1])
  *   -> [[1]]
  */
@@ -92,18 +92,18 @@
 var exported = {
 	k_combinations : function(set, k) {
 		var i, j, combs, head, tailcombs;
-		
+
 		// There is no way to take e.g. sets of 5 elements from
 		// a set of 4.
 		if (k > set.length || k <= 0) {
 			return [];
 		}
-		
+
 		// K-sized set has only one K-sized subset.
 		if (k == set.length) {
 			return [set];
 		}
-		
+
 		// There is N 1-sized subsets in a N-sized set.
 		if (k == 1) {
 			combs = [];
@@ -112,9 +112,9 @@ var exported = {
 			}
 			return combs;
 		}
-		
+
 		// Assert {1 < k < set.length}
-		
+
 		// Algorithm description:
 		// To get k-combinations of a set, we want to join each element
 		// with all (k-1)-combinations of the other elements. The set of
@@ -149,7 +149,7 @@ var exported = {
 	combinations: function(set) {
 		var k, i, combs, k_combs;
 		combs = [];
-		
+
 		// Calculate all non-empty k-combinations
 		for (k = 1; k <= set.length; k++) {
 			k_combs = module.exports.k_combinations(set, k);

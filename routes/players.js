@@ -18,7 +18,7 @@ var skaterStatQueryString = "SELECT result1.*, result2.positions"
 		+ " SELECT s.team, s.player_id, r.first, r.last, s.score_sit, s.strength_sit, r.position,"
 			+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
 			+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-			+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off" 
+			+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off"
 		+ " FROM game_stats AS s"
 			+ " LEFT JOIN game_rosters AS r"
 			+ " ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
@@ -91,8 +91,8 @@ router.get("/breakpoints", cache("24 hours"), function(request, response) {
 					} else {
 						result[f_or_d + "_breakpoints"][s].push(datapoints[datapoints.length - 1]);
 						done = true;
-					}				
-					i++;	
+					}
+					i++;
 				}
 			});
 		});
@@ -138,7 +138,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			+ " SELECT s.team, s.player_id, r.first, r.last, s.score_sit, s.strength_sit, r.position,"
 				+ "	SUM(toi) AS toi, SUM(ig) AS ig, SUM(\"is\") AS \"is\", (SUM(\"is\") + SUM(ibs) + SUM(ims)) AS ic, SUM(ia1) AS ia1, SUM(ia2) AS ia2,"
 				+ "	SUM(gf) AS gf, SUM(ga) AS ga, SUM(sf) AS sf, SUM(sa) AS sa, (SUM(sf) + SUM(bsf) + SUM(msf)) AS cf, (SUM(sa) + SUM(bsa) + SUM(msa)) AS ca,"
-				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off " 
+				+ "	SUM(cf_off) AS cf_off, SUM(ca_off) AS ca_off "
 			+ " FROM game_stats AS s"
 				+ " LEFT JOIN game_rosters AS r"
 				+ " ON s.player_id = r.player_id AND s.season = r.season AND s.game_id = r.game_id"
@@ -233,7 +233,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 	// Only return response when all results are ready
 	//
 
-	function returnResult() {	
+	function returnResult() {
 		if (result.player && result.history) {
 			return response.status(200).send(result);
 		}

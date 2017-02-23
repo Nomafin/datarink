@@ -329,12 +329,12 @@ module.exports = {
 				this.lineData.lines.map(function(p) {
 					p.sort_val = p[sit].toi === 0 ? 0 : p[sit][col] / p[sit].toi;
 					return p;
-				});	
+				});
 			} else {
 				this.lineData.lines.map(function(p) {
 					p.sort_val = p[sit][col];
 					return p;
-				});						
+				});
 			}
 			return _.orderBy(this.lineData.lines, "sort_val", order);
 		},

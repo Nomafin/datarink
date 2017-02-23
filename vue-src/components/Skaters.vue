@@ -128,7 +128,7 @@
 							</label>
 						</td>
 						<td><span class="rank" :class="{ tied: p.rank[1] }">{{ p.rank[0] }}</span></td>
-						<td class="left-aligned"><router-link :to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>	
+						<td class="left-aligned"><router-link :to="{ path: p.player_id.toString() }" append>{{ p.first + " " + p.last }}</router-link></td>
 						<td class="left-aligned">{{ p.positions.toUpperCase() }}</td>
 						<td class="left-aligned">{{ p.teams.toUpperCase() }}</td>
 						<td>{{ p.gp }}</td>
@@ -149,7 +149,7 @@
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].ca | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct | percentage(false) }}<span class="pct">%</span></td>
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_rel | percentage(true) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>			
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>
 					</tr>
 				</tbody>
 			</table>
@@ -299,7 +299,7 @@ module.exports = {
 					players = players.filter(function(p) { return p.gp >= min; });
 				}
 			}
-			return players;	
+			return players;
 		},
 		sorted: function() {
 			// Create a player property for their sort value - used to sort rate stats and used for ranking
@@ -317,12 +317,12 @@ module.exports = {
 					players.map(function(p) {
 						p.sort_val = p.stats[sit][col];
 						return p;
-					});		
+					});
 				} else {
 					players.map(function(p) {
 						p.sort_val = p.stats[sit].toi === 0 ? 0 : p.stats[sit][col] / p.stats[sit].toi;
 						return p;
-					});							
+					});
 				}
 			}
 			// Sort players

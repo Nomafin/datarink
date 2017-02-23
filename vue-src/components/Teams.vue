@@ -58,11 +58,11 @@
 						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].ga | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
 						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].g_diff | rate(isRatesEnabled, p.stats[strengthSit].toi, true) }}</td>
 						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].sh_pct | percentage(false) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].sv_pct | percentage(false) }}<span class="pct">%</span></td>					
+						<td class="cols-on-ice-goals">{{ p.stats[strengthSit].sv_pct | percentage(false) }}<span class="pct">%</span></td>
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].ca | rate(isRatesEnabled, p.stats[strengthSit].toi, false) }}</td>
 						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct | percentage(false) }}<span class="pct">%</span></td>
-						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>			
+						<td class="cols-on-ice-corsi">{{ p.stats[strengthSit].cf_pct_adj | percentage(false) }}<span class="pct">%</span></td>
 					</tr>
 				</tbody>
 			</table>
@@ -121,19 +121,19 @@ module.exports = {
 				this.teams.map(function(p) {
 					p.sort_val = p[col];
 					return p;
-				});	
+				});
 			} else {
 				var sit = this.strengthSit;
 				if (!this.isRatesEnabled || ["toi", "sh_pct", "sv_pct", "cf_pct", "cf_pct_adj"].indexOf(col) >= 0) {
 					this.teams.map(function(p) {
 						p.sort_val = p.stats[sit][col];
 						return p;
-					});		
+					});
 				} else {
 					this.teams.map(function(p) {
 						p.sort_val = p.stats[sit].toi === 0 ? 0 : p.stats[sit][col] / p.stats[sit].toi;
 						return p;
-					});							
+					});
 				}
 			}
 			this.teams = _.orderBy(this.teams, "sort_val", order);

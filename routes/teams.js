@@ -22,7 +22,7 @@ var teamStatQueryString = "SELECT result1.*, result2.gp"
 	+ " LEFT JOIN"
 	+ " ( "
 		+ " SELECT team, COUNT(DISTINCT game_id) AS gp"
-		+ " FROM game_rosters" 
+		+ " FROM game_rosters"
 		+ " WHERE season = $1"
 		+ " GROUP BY team"
 	+ " ) AS result2"
@@ -175,9 +175,9 @@ router.get("/:tricode", cache("24 hours"), function(request, response) {
 	//
 	// When all results are ready, reorganize the 'points' property and send response
 	//
-	
+
 	function returnResult() {
-		if (result.team && result.history && result.breakpoints && result.points) {	
+		if (result.team && result.history && result.breakpoints && result.points) {
 			result.team.points = result.points;
 			result.points = undefined;
 			return response.status(200).send(result);

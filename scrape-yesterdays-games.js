@@ -82,7 +82,7 @@ function getGameIds() {
 }
 
 //
-// Loop through each gameId one at a time aysnchronously 
+// Loop through each gameId one at a time aysnchronously
 //
 
 var unfinishedGameIds = [];	// Log games that were not scraped because they weren't final
@@ -137,7 +137,7 @@ function cacheApis() {
 			request(
 				{	uri: route,
 					method: "GET"
-				}, 
+				},
 				function (error, response, body) {
 					if (!error && response.statusCode === 200) {
 						console.log("Loaded " + route);
@@ -287,7 +287,7 @@ function processData(gId, pbpJson, shiftJson) {
 	// Prepare events output
 	// eventsObject is an array of event objects
 	//
-	
+
 	var isPlayoffs = gId >= 30000;
 	var recordedEvents = ["goal", "shot", "missed_shot", "blocked_shot", "faceoff", "penalty"];
 	var eventsObject = pbpJson.liveData.plays.allPlays;
@@ -424,7 +424,7 @@ function processData(gId, pbpJson, shiftJson) {
 				var isPenShotFound = false;
 				while (i + j < eventData.length && !isPenShotFound) {
 					if (["goal", "shot", "missed_shot", "blocked_shot"].indexOf(eventData[i + j]["type"]) >= 0) {
-						eventData[i + 1]["description"] += " {penalty_shot}" 
+						eventData[i + 1]["description"] += " {penalty_shot}"
 						isPenShotFound = true;
 					} else {
 						j++;
@@ -548,7 +548,7 @@ function processData(gId, pbpJson, shiftJson) {
 		goals.forEach(function(g) {
 
 			var venueIdx = g["venue"] === "away" ? 0 : 1;
-			
+
 			if (g["period"] < prd) {
 				intervals.forEach(function(interval) {
 					interval["score"][venueIdx]++;
@@ -615,7 +615,7 @@ function processData(gId, pbpJson, shiftJson) {
 	//
 
 	eventData.forEach(function(ev) {
-		
+
 		// Get score and strength situations
 		var scoreSits = getScoreSits(ev["score"][0], ev["score"][1]);
 		var strengthSits = getStrengthSits({
@@ -756,7 +756,7 @@ function processData(gId, pbpJson, shiftJson) {
 						ranges.push([start, end]);
 					}
 				}
-				
+
 				// Replace original array of timepoints with new array of ranges
 				teamStrSitTimes[prd.toString()][v][sit] = ranges;
 			});
@@ -914,7 +914,7 @@ function processData(gId, pbpJson, shiftJson) {
 			throw err;
 		}
 	});
-	
+
 	// Write game_rosters
 	// For player names, escape any apostrophes
 	var queryString = "INSERT INTO game_rosters VALUES ";
@@ -974,7 +974,7 @@ function processData(gId, pbpJson, shiftJson) {
 
 		// Wrap each role in quotes
 		roles = roles.map(function(d) {
-			if (d) { 
+			if (d) {
 				return "'" + d + "'";
 			} else {
 				return "NULL";
@@ -982,7 +982,7 @@ function processData(gId, pbpJson, shiftJson) {
 		});
 		line += roles.toString() + ",";
 
-		// Write on-ice players 
+		// Write on-ice players
 		["away", "home"].forEach(function(venue, vIdx) {
 
 			var players = ["NULL", "NULL", "NULL", "NULL", "NULL", "NULL", "NULL"];

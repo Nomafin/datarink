@@ -183,7 +183,7 @@ router.get("/", cache("24 hours"), function(request, response) {
 			});
 			return leaders;
 		}
-		
+
 		// Send response when recent and season results are ready
 		if (result.recent && result.season) {
 			return response.status(200).send(result);

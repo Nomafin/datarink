@@ -39,7 +39,7 @@ module.exports = {
 						top: spread === 0 ? 0 : 100 * extent[1] / spread,
 						height: spread === 0 ? 0 : 100 * Math.abs(d) / spread,
 						isNegative: true
-					});					
+					});
 				}
 			});
 			return bars;

@@ -137,7 +137,7 @@ exports.isForD = function(positions) {
 	} else if (counts.def === counts.fwd) {
 		position = counts.last;
 	}
-	return position;	
+	return position;
 };
 
 //
@@ -160,7 +160,7 @@ exports.structureSkaterStatRows = function(rows) {
 	// Structure results as an array of objects: [ { playerId: 123, data: [rows for player 123] }, { playerId: 234, data: [rows for player 234] } ]
 	Object.keys(rows).forEach(function(pId) {
 		// Get all teams and positions the player has been on, as well as games played
-		var positions = rows[pId][0].positions.split(",");	
+		var positions = rows[pId][0].positions.split(",");
 		resultRows.push({
 			player_id: +pId,
 			teams: _.uniqBy(rows[pId], "team").map(function(d) { return d.team; }),

@@ -15,7 +15,7 @@ var cache = apicache.middleware;
 // Return an array of tuples: [[start, end], [start, end]]
 function formatTimeranges(timeranges) {
 	timeranges = timeranges
-		.split(";")					
+		.split(";")
 		.map(function(interval) {
 			var times = interval.split("-");
 			return [+times[0], +times[1]];
@@ -93,7 +93,7 @@ function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
 		}
 	}
 	// Get the score situation and score adjustment factor for the player
-	var scoreSit = isHome ? Math.max(-3, Math.min(3, ev.h_score - ev.a_score)) : 
+	var scoreSit = isHome ? Math.max(-3, Math.min(3, ev.h_score - ev.a_score)) :
 		Math.max(-3, Math.min(3, ev.a_score - ev.h_score));
 	// Increment stats for each combo for all situations, and ev/sh/pp
 	combos.forEach(function(c) {
@@ -113,7 +113,7 @@ function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
 				}
 			})
 		}
-	});	
+	});
 };
 
 //
@@ -174,11 +174,11 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			+ " INNER JOIN ("
 				+ " SELECT player_id, \"first\", \"last\", string_agg(position, ',') as positions"
 				+ " FROM game_rosters"
-				+ " WHERE position != 'na' AND position != 'g' AND season = $1 AND team = $2" 
+				+ " WHERE position != 'na' AND position != 'g' AND season = $1 AND team = $2"
 				+ " GROUP BY player_id, \"first\", \"last\""
 			+ " ) AS r"
 			+ " ON s.player_id = r.player_id"
-			+ " WHERE s.season = $1 AND s.team = $2";			
+			+ " WHERE s.season = $1 AND s.team = $2";
 	}
 	db.query(shiftQueryStr, [season, id], function(err, rows) {
 		if (err) { return response.status(500).send("Error running query: " + err); }
@@ -195,7 +195,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 		sitQueryStr = "SELECT s.*"
 			+ " FROM game_rosters AS p"
 			+ " LEFT JOIN game_strength_situations AS s"
-			+ " ON p.season = s.season AND p.game_id = s.game_id AND p.team = s.team" 
+			+ " ON p.season = s.season AND p.game_id = s.game_id AND p.team = s.team"
 			+ " WHERE p.season = $1 AND p.\"position\" != 'na' AND p.player_id = $2";
 	} else if (scope === "team") {
 		sitQueryStr = "SELECT *"
@@ -206,7 +206,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 		if (err) { return response.status(500).send("Error running query: " + err); }
 		strSitRows = rows;
 		getLineResults();
-	});			
+	});
 
 	//
 	// Query for event rows
@@ -222,7 +222,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			+ " LEFT JOIN game_events AS e"
 			+ " ON p.season = e.season AND p.game_id = e.game_id"
 			+ " WHERE (e.type = 'goal' OR e.type = 'shot' OR e.type = 'missed_shot' OR e.type = 'blocked_shot')"
-				+ " AND p.season = $1 AND p.player_id = $2"; 
+				+ " AND p.season = $1 AND p.player_id = $2";
 	} else if (scope === "team") {
 		eventQueryStr = "SELECT e.*"
 			+ " FROM game_events AS e"
@@ -235,7 +235,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 		if (err) { return response.status(500).send("Error running query: " + err); }
 		eventRows = rows;
 		getLineResults();
-	});		
+	});
 
 	//
 	// Calculate line stats
@@ -259,7 +259,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		// Get each player's f_or_d value and store it in fdVals
 		// Use player id as keys, f/d as values - will be used when incrementing stats
-		var fdVals = {}; 
+		var fdVals = {};
 		shiftRows.forEach(function(s) {
 			var val = ah.isForD(s.positions.split(","));
 			s.f_or_d = val;
@@ -424,14 +424,14 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			// Generate combinations and increment their stats
 			var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
 			if (scope === "team") {
-				// Get the forwards and defense for which to increment stats	
+				// Get the forwards and defense for which to increment stats
 				var fwds = skaters.filter(function(sid) { return fdVals[sid] === "f"; });
 				var defs = skaters.filter(function(sid) { return fdVals[sid] === "d"; });
 				// Get combinations of linemates for which to increment stats
 				// This handles events with more than 2 defense or more than 3 forwards on the ice
 				["f", "d"].forEach(function(fd) {
 					var combos = fd === "f" ? combinations.k_combinations(fwds, 3) : combinations.k_combinations(defs, 2);
-					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);				
+					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
 				});
 				// Increment stats for SH forward pairings
 				if ((isHome && ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) || (!isHome && ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3)) {
@@ -484,7 +484,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			// Remove the specified player's properties from the response
 			var pids = l.player_ids.filter(function(d, i) { return i !== playerIdx; });
 			var firsts = l.firsts.filter(function(d, i) { return i !== playerIdx; });
-			var lasts = l.lasts.filter(function(d, i) { return i !== playerIdx; });		
+			var lasts = l.lasts.filter(function(d, i) { return i !== playerIdx; });
 			var obj = {
 				player_ids: pids,
 				firsts: firsts,

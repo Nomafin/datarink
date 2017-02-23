@@ -23,13 +23,13 @@ function start() {
 	// Create an Express server
 	var express = require("express");
 	var server = express();
-	
+
 	// Enable compression for static assets and api responses
 	server.use(compression());
 
 	// Serve static files, including the Vue application in public/index.html
 	server.use(express.static("public"));
-	
+
 	// Routes
 	server.use("/api/highlights/", require("./routes/highlights"));
 	server.use("/api/teams/", require("./routes/teams"));
