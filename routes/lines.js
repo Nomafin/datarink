@@ -61,7 +61,7 @@ function initLine(f_or_d, players, lines, lineResults, lineTeam) {
 		lines.push(pIds);
 	}
 	// Check if the combination already exists before creating the object
-	if (!lineResults[lineKey]) {
+	if (!lineResults.hasOwnProperty(lineKey)) {
 		lineResults[lineKey] = {
 			player_ids: pIds,
 			firsts: firsts,
@@ -320,14 +320,14 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
 
 				// Loop through each line and increment its toi for each period in the current game
-				for (var i = 0; i < lines.length; i++) {
+				lines.forEach(function(l) {
 
-					var lineObj = lineResults[lines[i].toString()];
+					var lineObj = lineResults[l.toString()];
 
-					for (var j = 0; j < prds.length; j++) {
+					prds.forEach(function(prd) {
 
 						var intersections = [];
-						var linemateRows = gShiftRows.filter(function(d) { return lines[i].indexOf(d.player_id) >= 0 && d.period === prds[j]; });
+						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
 						linemateRows.sort(function(a, b) { return a.shifts.length - b.shifts.length; });
 
 						// Ensure we have the expected number of linemate rows before getting overlaps
@@ -339,7 +339,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 						// Increment toi for all situations and ev5/sh/pp
 						if (intersections.length > 0) {
-							var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prds[j]; });
+							var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
 							intersections.forEach(function(int) {
 								lineObj.all.toi += int[1] - int[0];
 							});
@@ -350,8 +350,8 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 								});
 							});
 						}
-					}
-				}
+					});
+				});
 
 				//
 				// Generate SH forward pairings
@@ -373,23 +373,28 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 				}
 
 				// Increment toi
-				for (var i = 0; i < shLines.length; i++) {
-					var lineObj = lineResults[shLines[i].toString()];
-					for (var j = 0; j < prds.length; j++) {
+				shLines.forEach(function(l) {
+					var lineObj = lineResults[l.toString()];
+					prds.forEach(function(prd) {
 						// Get intersecting timepoints for all players and SH timeranges
-						var linemateRows = gShiftRows.filter(function(d) { return shLines[i].indexOf(d.player_id) >= 0 && d.period === prds[j]; });
-						var shRow = strSitRows.find(function(d) { return d.game_id === gId && d.period === prds[j] && d.strength_sit === "sh"; });
+						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
+						var shRow = strSitRows.find(function(d) { return d.game_id === gId && d.period === prd && d.strength_sit === "sh"; });
 						if (!shRow || !linemateRows[0] || !linemateRows[1]) {
 							return;
 						}
 						linemateRows.sort(function(a, b) { return a.shifts.length - b.shifts.length; });
-						var intersections = getRangeOverlaps(getRangeOverlaps(shRow.timeranges, linemateRows[0].shifts), linemateRows[1].shifts);
+						// Get toi for all situations the pair played together
+						var intersections = getRangeOverlaps(linemateRows[0].shifts, linemateRows[1].shifts);
 						intersections.forEach(function(int) {
-							lineObj.sh.toi += int[1] - int[0];
-							lineObj.all.toi = lineObj.sh.toi;
+							lineObj.all.toi += int[1] - int[0];
 						});
-					}
-				}
+						// Get toi for SH situations the pair played together
+						var shIntersections = getRangeOverlaps(shRow.timeranges, intersections);
+						shIntersections.forEach(function(int) {
+							lineObj.sh.toi += int[1] - int[0];
+						});
+					});
+				});
 			}); // End of f/d loop
 		}); // End of game id loop
 
@@ -397,8 +402,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 		// Append event stats to lineResults
 		//
 
-		for (var i = 0; i < eventRows.length; i++) {
-			var ev = eventRows[i];
+		eventRows.forEach(function(ev) {
 
 			// Combine the database home/away skater columns into an array, removing null values
 			ev["a_sIds"] = [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
@@ -457,7 +461,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 					}
 				}
 			}
-		} // End of events loop
+		}); // End of events loop
 
 		//
 		// Convert the lineResults associative array into an array of line objects
@@ -467,9 +471,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 		lineResults = [];
 
 		Object.keys(associativeResults).forEach(function(lineKey) {
-			if (associativeResults[lineKey].all.toi >= 300) {
-				lineResults.push(associativeResults[lineKey]);
-			}
+			lineResults.push(associativeResults[lineKey]);
 		});
 
 		//
@@ -478,7 +480,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		if (scope === "team") {
 			return response.status(200).send({
-				lines: lineResults
+				lines: lineResults.filter(function(d) { return d.all.toi >= 300; })
 			});
 		}
 
