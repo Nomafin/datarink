@@ -56,12 +56,13 @@ function initLine(f_or_d, players, lines, lineResults, lineTeam) {
 		lasts.push(lm.last);
 	});
 	// Record line as playing in the period
-	if (!lines.find(function(d) { return d.toString() === pIds.toString(); })) {
+	var lineKey = pIds.toString();
+	if (!lines.find(function(d) { return d.toString() === lineKey; })) {
 		lines.push(pIds);
 	}
 	// Check if the combination already exists before creating the object
-	if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
-		lineResults.push({
+	if (!lineResults[lineKey]) {
+		lineResults[lineKey] = {
 			player_ids: pIds,
 			firsts: firsts,
 			lasts: lasts,
@@ -71,7 +72,7 @@ function initLine(f_or_d, players, lines, lineResults, lineTeam) {
 			ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
 			pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
 			sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
-		});
+		};
 	}
 };
 
@@ -98,7 +99,7 @@ function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
 	// Increment stats for each combo for all situations, and ev/sh/pp
 	for (var i = 0; i < combos.length; i++) {
 		combos[i].sort(function(a, b) { return a - b; });
-		var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === combos[i].toString(); });
+		var lineObj = lineResults[combos[i].toString()];
 		if (lineObj) {
 			var sits = strSit ? ["all", strSit] : ["all"];
 			sits.forEach(function(sit) {
@@ -247,7 +248,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			return;
 		}
 
-		var lineResults = [];
+		var lineResults = {};
 
 		// Convert the raw timerange data in shiftRows and strSitRows into an array of timepoints
 		shiftRows.forEach(function(s) {
@@ -283,8 +284,6 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 		//
 		// Loop through each game and period and calculate line toi
 		//
-
-		console.time("toi");
 
 		var gIds = _.uniqBy(shiftRows, "game_id").map(function(d) { return d.game_id; });
 		gIds.forEach(function(gId) {
@@ -323,7 +322,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 				// Loop through each line and increment its toi for each period in the current game
 				for (var i = 0; i < lines.length; i++) {
 
-					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === lines[i].toString(); });
+					var lineObj = lineResults[lines[i].toString()];
 
 					for (var j = 0; j < prds.length; j++) {
 
@@ -375,7 +374,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 				// Increment toi
 				for (var i = 0; i < shLines.length; i++) {
-					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === shLines[i].toString(); });
+					var lineObj = lineResults[shLines[i].toString()];
 					for (var j = 0; j < prds.length; j++) {
 						// Get intersecting timepoints for all players and SH timeranges
 						var linemateRows = gShiftRows.filter(function(d) { return shLines[i].indexOf(d.player_id) >= 0 && d.period === prds[j]; });
@@ -394,13 +393,9 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			}); // End of f/d loop
 		}); // End of game id loop
 
-		console.timeEnd("toi");
-
 		//
 		// Append event stats to lineResults
 		//
-
-		console.time("events");
 
 		for (var i = 0; i < eventRows.length; i++) {
 			var ev = eventRows[i];
@@ -464,16 +459,26 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			}
 		} // End of events loop
 
-		console.timeEnd("events");
+		//
+		// Convert the lineResults associative array into an array of line objects
+		//
+
+		var associativeResults = lineResults;
+		lineResults = [];
+
+		Object.keys(associativeResults).forEach(function(lineKey) {
+			if (associativeResults[lineKey].all.toi >= 300) {
+				lineResults.push(associativeResults[lineKey]);
+			}
+		});
 
 		//
 		// For a specified team, no further analysis is needed
-		// Filter lines by toi before returning results
 		//
 
 		if (scope === "team") {
 			return response.status(200).send({
-				lines: lineResults.filter(function(d) { return d.all.toi >= 300; })
+				lines: lineResults
 			});
 		}
 
