@@ -493,9 +493,9 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		var playerLineResults = [];
 		lineResults.forEach(function(l) {
-			// Filter out lines that don't meet the minimum toi or don't contain the specified player
+			// Filter out lines that don't contain the specified player
 			var playerIdx = l.player_ids.indexOf(id);
-			if (l.all.toi < 300 || playerIdx < 0) {
+			if (playerIdx < 0) {
 				return;
 			}
 			// Remove the specified player's properties from the response
@@ -510,7 +510,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 				ev5: l.ev5,
 				pp: l.pp,
 				sh: l.sh
-			}
+			};
 			playerLineResults.push(obj);
 		});
 
@@ -584,7 +584,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		// Return results for the specified player
 		return response.status(200).send({
-			lines: playerLineResults,
+			lines: playerLineResults.filter(function(d) { return d.all.toi >= 300; }),
 			wowy: wowyResults
 		});
 	}
