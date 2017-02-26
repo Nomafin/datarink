@@ -11,110 +11,21 @@ var combinations = require("../helpers/combinations");
 var router = express.Router();
 var cache = apicache.middleware;
 
-// 'timeranges' is a string: "start-end;start-end;..."
-// Return an array of tuples: [[start, end], [start, end]]
-function formatTimeranges(timeranges) {
-	timeranges = timeranges
-		.split(";")
-		.map(function(interval) {
-			var times = interval.split("-");
-			return [+times[0], +times[1]];
-		});
-	return timeranges;
-};
-
-// arr0 and arr1 are arrays of tuples: [[start, end], [start, end]]
-// Return an array of tuples of overlapping timeranges: [[start, end], [start, end]]
+// arr0 and arr1 are arrays of timeranges: [[start, end], [start, end]]
+// Return an array of overlapping timeranges: [[start, end], [start, end]]
 function getRangeOverlaps(arr0, arr1) {
 	var overlaps = [];
-	arr0.forEach(function(s0) {
-		arr1.forEach(function(s1) {
-			var start = Math.max(s0[0], s1[0]);
-			var end = Math.min(s0[1], s1[1]);
+	for (var i = 0; i < arr0.length; i++) {
+		for (var j = 0; j < arr1.length; j++) {
+			var start = Math.max(arr0[i][0], arr1[j][0]);
+			var end = Math.min(arr0[i][1], arr1[j][1]);
 			if (start < end) {
 				overlaps.push([start, end]);
 			}
-		});
-	});
+		}
+	}
 	return overlaps;
 }
-
-// 'f_or_d' is 'f' or 'd'
-// 'players' is an array of player objects: [ { player_id: ... }, { player_id: ... }] - contains player properties used to generate lines
-// 'lines' is an array of player id arrays: [ [111, 222, 333], [222, 333, 444] ] - we'll loop through these lines and increment the stats
-// 'lineResults' is an array of line objects that will be send in the api response
-// 'lineTeam' is the tricode of the line's team
-function initLine(f_or_d, players, lines, lineResults, lineTeam) {
-	var pIds = [];
-	var firsts = [];
-	var lasts = [];
-	// Sort player ids in ascending order
-	players = players.sort(function(a, b) { return a.player_id - b.player_id; });
-	players.forEach(function(lm) {
-		pIds.push(lm.player_id);
-		firsts.push(lm.first);
-		lasts.push(lm.last);
-	});
-	// Record line as playing in the period
-	if (!lines.find(function(d) { return d.toString() === pIds.toString(); })) {
-		lines.push(pIds);
-	}
-	// Check if the combination already exists before creating the object
-	if (!lineResults.find(function(d) { return d.player_ids.toString() === pIds.toString(); })) {
-		lineResults.push({
-			player_ids: pIds,
-			firsts: firsts,
-			lasts: lasts,
-			f_or_d: f_or_d,
-			team: lineTeam,
-			all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-			ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-			pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
-			sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
-		});
-	}
-};
-
-// 'lineResults' is an array of line objects used to store results
-// 'combos' is an array of player id arrays to loop through: [ [111, 222, 333], [111, 222, 444] ]
-// 'ev' is the event object
-// 'isHome' is whether the team or player is the home team: true/false
-// 'suffix' is whether the event was 'f' (for) or 'a' (against) the team or player
-function incrementLineShotStats(lineResults, combos, ev, isHome, suffix) {
-	// Get strength situation for the team
-	var strSit;
-	if (ev.a_g && ev.h_g) {
-		if (ev.a_skaters === 5 && ev.h_skaters === 5) {
-			strSit = "ev5";
-		} else if (ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) {
-			strSit = isHome ? "sh" : "pp";
-		} else if (ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3) {
-			strSit = isHome ? "pp" : "sh";
-		}
-	}
-	// Get the score situation and score adjustment factor for the player
-	var scoreSit = isHome ? Math.max(-3, Math.min(3, ev.h_score - ev.a_score)) :
-		Math.max(-3, Math.min(3, ev.a_score - ev.h_score));
-	// Increment stats for each combo for all situations, and ev/sh/pp
-	combos.forEach(function(c) {
-		c.sort(function(a, b) { return a - b; });
-		var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === c.toString(); });
-		if (lineObj) {
-			var sits = strSit ? ["all", strSit] : ["all"];
-			sits.forEach(function(sit) {
-				lineObj[sit]["c" + suffix]++;
-				if (suffix === "f") {
-					lineObj[sit]["cf_adj"] += constants.cfWeights[scoreSit];
-				} else if (suffix === "a") {
-					lineObj[sit]["ca_adj"] += constants.cfWeights[-1 * scoreSit];
-				}
-				if (ev.type === "goal") {
-					lineObj[sit]["g" + suffix]++;
-				}
-			})
-		}
-	});
-};
 
 //
 // Handle GET requests for a particular player's linemates, or a particular team's lines
@@ -148,9 +59,9 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 	if (scope === "player") {
 		// Query for shifts belonging to the player and his teammates
 		// 'p' contains all of the specified player's game_rosters rows (i.e., all games they played in, regardless of team)
-		// 'sh' contains all player shifts, including player names and all of a player's positions ('r' used string_agg to combine all of a player's positions)
+		// 'sh' contains all player shifts, including player names and all of a player's positions
+		// 		('r' used string_agg to combine all of a player's positions)
 		// Join 'p' with 'sh' to get all shifts belonging to the specified player and his teammates
-		// Also use this to get all positions the player has played
 		shiftQueryStr = "SELECT sh.*"
 			+ " FROM game_rosters AS p"
 			+ " LEFT JOIN ("
@@ -247,18 +158,25 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			return;
 		}
 
-		var lineResults = [];
+		var lineResults = {};
 
-		// Convert the raw timerange data in shiftRows and strSitRows into an array of timepoints
-		shiftRows.forEach(function(s) {
-			s.shifts = formatTimeranges(s.shifts);
+		// Take raw timerange strings: 'start-end;start-end;...'
+		// and return an array of pairs: [[start, end], [start, end]]
+		function rangeStringToArray(rangeString) {
+			return rangeString.split(";")
+				.map(function(tmRange) {
+					return tmRange.split("-")
+						.map(function(tmPt) { return +tmPt; });
+				});
+		}
+		shiftRows.forEach(function(row) {
+			row.shifts = rangeStringToArray(row.shifts);
 		});
-		strSitRows.forEach(function(s) {
-			s.timeranges = formatTimeranges(s.timeranges);
+		strSitRows.forEach(function(row) {
+			row.timeranges = rangeStringToArray(row.timeranges);
 		});
 
-		// Get each player's f_or_d value and store it in fdVals
-		// Use player id as keys, f/d as values - will be used when incrementing stats
+		// Store the f_or_d value for each player id
 		var fdVals = {};
 		shiftRows.forEach(function(s) {
 			var val = ah.isForD(s.positions.split(","));
@@ -266,143 +184,144 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 			fdVals[s.player_id] = val;
 		});
 
-		// Determine if we need to get results for forward lines, defense lines, or both
-		var fdToLoop;
-		if (scope === "team") {
-			fdToLoop = ["f", "d"];
-		} else {
-			fdToLoop = [fdVals[id]];
-		}
-
-		// Store all f/d combinations that have been generated for a particular *roster*
-		// 		key: roster player ids in ascending order: 123,234,345,... - the key will contain *all* f/d players in a roster
-		// 		value: all generated combinations for those player ids
-		var generatedShiftCombos = {};
-		var shGeneratedShiftCombos = {};
+		// Store all forward lines or defender lines that have been generated for a particular roster
+		// key: a string of comma-delimited player ids (all forwards or defenders that played in a particular game)
+		// value: an array of lines, where each line is an array of player ids
+		var rosterLines = {};
+		var rosterShLines = {};
 
 		//
-		// Loop through each game and period and calculate line toi
+		// Increment lines' toi, one game at a time
 		//
 
 		var gIds = _.uniqBy(shiftRows, "game_id").map(function(d) { return d.game_id; });
 		gIds.forEach(function(gId) {
 
-			var gShiftRows = shiftRows.filter(function(d) { return d.game_id === gId; });
+			// Store shifts and period numbers for current game
+			var gmShifts = shiftRows.filter(function(d) { return d.game_id === gId; });
+			var prds = _.uniqBy(gmShifts, "period").map(function(d) { return d.period; });
 
-			// Loop through forward and/or defense lines
-			fdToLoop.forEach(function(fd) {
+			// Loop through forward and/or defense
+			(scope === "team" ? ["f", "d"] : [fdVals[id]]).forEach(function(fd) {
 
-				// Generate combinations
-				var posShiftRows = gShiftRows.filter(function(d) { return d.f_or_d === fd; });
-				var uniqLinemates = _.uniqBy(posShiftRows, "player_id");
+				// Get roster and corresponding shifts
+				var posShifts = gmShifts.filter(function(d) { return d.f_or_d === fd; });
+				var roster = _.uniqBy(posShifts, "player_id");
 
-				// Generate key to check if we've already generated combinations for the combination of players
-				var lineKey = uniqLinemates.map(function(d) { return d.player_id; });
-				lineKey = lineKey.sort(function(a, b) { return a - b; });
-				lineKey = lineKey.toString();
+				// Generate lines for this roster if we haven't done so previously
+				// Create id for the roster by sorting the array of player ids and converting to a string
+				var rosterId = roster.map(function(d) { return d.player_id; })
+					.sort(function(a, b) { return a - b; })
+					.toString();
+				if (!rosterLines.hasOwnProperty(rosterId)) {
 
-				// Reuse or create objects to store each combination's results
-				var lines = [];
-				if (generatedShiftCombos.hasOwnProperty(lineKey)) {
-					lines = generatedShiftCombos[lineKey];
-				} else {
-					var numLinemates = fd === "f" ? 3 : 2;
-					var combos = combinations.k_combinations(uniqLinemates, numLinemates);
-					var lineTeam = gShiftRows[0].team;
-					combos.forEach(function(combo) {
-						initLine(fd, combo, lines, lineResults, lineTeam);
+					// Create array in rosterLines to store 3f lines and 2d lines
+					// Create array in rosterShLines to store 2f lines
+					rosterLines[rosterId] = [];
+					if (fd === "f") {
+						rosterShLines[rosterId] = [];
+					}
+
+					// For forwards, generate 2 and 3 player lines. For defenders, generate 2 player lines
+					var lineSizes = fd === "f" ? [3, 2] : [2];
+					lineSizes.forEach(function(lineSize) {
+
+						// Generate and loop through combinations of players
+						combinations.k_combinations(roster, lineSize).forEach(function(line) {
+
+							// 'line' is an array of player objects
+							// Sort players by ascending id and store the line as an array of player ids
+							line = line.sort(function(a, b) { return a.player_id - b.player_id; });
+							if (fd === "f" && lineSize === 2) {
+								rosterShLines[rosterId].push(line.map(function(d) { return d.player_id; }));
+							} else {
+								rosterLines[rosterId].push(line.map(function(d) { return d.player_id; }));
+							}
+
+							// For new lines, create an object to store results
+							var lineId = line.map(function(d) { return d.player_id; }).toString();
+							if (!lineResults.hasOwnProperty(lineId)) {
+								lineResults[lineId] = {
+									player_ids: line.map(function(d) { return d.player_id; }),
+									firsts: line.map(function(d) { return d.first; }),
+									lasts: line.map(function(d) { return d.last; }),
+									f_or_d: line[0].f_or_d,
+									team: line[0].team,
+									all: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+									ev5: { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+									pp:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 },
+									sh:  { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 }
+								}
+							}
+						});
 					});
-					generatedShiftCombos[lineKey] = lines;
 				}
 
-				// Get period numbers in the current game
-				var prds = _.uniqBy(gShiftRows, "period").map(function(d) { return d.period; });
+				// Loop through each line and increment its toi
+				// For forwards, loop through 3f and 2f lines
+				var toLoop = fd === "f" ? [rosterLines[rosterId], rosterShLines[rosterId]] : [rosterLines[rosterId]];
+				toLoop.forEach(function(lines) {
+					lines.forEach(function(l) {
 
-				// Loop through each line and increment its toi for each period in the current game
-				lines.forEach(function(l) {
-					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
+						// Get reference to the line's result object, and flag if it's a sh forward line
+						var line = lineResults[l.toString()];
+						var isShFwd = !!(line.f_or_d === "f" && line.player_ids.length === 2);
 
-					prds.forEach(function(prd) {
+						// Loop through each period of the current game
+						prds.forEach(function(prd) {
 
-						var intersections = [];
-						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
-						linemateRows.sort(function(a, b) { return a.shifts.length - b.shifts.length; });
+							// Get overlap of linemates' shifts
+							var mateOverlaps = [];
+							var linemateShifts = posShifts.filter(function(d) {
+									return l.indexOf(d.player_id) >= 0 && d.period === prd;
+								});
+							if (!isShFwd && fd === "f" && linemateShifts.length === 3) {
+								mateOverlaps = getRangeOverlaps(linemateShifts[2].shifts,
+										getRangeOverlaps(linemateShifts[0].shifts, linemateShifts[1].shifts)
+									);
+							} else if ((isShFwd || fd === "d") && linemateShifts.length === 2) {
+								mateOverlaps = getRangeOverlaps(linemateShifts[0].shifts, linemateShifts[1].shifts);
+							}
 
-						// Ensure we have the expected number of linemate rows before getting overlaps
-						if (fd === "f" && linemateRows.length === 3) {
-							intersections = getRangeOverlaps(getRangeOverlaps(linemateRows[0].shifts, linemateRows[1].shifts), linemateRows[2].shifts);
-						} else if (fd === "d" && linemateRows.length === 2) {
-							intersections = getRangeOverlaps(linemateRows[0].shifts, linemateRows[1].shifts);
-						}
+							// Increment toi for all situations play
+							if (!isShFwd) {
+								mateOverlaps.forEach(function(timerange) {
+									line.all.toi += timerange[1] - timerange[0];
+								});
+							}
 
-						// Increment toi for all situations and ev5/sh/pp
-						if (intersections.length > 0) {
-							var prdSsRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
-							intersections.forEach(function(int) {
-								lineObj.all.toi += int[1] - int[0];
-							});
-							prdSsRows.forEach(function(sr) {
-								var srIntersections = getRangeOverlaps(sr.timeranges, intersections);
-								srIntersections.forEach(function(int) {
-									lineObj[sr.strength_sit].toi += int[1] - int[0];
+							// Increment toi for ev5, sh, and pp play
+							// For sh forward lines, only increment sh toi
+							if (mateOverlaps.length === 0) {
+								return;
+							}
+							var prdSitRows = strSitRows.filter(function(d) { return d.game_id === gId && d.period === prd; });
+							if (isShFwd) {
+								prdSitRows = prdSitRows.filter(function(d) { return d.strength_sit === "sh"; });
+							}
+							prdSitRows.forEach(function(sr) {
+								getRangeOverlaps(sr.timeranges, mateOverlaps).forEach(function(timerange) {
+									line[sr.strength_sit].toi += timerange[1] - timerange[0];
 								});
 							});
-						}
-					});
-				});
-
-				//
-				// Generate SH forward pairings
-				//
-
-				var shLines = [];
-
-				// Reuse or create objects to store each combination's results
-				if (fd === "f") {
-					if (shGeneratedShiftCombos.hasOwnProperty(lineKey)) {
-						shLines = shGeneratedShiftCombos[lineKey];
-					} else {
-						var shCombos = combinations.k_combinations(uniqLinemates, 2);
-						shCombos.forEach(function(shCombo) {
-							initLine(fd, shCombo, shLines, lineResults, lineTeam);
-						});
-						shGeneratedShiftCombos[lineKey] = shLines;
-					}
-				}
-
-				// Increment toi
-				shLines.forEach(function(l) {
-					var lineObj = lineResults.find(function(d) { return d.player_ids.toString() === l.toString(); });
-					prds.forEach(function(prd) {
-						// Get intersecting timepoints for all players and SH timeranges
-						var linemateRows = gShiftRows.filter(function(d) { return l.indexOf(d.player_id) >= 0 && d.period === prd; });
-						var shRow = strSitRows.find(function(d) { return d.game_id === gId && d.period === prd && d.strength_sit === "sh"; });
-						if (!shRow || !linemateRows[0] || !linemateRows[1]) {
-							return;
-						}
-						linemateRows.sort(function(a, b) { return a.shifts.length - b.shifts.length; });
-						var intersections = getRangeOverlaps(getRangeOverlaps(shRow.timeranges, linemateRows[0].shifts), linemateRows[1].shifts);
-						intersections.forEach(function(int) {
-							lineObj.sh.toi += int[1] - int[0];
-							lineObj.all.toi = lineObj.sh.toi;
-						});
-					});
-				});
+						}); // End of period loop
+					}); // End of lines loop
+				}); // End of rosterLines/rosterShLines loop
 			}); // End of f/d loop
 		}); // End of game id loop
 
 		//
-		// Append event stats to lineResults
+		// Increment lines' event stats
 		//
 
 		eventRows.forEach(function(ev) {
 
-			// Combine the database home/away skater columns into an array, removing null values
+			// Convert the database home/away skater columns into arrays, removing null values
 			ev["a_sIds"] = [ev.a_s1, ev.a_s2, ev.a_s3, ev.a_s4, ev.a_s5, ev.a_s6].filter(function(d) { return d; });
 			ev["h_sIds"] = [ev.h_s1, ev.h_s2, ev.h_s3, ev.h_s4, ev.h_s5, ev.h_s6].filter(function(d) { return d; });
 
-			// Get isHome: true or false to indicate if the player or team was at home
-			// Get suffix: 'f' or 'a' to indicate if the event was for/against the team or player
+			// Get isHome: true/false to indicate if the player or team was at home
+			// Get suffix: 'f'/'a' to indicate if the event was for/against the team or player
 			var isHome;
 			var suffix;
 			if (scope === "team") {
@@ -421,80 +340,122 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 				}
 			}
 
-			// Generate combinations and increment their stats
-			var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
-			if (scope === "team") {
-				// Get the forwards and defense for which to increment stats
-				var fwds = skaters.filter(function(sid) { return fdVals[sid] === "f"; });
-				var defs = skaters.filter(function(sid) { return fdVals[sid] === "d"; });
-				// Get combinations of linemates for which to increment stats
-				// This handles events with more than 2 defense or more than 3 forwards on the ice
-				["f", "d"].forEach(function(fd) {
-					var combos = fd === "f" ? combinations.k_combinations(fwds, 3) : combinations.k_combinations(defs, 2);
-					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
-				});
-				// Increment stats for SH forward pairings
-				if ((isHome && ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) || (!isHome && ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3)) {
-					var combos = combinations.k_combinations(fwds, 2);
-					incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
-				}
-			} else if (scope === "player") {
-				// Get the skaters for which to increment stats (same f/d value)
-				skaters = skaters.filter(function(sid) { return fdVals[sid] === fdVals[id]; });
-				// Get combinations of linemates for which to increment stats
-				// This handles events with more than 2 defense or more than 3 forwards on the ice
-				var numLinemates = fdVals[id] === "d" ? 2 : 3;
-				var combos = combinations.k_combinations(skaters, numLinemates);
-				incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
-				// Increment stats for SH forward pairings
-				if (fdVals[id] === "f") {
-					if ((isHome && ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) || (!isHome && ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3)) {
-						var combos = combinations.k_combinations(skaters, 2);
-						incrementLineShotStats(lineResults, combos, ev, isHome, suffix);
-					}
+			// Get strength situation for the team
+			var strSit;
+			if (ev.a_g && ev.h_g) {
+				if (ev.a_skaters === 5 && ev.h_skaters === 5) {
+					strSit = "ev5";
+				} else if (ev.a_skaters > ev.h_skaters && ev.h_skaters >= 3) {
+					strSit = isHome ? "sh" : "pp";
+				} else if (ev.h_skaters > ev.a_skaters && ev.a_skaters >= 3) {
+					strSit = isHome ? "pp" : "sh";
 				}
 			}
-		}); // End of events loop
+
+			// Get the score adjustment factor for the line
+			var scoreSit = isHome ?
+				Math.max(-3, Math.min(3, ev.h_score - ev.a_score)) :
+				Math.max(-3, Math.min(3, ev.a_score - ev.h_score));
+
+			// Generate lines for which to increment stats
+			// Each entry in 'linesToUpdate' is an array of player ids
+			var linesToUpdate = [];
+			var skaters = isHome ? ev["h_sIds"] : ev["a_sIds"];
+			if (scope === "team") {
+				var fwds = skaters.filter(function(sid) { return fdVals[sid] === "f"; });
+				var defs = skaters.filter(function(sid) { return fdVals[sid] === "d"; });
+				linesToUpdate = combinations.k_combinations(fwds, 3)
+					.concat(
+						combinations.k_combinations(fwds, 2),
+						combinations.k_combinations(defs, 2)
+					);
+			} else if (scope === "player") {
+				// Get skaters with the same fd value as the specified player
+				// For forwards, generate 2f lines for sh situations
+				skaters = skaters.filter(function(sid) { return fdVals[sid] === fdVals[id]; });
+				linesToUpdate = combinations.k_combinations(skaters, 2);
+				if (fdVals[id] === "f") {
+					linesToUpdate = linesToUpdate.concat(combinations.k_combinations(skaters, 3));
+				}
+			}
+
+			// Increment stats for the generated lines
+			linesToUpdate.forEach(function(l) {
+
+				// Get line object to update
+				var lineId = l.sort(function(a, b) { return a - b; }).toString();
+				if (!lineResults.hasOwnProperty(lineId)) {
+					return;
+				}
+				var line = lineResults[lineId];
+
+				// Get strength situations to update
+				// For sh 2f lines, only update sh stats
+				var strSitsToUpdate = [];
+				if (line.f_or_d === "f" && line.player_ids.length === 2) {
+					if (strSit === "sh") {
+						strSitsToUpdate = ["sh"];
+					}
+				} else {
+					strSitsToUpdate = strSit ? ["all", strSit] : ["all"];
+				}
+
+				// Increment stats for each situation
+				strSitsToUpdate.forEach(function(strSit) {
+					line[strSit]["c" + suffix]++;
+					if (suffix === "f") {
+						line[strSit]["cf_adj"] += constants.cfWeights[scoreSit];
+					} else if (suffix === "a") {
+						line[strSit]["ca_adj"] += constants.cfWeights[-scoreSit];
+					}
+					if (ev.type === "goal") {
+						line[strSit]["g" + suffix]++;
+					}
+				});
+			}); // End of line loop
+		}); // End of event loop
 
 		//
-		// For a specified team, no further analysis is needed
-		// Filter lines by toi before returning results
+		// Convert the lineResults associative array into an array of line objects
+		//
+
+		var associativeResults = lineResults;
+		lineResults = [];
+		Object.keys(associativeResults).forEach(function(lineKey) {
+			lineResults.push(associativeResults[lineKey]);
+		});
+
+		//
+		// For a specified team, return results
 		//
 
 		if (scope === "team") {
 			return response.status(200).send({
-				lines: lineResults.filter(function(d) { return d.all.toi >= 300; })
+				lines: lineResults.filter(function(d) { return d.all.toi >= 300 || d.sh.toi >= 300; })
 			});
 		}
 
 		//
 		// For a specified player, return only lines they played on
-		// Before returning the line results, filter by toi and remove the specified player's id and name
-		// Create new objects 'obj' to store the player's line results because
-		// 		we need the original line result objects (that contain the full list of player ids) to calculate wowy stats
 		//
 
 		var playerLineResults = [];
 		lineResults.forEach(function(l) {
-			// Filter out lines that don't meet the minimum toi or don't contain the specified player
-			var playerIdx = l.player_ids.indexOf(id);
-			if (l.all.toi < 300 || playerIdx < 0) {
+			var idxToRemove = l.player_ids.indexOf(id);
+			// Filter out lines that don't contain the specified player
+			if (idxToRemove < 0) {
 				return;
 			}
 			// Remove the specified player's properties from the response
-			var pids = l.player_ids.filter(function(d, i) { return i !== playerIdx; });
-			var firsts = l.firsts.filter(function(d, i) { return i !== playerIdx; });
-			var lasts = l.lasts.filter(function(d, i) { return i !== playerIdx; });
-			var obj = {
-				player_ids: pids,
-				firsts: firsts,
-				lasts: lasts,
+			playerLineResults.push({
+				player_ids: l.player_ids.filter(function(d, i) { return i !== idxToRemove; }),
+				firsts: l.firsts.filter(function(d, i) { return i !== idxToRemove; }),
+				lasts: l.lasts.filter(function(d, i) { return i !== idxToRemove; }),
 				all: l.all,
 				ev5: l.ev5,
 				pp: l.pp,
 				sh: l.sh
-			}
-			playerLineResults.push(obj);
+			});
 		});
 
 		//
@@ -503,74 +464,67 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		var wowyResults = [];
 
-		// Initialize partner objects by looping through each player id of each line
-		lineResults.forEach(function(l) {
-			l.player_ids.forEach(function(pid, idx) {
-				var existingObj = wowyResults.find(function(d) { return d.player_id === pid; });
-				// Create partner object - ignore the specified player
-				if (!existingObj && pid !== id) {
-					wowyResults.push({
-						player_id: pid,
-						first: l.firsts[idx],
-						last: l.lasts[idx],
-						teams: [l.team]
-					});
-				} else if (existingObj) {
-					// If the partner already has an object, record if the player and partner played together on a different team
-					if (existingObj.teams.indexOf(l.team) < 0) {
-						existingObj.teams.push(l.team);
-					}
-				}
-			});
-		});
+		// Create objects to store wowy stats for each partner
+		_.uniqBy(shiftRows, "player_id").forEach(function(d) {
 
-		// Initialize stat counts
-		wowyResults.forEach(function(p) {
+			if (d.player_id === id) {
+				return;
+			}
+			var wowyObj = {
+				player_id: d.player_id,
+				first: d.first,
+				last: d.last
+			};
+
+			// Initialize counters for wowy stats
 			["together", "self_only", "mate_only"].forEach(function(context) {
-				p[context] = {};
+				wowyObj[context] = {};
 				["all", "ev5", "pp", "sh"].forEach(function(sit) {
-					p[context][sit] = { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 };
+					wowyObj[context][sit] = { toi: 0, cf: 0, ca: 0, cf_adj: 0, ca_adj: 0, gf: 0, ga: 0 };
 				});
 			});
+
+			wowyResults.push(wowyObj);
 		});
 
-		// Increment stats with/without each partner by looping through each line's results
-		wowyResults.forEach(function(p) {
+		// Calculate wowy stats for each partner
+		wowyResults.forEach(function(wowy) {
 			lineResults.forEach(function(l) {
+
 				// Determine wowy context
-				var hasSelf = l.player_ids.indexOf(id) >= 0 ? true: false; 			// Whether or not the player is in the line
-				var hasMate = l.player_ids.indexOf(p.player_id) >= 0 ? true: false;	// Whether or not the linemate is in the line
-				var context = "";
-				if (!hasSelf && !hasMate) {
-					return; // Skip line if it doesn't contain either player
-				} else if (hasSelf && hasMate) {
+				// Flag whether the line contains the specified player and/or wowy partner
+				var hasSelf = l.player_ids.indexOf(id) >= 0 ? true: false;
+				var hasMate = l.player_ids.indexOf(wowy.player_id) >= 0 ? true: false;
+				var context;
+				if (hasSelf && hasMate) {
 					context = "together";
 				} else if (hasSelf && !hasMate) {
 					context = "self_only";
 				} else if (!hasSelf && hasMate) {
 					context = "mate_only";
+				} else {
+					return;
 				}
+
 				// Increment stats for the context
-				if (context) {
-					["all", "ev5", "pp", "sh"].forEach(function(sit) {
-						p[context][sit].toi += l[sit].toi;
-						p[context][sit].cf += l[sit].cf;
-						p[context][sit].ca += l[sit].ca;
-						p[context][sit].cf_adj += l[sit].cf_adj;
-						p[context][sit].ca_adj += l[sit].ca_adj;
-						p[context][sit].gf += l[sit].gf;
-						p[context][sit].ga += l[sit].ga;
-					});
-				}
+				["all", "ev5", "pp", "sh"].forEach(function(sit) {
+					wowy[context][sit].toi += l[sit].toi;
+					wowy[context][sit].cf += l[sit].cf;
+					wowy[context][sit].ca += l[sit].ca;
+					wowy[context][sit].cf_adj += l[sit].cf_adj;
+					wowy[context][sit].ca_adj += l[sit].ca_adj;
+					wowy[context][sit].gf += l[sit].gf;
+					wowy[context][sit].ga += l[sit].ga;
+				});
 			});
 		});
 
-		// Return results for the specified player
+		// For a specified player, return results
 		return response.status(200).send({
-			lines: playerLineResults,
+			lines: playerLineResults.filter(function(d) { return d.all.toi >= 300 || d.sh.toi >= 300; }),
 			wowy: wowyResults
 		});
-	}
+	} // End of getLineResults()
 });
 
 module.exports = router;
