@@ -588,9 +588,12 @@ function processData(gId, pbpJson, shiftJson) {
 			// If a shot or penalty occurred at 0:05, then attribute it to all players on ice during interval 0:04-0:05
 			// Special case: If a shot occurred at 0:00, then attribute it to all players on ice during interval 0:00-0:01
 			// 		This occurred in period1, time0 of 2016020078 (eventIdx 3)
+			// Special case: If a faceoff occurred at 20:00 (at the end of of the period), then attribute it to all players on ice during interval 19:59-20:00
 			var interval;
-			if (ev["type"] === "faceoff"
-				|| ["blocked_shot", "missed_shot", "shot"].indexOf(ev["type"]) >= 0 && ev["time"] === 0) {
+			if (ev["type"] === "faceoff" && ev["time"] === prdDur) {
+				interval = intervals.find(function(d) { return d["end"] === ev["time"]; });
+			} else if (ev["type"] === "faceoff"
+				|| (["blocked_shot", "missed_shot", "shot"].indexOf(ev["type"]) >= 0 && ev["time"] === 0)) {
 				interval = intervals.find(function(d) { return d["start"] === ev["time"]; });
 			} else {
 				interval = intervals.find(function(d) { return d["end"] === ev["time"]; });
