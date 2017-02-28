@@ -1,5 +1,6 @@
 "use strict"
 
+var request = require("request");
 var express = require("express");
 var apicache = require("apicache");
 var _ = require("lodash");
@@ -26,6 +27,40 @@ function getRangeOverlaps(arr0, arr1) {
 	}
 	return overlaps;
 }
+
+//
+// Handle GET requests for all teams' lines
+//
+
+router.get("/all", cache("24 hours"), function(req, res) {
+
+	// Call the lines api for each team and store the results
+	var teamResults = [];
+	var linesRoute = req.protocol + "://" + req.get("host") + "/api/lines/";
+	var teams = ["car", "cbj", "njd", "nyi", "nyr", "phi",
+		"pit", "wsh", "bos", "buf", "det", "fla",
+		"mtl", "ott", "tbl", "tor", "chi", "col",
+		"dal", "min", "nsh", "stl", "wpg", "ana",
+		"ari", "cgy", "edm", "lak", "sjs", "van"];
+	teams.forEach(function(team) {
+		var reqUrl = linesRoute + team;
+		request(reqUrl, function (error, lineResponse, body) {
+			teamResults.push(JSON.parse(body));
+			formatResult();
+		});
+	});
+
+	// Combine all team's lines into a flat array of line objects
+	function formatResult() {
+		if (teamResults.length === teams.length) {
+			var result = [];
+			teamResults.forEach(function(team) {
+				result = result.concat(team.lines);
+			});
+			res.status(200).send(result);
+		}
+	}
+});
 
 //
 // Handle GET requests for a particular player's linemates, or a particular team's lines
