@@ -7,9 +7,10 @@
 			</svg
 			><router-link to="/home">Home</router-link
 			><router-link to="/teams">Teams</router-link
+			><router-link to="/lines">Lines</router-link
 			><router-link to="/skaters">Skaters</router-link>
 		</div>
-		<keep-alive include="Home,Skaters,Teams">
+		<keep-alive include="Home,Skaters,Teams,Lines">
 			<router-view/>
 		</keep-alive>
 		<div class="section section-footer">

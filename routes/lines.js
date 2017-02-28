@@ -57,7 +57,7 @@ router.get("/all", cache("24 hours"), function(req, res) {
 			teamResults.forEach(function(team) {
 				result = result.concat(team.lines);
 			});
-			res.status(200).send(result);
+			res.status(200).send({ lines: result });
 		}
 	}
 });
