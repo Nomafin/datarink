@@ -348,7 +348,8 @@ button:focus {
 	border-left-color: transparent;
 }
 
-.search-with-menu .select-container {
+.search-with-menu .select-container,
+.search-with-menu label {
 	margin-right: 0;
 }
 
@@ -432,8 +433,9 @@ input[type="checkbox"]:checked + label.checkbox-container span.checkbox-checkmar
 }
 
 .search-with-menu label {
-	background: none;
+	background: $gray1;
 	border-right: 0;
+	line-height: $control-height;
 }
 
 .search-with-menu .tooltip {

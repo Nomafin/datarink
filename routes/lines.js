@@ -70,6 +70,7 @@ router.get("/all", cache("24 hours"), function(req, res) {
 router.get("/:id", cache("24 hours"), function(request, response) {
 
 	var season = 2016;
+	var minToi = 600; 			// Minimum toi in seconds
 	var scope;					// 'team' or 'player'
 	var id = request.params.id;	// the team tricode or player id
 	if (id.length === 7) {
@@ -466,7 +467,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		if (scope === "team") {
 			return response.status(200).send({
-				lines: lineResults.filter(function(d) { return d.all.toi >= 300 || d.sh.toi >= 300; })
+				lines: lineResults.filter(function(d) { return d.all.toi >= minToi || d.sh.toi >= minToi; })
 			});
 		}
 
@@ -556,7 +557,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		// For a specified player, return results
 		return response.status(200).send({
-			lines: playerLineResults.filter(function(d) { return d.all.toi >= 300 || d.sh.toi >= 300; }),
+			lines: playerLineResults.filter(function(d) { return d.all.toi >= minToi || d.sh.toi >= minToi; }),
 			wowy: wowyResults
 		});
 	} // End of getLineResults()
