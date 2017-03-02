@@ -1,5 +1,6 @@
 "use strict"
 
+var request = require("request");
 var express = require("express");
 var apicache = require("apicache");
 var _ = require("lodash");
@@ -28,6 +29,40 @@ function getRangeOverlaps(arr0, arr1) {
 }
 
 //
+// Handle GET requests for all teams' lines
+//
+
+router.get("/all", cache("24 hours"), function(req, res) {
+
+	// Call the lines api for each team and store the results
+	var teamResults = [];
+	var linesRoute = req.protocol + "://" + req.get("host") + "/api/lines/";
+	var teams = ["car", "cbj", "njd", "nyi", "nyr", "phi",
+		"pit", "wsh", "bos", "buf", "det", "fla",
+		"mtl", "ott", "tbl", "tor", "chi", "col",
+		"dal", "min", "nsh", "stl", "wpg", "ana",
+		"ari", "cgy", "edm", "lak", "sjs", "van"];
+	teams.forEach(function(team) {
+		var reqUrl = linesRoute + team;
+		request(reqUrl, function (error, lineResponse, body) {
+			teamResults.push(JSON.parse(body));
+			formatResult();
+		});
+	});
+
+	// Combine all team's lines into a flat array of line objects
+	function formatResult() {
+		if (teamResults.length === teams.length) {
+			var result = [];
+			teamResults.forEach(function(team) {
+				result = result.concat(team.lines);
+			});
+			res.status(200).send({ lines: result.filter(function(d) { return d.all.toi >= 1200 || d.sh.toi >= 1200; }) });
+		}
+	}
+});
+
+//
 // Handle GET requests for a particular player's linemates, or a particular team's lines
 // Specify a player using a player id 8471675; specify a team using a tricode 'tor'
 //
@@ -35,6 +70,7 @@ function getRangeOverlaps(arr0, arr1) {
 router.get("/:id", cache("24 hours"), function(request, response) {
 
 	var season = 2016;
+	var minToi = 600; 			// Minimum toi in seconds
 	var scope;					// 'team' or 'player'
 	var id = request.params.id;	// the team tricode or player id
 	if (id.length === 7) {
@@ -431,7 +467,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		if (scope === "team") {
 			return response.status(200).send({
-				lines: lineResults.filter(function(d) { return d.all.toi >= 300 || d.sh.toi >= 300; })
+				lines: lineResults.filter(function(d) { return d.all.toi >= minToi || d.sh.toi >= minToi; })
 			});
 		}
 
@@ -521,7 +557,7 @@ router.get("/:id", cache("24 hours"), function(request, response) {
 
 		// For a specified player, return results
 		return response.status(200).send({
-			lines: playerLineResults.filter(function(d) { return d.all.toi >= 300 || d.sh.toi >= 300; }),
+			lines: playerLineResults.filter(function(d) { return d.all.toi >= minToi || d.sh.toi >= minToi; }),
 			wowy: wowyResults
 		});
 	} // End of getLineResults()

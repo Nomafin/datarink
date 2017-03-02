@@ -132,7 +132,7 @@
 							<td>{{ l[strengthSit].ca_adj | rate(true, l[strengthSit].toi, false) }}</td>
 						</tr>
 						<tr v-if="filteredLines.length === 0">
-							<td class="left-aligned" colspan="9">No lines with at least 5 minutes together</td>
+							<td class="left-aligned" colspan="9">No lines with at least 10 minutes together</td>
 						</tr>
 					</tbody>
 				</table>
@@ -240,7 +240,7 @@
 							<th>CF</th>
 							<th>CA</th>
 							<th>C diff</th>
-							<th>C diff, score-adj</th>
+							<th>C diff score-adj</th>
 						</tr>
 					</thead>
 					<tbody>

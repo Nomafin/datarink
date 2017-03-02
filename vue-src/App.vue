@@ -7,9 +7,10 @@
 			</svg
 			><router-link to="/home">Home</router-link
 			><router-link to="/teams">Teams</router-link
+			><router-link to="/lines">Lines</router-link
 			><router-link to="/skaters">Skaters</router-link>
 		</div>
-		<keep-alive include="Home,Skaters,Teams">
+		<keep-alive include="Home,Skaters,Teams,Lines">
 			<router-view/>
 		</keep-alive>
 		<div class="section section-footer">
@@ -146,11 +147,18 @@ a:focus {
 }
 
 .header > svg {
-	display: inline-block;
+	display: none;
 	vertical-align: top;
 	width: 32px;
 	height: 32px;
 	margin: 16px 0px 16px 24px;
+}
+
+/* When width is 380px or wider */
+@media (min-width: 381px) {
+	.header > svg {
+		display: inline-block;
+	}
 }
 
 .header svg .logo-r {
@@ -347,7 +355,8 @@ button:focus {
 	border-left-color: transparent;
 }
 
-.search-with-menu .select-container {
+.search-with-menu .select-container,
+.search-with-menu label {
 	margin-right: 0;
 }
 
@@ -431,8 +440,9 @@ input[type="checkbox"]:checked + label.checkbox-container span.checkbox-checkmar
 }
 
 .search-with-menu label {
-	background: none;
+	background: $gray1;
 	border-right: 0;
+	line-height: $control-height;
 }
 
 .search-with-menu .tooltip {

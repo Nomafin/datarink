@@ -99,7 +99,7 @@
 							<th>CF</th>
 							<th>CA</th>
 							<th>C diff</th>
-							<th>C diff, score-adj</th>
+							<th>C diff score-adj</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -271,7 +271,7 @@
 							<td>{{ l[strengthSit].ca_adj | rate(true, l[strengthSit].toi, false) }}</td>
 						</tr>
 						<tr v-if="filteredLines.length === 0">
-							<td class="left-aligned" :colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines with at least 5 minutes together</td>
+							<td class="left-aligned" :colspan="data.player.f_or_d === 'f' ? '8' : '7'">No lines with at least 10 minutes together</td>
 						</tr>
 					</tbody>
 				</table>
@@ -334,7 +334,7 @@
 							<td class="left-aligned toi">{{ Math.round(w.self_only[strengthSit].toi) }}</td>
 						</tr>
 						<tr v-if="filteredWowy.length === 0">
-							<td class="left-aligned" colspan="7">No combinations with at least 5 minutes together</td>
+							<td class="left-aligned" colspan="7">No combinations with at least 10 minutes together</td>
 						</tr>
 					</tbody>
 				</table>
