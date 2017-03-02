@@ -345,7 +345,7 @@ module.exports = {
 						if (nRequest[i].readyState === 4) {
 							if (nRequest[i].status === 200) {
 								var teamLines = JSON.parse(nRequest[i].responseText).lines;
-								results = results.concat(teamLines.filter(function(d) { return d.all.toi >= 1200; }));
+								results = results.concat(teamLines.filter(function(d) { return d.all.toi >= 1200 || d.sh.toi >= 1200; }));
 								retrieved++;
 								processResults();
 							} else {
