@@ -131,21 +131,31 @@ function cacheApis() {
 	setTimeout(function() {
 		console.log("Requesting apis to cache them...");
 		var apiRoot = "http://datarink.herokuapp.com/api/";
-		var endpoints = ["highlights", "teams", "players", "players/breakpoints", "lines/all"];
-		endpoints.forEach(function(endpoint) {
-			var route = apiRoot + endpoint;
-			request(
-				{	uri: route,
-					method: "GET"
-				},
-				function (error, response, body) {
-					if (!error && response.statusCode === 200) {
-						console.log("Loaded " + route);
-					} else {
-						console.log("Failed to load " + route);
+		var endpoints = ["highlights", "teams", "players", "players/breakpoints"];
+		var tricodes = ["car", "cbj", "njd", "nyi", "nyr", "phi",
+			"pit", "wsh", "bos", "buf", "det", "fla",
+			"mtl", "ott", "tbl", "tor", "chi", "col",
+			"dal", "min", "nsh", "stl", "wpg", "ana",
+			"ari", "cgy", "edm", "lak", "sjs", "van"];
+		tricodes.forEach(function(t) {
+			endpoints.push("lines/" + t);
+		});
+		endpoints.forEach(function(endpoint, i) {
+			setTimeout(function() {
+				var route = apiRoot + endpoint;
+				request(
+					{	uri: route,
+						method: "GET"
+					},
+					function (error, response, body) {
+						if (!error && response.statusCode === 200) {
+							console.log("Loaded " + route);
+						} else {
+							console.log("Failed to load " + route);
+						}
 					}
-				}
-			);
+				);
+			}, i * 6000);
 		});
 	}, 90000);
 }
