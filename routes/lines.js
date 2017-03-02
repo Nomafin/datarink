@@ -36,7 +36,12 @@ router.get("/all", cache("24 hours"), function(req, res) {
 
 	// Call the lines api for each team and store the results
 	var teamResults = [];
-	var linesRoute = req.protocol + "://" + req.get("host") + "/api/lines/";
+	var linesRoute;
+	if (process.env.NODE_ENV === "development") {
+		linesRoute = req.protocol + "://" + req.get("host") + "/api/lines/";
+	} else {
+		linesRoute = "http://www.datarink.com/api/lines/";
+	}
 	var teams = ["car", "cbj", "njd", "nyi", "nyr", "phi",
 		"pit", "wsh", "bos", "buf", "det", "fla",
 		"mtl", "ott", "tbl", "tor", "chi", "col",
