@@ -32,6 +32,7 @@ function getRangeOverlaps(arr0, arr1) {
 // Handle GET requests for all teams' lines
 //
 
+/*
 router.get("/all", cache("24 hours"), function(req, res) {
 
 	// Call the lines api for each team and store the results
@@ -66,6 +67,7 @@ router.get("/all", cache("24 hours"), function(req, res) {
 		}
 	}
 });
+*/
 
 //
 // Handle GET requests for a particular player's linemates, or a particular team's lines

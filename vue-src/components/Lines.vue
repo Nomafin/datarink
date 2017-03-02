@@ -328,10 +328,40 @@ module.exports = {
 		fetchData: function() {
 			var self = this;
 			var xhr = new XMLHttpRequest();
-			xhr.open("GET", "./api/lines/all");
-			xhr.onload = function() {
-				self.lines = JSON.parse(xhr.responseText)["lines"];
-				self.lines.forEach(function(l) {
+			var results = [];
+			var teams = ["car", "cbj", "njd", "nyi", "nyr", "phi",
+				"pit", "wsh", "bos", "buf", "det", "fla",
+				"mtl", "ott", "tbl", "tor", "chi", "col",
+				"dal", "min", "nsh", "stl", "wpg", "ana",
+				"ari", "cgy", "edm", "lak", "sjs", "van"];
+			var retrieved = 0;
+
+			var nRequest = [];
+			for (var i = 0; i < teams.length; i++) {
+				(function(i) {
+					nRequest[i] = new XMLHttpRequest();
+					nRequest[i].open("GET", "./api/lines/" + teams[i], true);
+					nRequest[i].onreadystatechange = function (oEvent) {
+						if (nRequest[i].readyState === 4) {
+							if (nRequest[i].status === 200) {
+								var teamLines = JSON.parse(nRequest[i].responseText).lines;
+								results = results.concat(teamLines.filter(function(d) { return d.all.toi >= 1200; }));
+								retrieved++;
+								processResults();
+							} else {
+								console.log("Error", nRequest[i].statusText);
+							}
+						}
+					};
+					nRequest[i].send(null);
+				})(i);
+			}
+
+			function processResults() {
+				if (retrieved < teams.length) {
+					return;
+				}
+				results.forEach(function(l) {
 					l.line_id = l.player_ids.toString().replace(/,/g , "");
 					l.name0 = (l.firsts[0] + " " + l.lasts[0]).toLowerCase();
 					l.name1 = (l.firsts[1] + " " + l.lasts[1]).toLowerCase();
@@ -349,8 +379,8 @@ module.exports = {
 						s.cf_pct_adj = s.cf_adj + s.ca_adj === 0 ? 0 : 100 * s.cf_adj / (s.cf_adj + s.ca_adj);
 					});
 				});
+				self.lines = results;
 			}
-			xhr.send();
 		},
 		sortBy: function(newSortCol) {
 			this.sort.order = newSortCol === this.sort.col ? -this.sort.order : -1;
