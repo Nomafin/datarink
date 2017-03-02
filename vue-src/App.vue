@@ -147,11 +147,18 @@ a:focus {
 }
 
 .header > svg {
-	display: inline-block;
+	display: none;
 	vertical-align: top;
 	width: 32px;
 	height: 32px;
 	margin: 16px 0px 16px 24px;
+}
+
+/* When width is 380px or wider */
+@media (min-width: 381px) {
+	.header > svg {
+		display: inline-block;
+	}
 }
 
 .header svg .logo-r {
