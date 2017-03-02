@@ -71,15 +71,15 @@
 				</button
 				><div class="search-with-menu">
 					<label for="toi-filter">Minimum mins</label
-					><input id="toi-filter" v-model.number="filter.toi" @blur="sanitizeToi();" @keyup.enter="blurInput($event);" type="number" style="width: 62px;" :placeholder="apiminToi">
+					><input id="toi-filter" v-model.number="toiInput" @blur="sanitizeToi();" @keyup.enter="blurInput($event);" type="number" style="width: 62px;" :placeholder="apiminToi">
 				</div
 				><div class="search-with-menu">
 					<label for="team-filter">Team</label
-					><input id="team-filter" v-model="filter.team" @keyup.enter="blurInput($event);" type="text" style="width: 62px;">
+					><input id="team-filter" v-model="teamInput" @keyup.enter="blurInput($event);" type="text" style="width: 62px;">
 				</div
 				><div class="search-with-menu">
 					<label for="player-filter">Player</label
-					><input id="player-filter" v-model="filter.player" @keyup.enter="blurInput($event);" type="text">
+					><input id="player-filter" v-model="playerInput" @keyup.enter="blurInput($event);" type="text">
 				</div>
 			</div>
 			<div class="section section-table">
@@ -190,6 +190,9 @@ module.exports = {
 			search: {
 				position: "all"
 			},
+			toiInput: 20,
+			playerInput: "",
+			teamInput: "",
 			filter: {
 				toi: 20,
 				player: "",
@@ -205,6 +208,9 @@ module.exports = {
 		"modal": Modal,
 	},
 	watch: {
+		toiInput: _.debounce(function() { this.filter.toi = this.toiInput; }, 250),
+		teamInput: _.debounce(function() { this.filter.team = this.teamInput; }, 250),
+		playerInput: _.debounce(function() { this.filter.player = this.playerInput; }, 250),
 		strengthSit: function() {
 			this.compareSit = this.strengthSit;
 		},
@@ -360,7 +366,7 @@ module.exports = {
 			event.target.blur();
 		},
 		sanitizeToi: function() {
-			this.filter.toi = Math.max(this.apiMinToi, this.filter.toi);
+			this.toiInput = Math.max(this.apiMinToi, this.toiInput);
 		},
 		updateComparisonList: function(l) {
 			if (_.find(this.compared, function(d) { return d.line_id === l.line_id; })) {
